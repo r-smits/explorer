@@ -1,6 +1,5 @@
 #pragma once
-
-#include <memory>
+#include <pch.h>
 #include <spdlog/spdlog.h>
 
 namespace Explorer {

@@ -1,5 +1,5 @@
+#include <Math/Transformation.h>
 #include <View/Renderer.h>
-#include <View/Transformation.h>
 
 Renderer::Renderer(MTL::Device *device) : device(device->retain()) {
   this->commandQueue = device->newCommandQueue();

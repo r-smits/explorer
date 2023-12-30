@@ -1,9 +1,5 @@
 #pragma once
-#include <Control/AppProperties.h>
-#include <CoreFoundation/CoreFoundation.h>
 #include <Events/Events.h>
-#include <Events/KeyEvent.h>
-#include <functional>
 #include <pch.h>
 /**
  * 1) AppDelegate -> ViewAdapter -> ViewExtender (C++ -> Obj-C)

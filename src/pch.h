@@ -1,23 +1,23 @@
 #pragma once
+
 #include <AppKit/AppKit.hpp>
-#include <Control/Logger.h>
+#include <Log/Logger.h>
 #include <Metal/Metal.hpp>
 #include <MetalKit/MetalKit.hpp>
 #include <simd/simd.h>
 
-
+#include <algorithm>
+#include <cmath>
+#include <fstream>
+#include <functional>
 #include <iostream>
 #include <memory>
-#include <utility>
-#include <algorithm>
-#include <functional>
-#include <string>
 #include <sstream>
-#include <vector>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
-#include <fstream>
-#include <cmath>
+#include <utility>
+#include <vector>
 
 /**
  * This file is meant to be a pre-compiled header.

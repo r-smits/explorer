@@ -41,6 +41,8 @@ public:
   virtual int getCategoryFlags() const = 0;
   virtual std::string toString() const { return getName(); };
   inline bool isInCategory(EventCategory category) { return getCategoryFlags() & category; };
+  inline bool isHandled() { return this->handled; }
+  inline void done() { this->handled = true; }
 
 private:
   bool handled = false;

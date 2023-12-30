@@ -1,4 +1,4 @@
-#include <Control/Logger.h>
+#include <Log/Logger.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
 namespace Explorer {

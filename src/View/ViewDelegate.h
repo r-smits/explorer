@@ -1,6 +1,7 @@
 #pragma once
 #include <Events/Events.h>
 #include <Events/KeyEvent.h>
+#include <Layer/LayerStack.h>
 #include <View/Renderer.h>
 #include <pch.h>
 
@@ -20,8 +21,11 @@ public:
   virtual void onEvent(Event &event);
   virtual bool onKeyPressed(KeyPressedEvent &event);
   virtual bool onKeyReleased(KeyReleasedEvent &event);
+  virtual void pushLayer(Layer *layer);
+  virtual void pushOverlay(Layer *layer);
 
 private:
+  LayerStack layerStack;
   Renderer *renderer;
 };
 } // namespace Explorer

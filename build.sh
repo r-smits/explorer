@@ -1,7 +1,7 @@
 echo "[Script] Building cmake files ..."
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -S . -B ./build 
 echo "[Script] Building project binary ..."
-ninja -C ./build
+ninja -v -C ./build
 echo "[Script] Executing project binary ..."
 ./build/EXPLORER
 
