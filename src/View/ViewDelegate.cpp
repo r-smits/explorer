@@ -4,6 +4,8 @@
 
 Explorer::ViewDelegate::ViewDelegate(MTL::Device *device)
     : MTK::ViewDelegate(), renderer(new Renderer(device)) {
+
+  // Set up Keyboard IO eventing from MTK::View
   ViewAdapter *viewAdapter = ViewAdapter::sharedInstance();
   auto callback = [this](Event &event) { this->onEvent(event); };
   viewAdapter->setHandler(callback);
@@ -39,6 +41,8 @@ void Explorer::ViewDelegate::pushOverlay(Layer *layer) { this->layerStack.pushOv
 
 void Explorer::ViewDelegate::drawInMTKView(MTK::View *view) {
   renderer->draw(view);
+  // ImGui_ImplOSX_NewFrame(view);
+
   for (Layer *layer : this->layerStack)
     layer->onUpdate();
 }

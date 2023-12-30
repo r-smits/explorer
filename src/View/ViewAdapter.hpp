@@ -12,15 +12,9 @@ public:
   static ViewAdapter *sharedInstance();
   virtual MTK::View *getView(CGRect frame) const;
   virtual void printDebug() const;
-
-  void setHandler(const std::function<void(Event &)> &func) { this->handler = func; }
-  void onEvent(Event &event) {
-    if (!handler) {
-      WARN("No handler was set to handle events.");
-      return;
-    }
-    this->handler(event);
-  };
+  virtual void setHandler(const std::function<void(Event &)> &func);
+  virtual void onEvent(Event &event);
+  static void imGuiInit(MTL::Device* device);
 
 private:
   std::function<void(Event &)> handler;
