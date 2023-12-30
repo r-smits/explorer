@@ -3,20 +3,27 @@
 #define MTK_PRIVATE_IMPLEMENTATION
 #define CA_PRIVATE_IMPLEMENTATION
 
-#include <config.h>
+#include <Control/AppProperties.h>
 #include <Control/AppDelegate.h>
+#include <Events/KeyEvent.h>
+#include <pch.h>
+
 
 int main() {
+	Explorer::KeyPressedEvent k("a", 0);
+	DEBUG(k.toString());
 
-    void* libHandle = dlopen("./Dylib/test.dylib", RTLD_NOW);
+  NS::AutoreleasePool *autoreleasePool = NS::AutoreleasePool::alloc()->init();
+	
+	Explorer::AppProperties properties = Explorer::AppProperties(500.0, 500.0);	
+	Explorer::AppDelegate appDelegate = Explorer::AppDelegate(&properties);
+  NS::Application *app = NS::Application::sharedApplication();
 
-    NS::AutoreleasePool* autoreleasePool = NS::AutoreleasePool::alloc()->init();
-    Explorer::AppDelegate controller;
-    NS::Application* app = NS::Application::sharedApplication();
+  app->setDelegate(&appDelegate);
+  app->run();
 
-    app->setDelegate(&controller);
-    app->run();
-
-    autoreleasePool->release();
-    return 0;
+  autoreleasePool->release();
+  return 0;
 }
+
+

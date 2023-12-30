@@ -1,5 +1,4 @@
 #include <View/Transformation.h>
-#include <cmath>
 
 simd::float4x4 Transformation::identity() {
     return simd::float4x4(1.0f);
@@ -17,7 +16,7 @@ simd::float4x4 Transformation::zRotation(float theta) {
     theta = theta * 180 / M_PI;
     float c = cosf(theta);
     float s = sinf(theta);
-
+		
     simd::float4 column1 = {c, s, 0.0f, 0.0f};
     simd_float4 column2 = {-s,      c, 0.0f, 0.0f};
     simd_float4 column3 = {0.0f, 0.0f, 1.0f, 0.0f};

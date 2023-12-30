@@ -1,42 +1,62 @@
 #include <Control/AppDelegate.h>
+#include <Control/Logger.h>
+#include <Control/ViewAdapter.hpp>
+#include <Foundation/NSTypes.hpp>
+#include <sstream>
+
+Explorer::AppDelegate::AppDelegate(Explorer::AppProperties *properties) {
+  this->properties = properties;
+  ViewAdapter *viewAdapter = ViewAdapter::sharedInstance();
+  this->mtkView = viewAdapter->getView(properties->cgRect);
+}
 
 Explorer::AppDelegate::~AppDelegate() {
-    mtkView->release();
-    window->release();
-    device->release();
-    delete viewDelegate;
+  mtkView->release();
+  window->release();
+  device->release();
+  delete viewDelegate;
 }
 
-void Explorer::AppDelegate::applicationWillFinishLaunching(NS::Notification* notification) {
-    NS::Application* app = reinterpret_cast<NS::Application*>(notification->object());
-    app->setActivationPolicy(NS::ActivationPolicy::ActivationPolicyRegular);
+double Explorer::AppDelegate::getWidth() { return properties->cgRect.size.width; }
+
+double Explorer::AppDelegate::getHeight() { return properties->cgRect.size.height; }
+
+void Explorer::AppDelegate::applicationWillFinishLaunching(NS::Notification *msg) {
+  NS::Application *app = reinterpret_cast<NS::Application *>(msg->object());
+  app->setActivationPolicy(NS::ActivationPolicy::ActivationPolicyRegular);
 }
 
-void Explorer::AppDelegate::applicationDidFinishLaunching(NS::Notification* notification) {
-    CGRect frame = (CGRect) { {100.0, 100.0}, {1512.0, 850.0} };
+void Explorer::AppDelegate::applicationDidFinishLaunching(NS::Notification *msg) {
+  this->window = NS::Window::alloc()->init(
+      properties->cgRect, NS::WindowStyleMaskClosable | NS::WindowStyleMaskTitled,
+      NS::BackingStoreBuffered, false);
+  this->device = MTL::CreateSystemDefaultDevice();
 
-    this->window = NS::Window::alloc()->init(
-        frame,
-        NS::WindowStyleMaskClosable|NS::WindowStyleMaskTitled,
-        NS::BackingStoreBuffered,
-        false
-    );
-    this->device = MTL::CreateSystemDefaultDevice();
-    this->mtkView = MTK::View::alloc()->init(frame, this->device);
-    this->mtkView->setColorPixelFormat(MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB);
-    this->mtkView->setClearColor(MTL::ClearColor::Make(1.0, 1.0, 1.0, 1.0));
+  this->mtkView->setDevice(this->device);
+  this->mtkView->setPreferredFramesPerSecond((NS::Integer)120);
 
-    this->viewDelegate = new ViewDelegate(device);
-    mtkView->setDelegate(this->viewDelegate);
+  this->mtkView->setColorPixelFormat(MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB);
+  this->mtkView->setClearColor(MTL::ClearColor::Make(1.0, 1.0, 1.0, 1.0));
+  this->viewDelegate = new ViewDelegate(device);
+  mtkView->setDelegate(this->viewDelegate);
+  window->setContentView(mtkView);
 
-    window->setContentView(mtkView);
-    window->setTitle(NS::String::string("Window", NS::StringEncoding::UTF8StringEncoding));
-    window->makeKeyAndOrderFront(nullptr);
+  std::stringstream ss;
+  ss << "Initialized view (" << this->getWidth() << "x" << this->getHeight() << ")";
+  DEBUG(ss.str());
+  std::stringstream ss1;
+  ss1 << "FPS (" << this->mtkView->preferredFramesPerSecond() << ")";
+  DEBUG(ss1.str());
+  std::stringstream ss2;
 
-    NS::Application* app = reinterpret_cast<NS::Application*>(notification->object());
-    app->activateIgnoringOtherApps(true);
+  window->setTitle(NS::String::string("Window", NS::StringEncoding::UTF8StringEncoding));
+  window->makeKeyAndOrderFront(nullptr);
+
+  NS::Application *app = reinterpret_cast<NS::Application *>(msg->object());
+  app->activateIgnoringOtherApps(true);
 }
 
-bool Explorer::AppDelegate::applicationShouldTerminateAfterLastWindowClosed(NS::Application* sender) {
-    return true;
+bool Explorer::AppDelegate::applicationShouldTerminateAfterLastWindowClosed(
+    NS::Application *sender) {
+  return true;
 }
