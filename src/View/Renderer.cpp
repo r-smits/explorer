@@ -37,7 +37,7 @@ NS::String *Renderer::open(std::string path) {
 }
 
 MTL::Library *Renderer::getLibrary(std::string path) {
-  INFO("Creating library from " + path + " ...");
+  DEBUG("Creating library ... ");
   NS::Error *error = nullptr;
   MTL::CompileOptions *options = nullptr;
   MTL::Library *library = device->newLibrary(open(path), options, &error);
@@ -108,7 +108,7 @@ MTL::BinaryArchive *Renderer::createBinaryArchive() {
 
 bool Renderer::writeBinaryArchive(
     MTL::RenderPipelineDescriptor *renderPipelineDescriptor, std::string path) {
-  INFO("Serializing binary to " + path + " ...");
+  DEBUG("Serializing binary ...");
   NS::Error *error = nullptr;
   MTL::BinaryArchive *mlib = this->createBinaryArchive();
   mlib->addRenderPipelineFunctions(renderPipelineDescriptor, &error);

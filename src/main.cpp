@@ -9,9 +9,6 @@
 #include <pch.h>
 
 int main() {
-  Explorer::KeyPressedEvent k("a", 0);
-  DEBUG(k.toString());
-
   NS::AutoreleasePool *autoreleasePool = NS::AutoreleasePool::alloc()->init();
 
   Explorer::AppProperties properties = Explorer::AppProperties(500.0, 500.0);

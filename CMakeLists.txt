@@ -33,7 +33,6 @@ add_executable(EXPLORER
 				${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/LayerStack.cpp
 )
 
-
 # Configure compilation variables
 set_target_properties(EXPLORER PROPERTIES
         CXX_STANDARD 17
@@ -46,17 +45,30 @@ target_include_directories(EXPLORER PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
         "${CMAKE_CURRENT_SOURCE_DIR}/vendor"
         "${CMAKE_CURRENT_SOURCE_DIR}/vendor/spdlog/include"
+				"${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui/"
+				"${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui/backends"
+				"${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui/misc/cpp/"
+)
+
+file(GLOB IMGUI_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui/*)
+add_library(IMGUI STATIC 
+				${IMGUI_SOURCES}
+)
+
+set_target_properties(IMGUI PROPERTIES
+				CXX_STANDARD 11
+				CXX_STANDARD_REQUIRED ON
+				CXX_EXTENSIONS ON
 )
 
 # Metal cpp library (linker)
-target_link_libraries(EXPLORER
-        "-framework Metal"
+target_link_libraries(EXPLORER PUBLIC
+				IMGUI
+				"-framework Metal"
         "-framework MetalKit"
         "-framework AppKit"
         "-framework Foundation"
         "-framework QuartzCore"
-				"-framework Cocoa"
-				"-framework CoreData"
 )
 
 # Add precompiled headers

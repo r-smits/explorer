@@ -9,7 +9,7 @@ void Logger::init() {
   spdlog::set_pattern("%^[%T] %n: %v%$");
   logger = spdlog::stdout_color_mt("EXPLORER");
   logger->set_level(spdlog::level::trace);
-  logger->info("Initialized logger.");
+  logger->debug("Initialized logger.");
 }
 
 std::shared_ptr<spdlog::logger> &Logger::get(std::string message) {

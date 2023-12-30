@@ -1,7 +1,12 @@
 #include <Events/KeyEvent.h>
+#include <Metal/Metal.h>
 #include <View/ViewAdapter.hpp>
 #include <View/ViewExtender.h>
 #include <pch.h>
+
+#include <imgui.h>
+#include <imgui_impl_metal.h>
+#include <imgui_impl_osx.h>
 
 ViewExtender *extender;
 Explorer::ViewAdapter *adapter;
@@ -24,6 +29,32 @@ void Explorer::ViewAdapter::printDebug() const {
   [ref printDebug];
 }
 
+void Explorer::ViewAdapter::setHandler(
+    const std::function<void(Explorer::Event &)> &func) {
+  this->handler = func;
+}
+
+void Explorer::ViewAdapter::onEvent(Explorer::Event &event) {
+  if (!handler) {
+    WARN("No handler was set to handle events.");
+    return;
+  }
+  this->handler(event);
+}
+
+// Set up IMGUI
+// https://github.com/ocornut/imgui/blob/master/examples/example_apple_metal/main.mm
+void Explorer::ViewAdapter::imGuiInit(MTL::Device *device) {
+  DEBUG("Initializing ImGui ...");
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO &io = ImGui::GetIO();
+  (void)io;
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+  ImGui::StyleColorsDark();
+  ImGui_ImplMetal_Init((__bridge id<MTLDevice>)device);
+}
+
 @implementation ViewExtender
 
 + (void)load:(CGRect)frame {
@@ -40,7 +71,8 @@ void Explorer::ViewAdapter::printDebug() const {
 
 - (id)init {
   BOOL isFirstResponder = [self becomeFirstResponder];
-  NSLog(@"Is first responder: %@", isFirstResponder ? @"Yes" : @"No");
+  (isFirstResponder) ? DEBUG("MTKView is now first responder.")
+                     : WARN("MTKView is not first responder.");
   return self;
 }
 
