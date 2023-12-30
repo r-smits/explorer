@@ -1,3 +1,5 @@
 # Exludes
 build/*
 Testing/*
+.cache/*
+.git/*
