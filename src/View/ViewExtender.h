@@ -1,12 +1,6 @@
 #pragma once
-#include <AppKit/AppKit.h>
-#include <CoreFoundation/CoreFoundation.h>
-#include <Foundation/Foundation.h>
-#include <GameController/GCKeyboard.h>
-#include <GameController/GameController.h>
 #include <MetalKit/MTKView.h>
-#include <iostream>
-#include <objc/NSObject.h>
+#include <pch.h>
 
 /**
  * 1) AppDelegate -> KeyboardAdapterCXX (C++ -> Obj-C -> C++)

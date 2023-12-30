@@ -1,15 +1,7 @@
-#include "Events/KeyEvent.h"
-#include "Foundation/NSString.hpp"
-#include <AppKit/AppKit.h>
-#include <Control/AppProperties.h>
-#include <Control/ViewAdapter.hpp>
-#include <Control/ViewExtender.h>
-#include <CoreFoundation/CoreFoundation.h>
-#include <Foundation/Foundation.h>
-#include <Foundation/NSString.h>
-#include <cstdio>
+#include <Events/KeyEvent.h>
+#include <View/ViewAdapter.hpp>
+#include <View/ViewExtender.h>
 #include <pch.h>
-#include <string>
 
 ViewExtender *extender;
 Explorer::ViewAdapter *adapter;

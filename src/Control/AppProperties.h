@@ -19,5 +19,8 @@ public:
   AppProperties(double width, double height) { cgRect = (CGRect){{100, 100}, {width, height}}; }
   ~AppProperties() {}
   CGRect cgRect;
+	std::string shaderBasePath;
+	std::string vertexFnName;
+	std::string fragmentFnName;
 };
 }; // namespace Explorer
