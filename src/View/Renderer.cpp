@@ -53,10 +53,8 @@ MTL::RenderPipelineDescriptor *Renderer::getRenderPipelineDescriptor(
   MTL::Library *library = this->getLibrary(path);
   MTL::RenderPipelineDescriptor *renderPipelineDescriptor =
       MTL::RenderPipelineDescriptor::alloc()->init();
-  renderPipelineDescriptor->setVertexFunction(
-      library->newFunction(nsString(vertexFnName)));
-  renderPipelineDescriptor->setFragmentFunction(
-      library->newFunction(nsString(fragmentFnName)));
+  renderPipelineDescriptor->setVertexFunction(library->newFunction(nsString(vertexFnName)));
+  renderPipelineDescriptor->setFragmentFunction(library->newFunction(nsString(fragmentFnName)));
   renderPipelineDescriptor->colorAttachments()->object(0)->setPixelFormat(
       MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB);
   renderPipelineDescriptor->setVertexDescriptor(this->getVertexDescriptor());
@@ -65,8 +63,7 @@ MTL::RenderPipelineDescriptor *Renderer::getRenderPipelineDescriptor(
 }
 
 MTL::VertexDescriptor *Renderer::getVertexDescriptor() {
-  MTL::VertexDescriptor *vertexDescriptor =
-      MTL::VertexDescriptor::alloc()->init();
+  MTL::VertexDescriptor *vertexDescriptor = MTL::VertexDescriptor::alloc()->init();
 
   auto positionDescriptor = vertexDescriptor->attributes()->object(0);
   positionDescriptor->setFormat(MTL::VertexFormat::VertexFormatFloat2);
@@ -84,12 +81,10 @@ MTL::VertexDescriptor *Renderer::getVertexDescriptor() {
   return vertexDescriptor;
 }
 
-MTL::RenderPipelineState *
-Renderer::getRenderPipelineState(std::string shaderName, bool serialize) {
+MTL::RenderPipelineState *Renderer::getRenderPipelineState(std::string shaderName, bool serialize) {
   std::string basePath = "/Users/ramonsmits/Code/Explorer/src/Shaders/";
   MTL::RenderPipelineDescriptor *descriptor = this->getRenderPipelineDescriptor(
-      basePath + shaderName + ".metal", "vertexMain" + shaderName,
-      "fragmentMain" + shaderName);
+      basePath + shaderName + ".metal", "vertexMain" + shaderName, "fragmentMain" + shaderName);
   if (serialize)
     this->writeBinaryArchive(descriptor, basePath + shaderName + ".metallib");
   NS::Error *newPipelineStateError = nullptr;
@@ -106,8 +101,7 @@ MTL::BinaryArchive *Renderer::createBinaryArchive() {
   NS::Error *error = nullptr;
   MTL::BinaryArchiveDescriptor *binaryArchiveDescriptor =
       MTL::BinaryArchiveDescriptor::alloc()->init();
-  MTL::BinaryArchive *binaryArchive =
-      device->newBinaryArchive(binaryArchiveDescriptor, &error);
+  MTL::BinaryArchive *binaryArchive = device->newBinaryArchive(binaryArchiveDescriptor, &error);
   error->release();
   return binaryArchive;
 }
@@ -150,8 +144,7 @@ void Renderer::draw(MTK::View *view) {
   MTL::CommandBuffer *CommandBuffer = commandQueue->commandBuffer();
   MTL::RenderPassDescriptor *renderPass = view->currentRenderPassDescriptor();
 
-  MTL::RenderCommandEncoder *encoder =
-      CommandBuffer->renderCommandEncoder(renderPass);
+  MTL::RenderCommandEncoder *encoder = CommandBuffer->renderCommandEncoder(renderPass);
 
   encoder->setRenderPipelineState(this->generalPipeline);
 
@@ -160,17 +153,16 @@ void Renderer::draw(MTK::View *view) {
   encoder->setVertexBuffer(this->quadMesh.vertexBuffer, 0, 0);
 
   encoder->drawIndexedPrimitives(
-      MTL::PrimitiveType::PrimitiveTypeTriangle, NS::UInteger(6),
-      MTL::IndexType::IndexTypeUInt16, this->quadMesh.indexBuffer,
-      NS::UInteger(0), NS::UInteger(1));
+      MTL::PrimitiveType::PrimitiveTypeTriangle, NS::UInteger(6), MTL::IndexType::IndexTypeUInt16,
+      this->quadMesh.indexBuffer, NS::UInteger(0), NS::UInteger(1));
 
   encoder->setVertexBuffer(this->mesh, 0, 0);
 
-  simd::float4x4 m = Transformation::translation({0.25, 0.25, 0}) *
-                     Transformation::zRotation(t) * Transformation::scale(0.25);
+  simd::float4x4 m = Transformation::translation({0.25, 0.25, 0}) * Transformation::zRotation(t) *
+                     Transformation::scale(0.25);
   encoder->setVertexBytes(&m, sizeof(simd::float4x4), 1);
-  encoder->drawPrimitives(MTL::PrimitiveType::PrimitiveTypeTriangle,
-                          NS::UInteger(0), NS::UInteger(3));
+  encoder->drawPrimitives(
+      MTL::PrimitiveType::PrimitiveTypeTriangle, NS::UInteger(0), NS::UInteger(3));
 
   encoder->endEncoding();
 

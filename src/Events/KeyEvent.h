@@ -26,8 +26,7 @@ public:
 
   std::string toString() const override {
     std::stringstream ss;
-    ss << "[KeyPressed] " << this->key << " (" << this->repeatCount
-       << ")";
+    ss << "[KeyPressed] " << this->key << " (" << this->repeatCount << ")";
     return ss.str();
   }
 
