@@ -43,7 +43,8 @@ void Explorer::AppDelegate::applicationDidFinishLaunching(NS::Notification *msg)
   this->mtkView->setDevice(this->device);
 
 	// Dedicate same gpu to imgui
-	ViewAdapter::imGuiInit(this->device);
+	// This is going to be called in layer stack instead;
+	//ViewAdapter::imGuiInit(this->device);
 	
   // Set MTK::View defaults
   this->mtkView->setPreferredFramesPerSecond((NS::Integer)120);
@@ -51,7 +52,7 @@ void Explorer::AppDelegate::applicationDidFinishLaunching(NS::Notification *msg)
   this->mtkView->setClearColor(MTL::ClearColor::Make(1.0, 1.0, 1.0, 1.0));
 
   // Set object to be the MTK::View event handler
-  this->viewDelegate = new ViewDelegate(device);
+  this->viewDelegate = new ViewDelegate(this->mtkView);
   this->mtkView->setDelegate(this->viewDelegate);
 
   // Set NS::Window defaults

@@ -18,8 +18,8 @@ add_executable(EXPLORER
 				${CMAKE_CURRENT_SOURCE_DIR}/src/View/ViewExtender.mm
 				${CMAKE_CURRENT_SOURCE_DIR}/src/Log/Logger.h
 				${CMAKE_CURRENT_SOURCE_DIR}/src/Log/Logger.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/View/Renderer.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/View/Renderer.cpp
+				${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/Renderer.h
+				${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/Renderer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/Model/Meshfactory.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/Model/MeshFactory.cpp
 				${CMAKE_CURRENT_SOURCE_DIR}/src/Math/Transformation.h
@@ -31,6 +31,8 @@ add_executable(EXPLORER
 				${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/Layer.cpp
 				${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/LayerStack.h
 				${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/LayerStack.cpp
+				${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/ImGuiLayer.h
+				${CMAKE_CURRENT_SOURCE_DIR}/src/layer/ImGuiLayer.mm
 )
 
 # Configure compilation variables
@@ -69,6 +71,9 @@ target_link_libraries(EXPLORER PUBLIC
         "-framework AppKit"
         "-framework Foundation"
         "-framework QuartzCore"
+				"-framework Cocoa"
+				"-framework GameController"
+
 )
 
 # Add precompiled headers

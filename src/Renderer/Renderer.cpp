@@ -1,14 +1,14 @@
 #include <Math/Transformation.h>
-#include <View/Renderer.h>
+#include <Renderer/Renderer.h>
 
-Renderer::Renderer(MTL::Device *device) : device(device->retain()) {
-  this->commandQueue = device->newCommandQueue();
-  this->stringEncoding = NS::StringEncoding::UTF8StringEncoding;
+Explorer::Renderer::Renderer(MTL::Device *device, ImGuiLayer *imGuiLayer)
+    : device(device->retain()), commandQueue(device->newCommandQueue()), imGuiLayer(imGuiLayer),
+      stringEncoding(NS::StringEncoding::UTF8StringEncoding) {
   this->buildPipeline();
   this->buildMeshes();
 }
 
-Renderer::~Renderer() {
+Explorer::Renderer::~Renderer() {
   this->quadMesh.vertexBuffer->release();
   this->quadMesh.indexBuffer->release();
   this->commandQueue->release();
@@ -17,16 +17,16 @@ Renderer::~Renderer() {
   this->mesh->release();
 }
 
-void Renderer::buildPipeline() {
+void Explorer::Renderer::buildPipeline() {
   this->generalPipeline = this->getRenderPipelineState("General", true);
 }
 
-void Renderer::buildMeshes() {
+void Explorer::Renderer::buildMeshes() {
   this->mesh = MeshFactory::buildTriangle(this->device);
   this->quadMesh = MeshFactory::buildQuad(this->device);
 }
 
-NS::String *Renderer::open(std::string path) {
+NS::String *Explorer::Renderer::open(std::string path) {
   std::ifstream file;
   file.open(path);
   std::stringstream reader;
@@ -36,7 +36,7 @@ NS::String *Renderer::open(std::string path) {
   return NS::String::string(rawString.c_str(), this->stringEncoding);
 }
 
-MTL::Library *Renderer::getLibrary(std::string path) {
+MTL::Library *Explorer::Renderer::getLibrary(std::string path) {
   DEBUG("Creating library ... ");
   NS::Error *error = nullptr;
   MTL::CompileOptions *options = nullptr;
@@ -48,7 +48,7 @@ MTL::Library *Renderer::getLibrary(std::string path) {
   return library;
 }
 
-MTL::RenderPipelineDescriptor *Renderer::getRenderPipelineDescriptor(
+MTL::RenderPipelineDescriptor *Explorer::Renderer::getRenderPipelineDescriptor(
     std::string path, std::string vertexFnName, std::string fragmentFnName) {
   MTL::Library *library = this->getLibrary(path);
   MTL::RenderPipelineDescriptor *renderPipelineDescriptor =
@@ -62,7 +62,7 @@ MTL::RenderPipelineDescriptor *Renderer::getRenderPipelineDescriptor(
   return renderPipelineDescriptor;
 }
 
-MTL::VertexDescriptor *Renderer::getVertexDescriptor() {
+MTL::VertexDescriptor *Explorer::Renderer::getVertexDescriptor() {
   MTL::VertexDescriptor *vertexDescriptor = MTL::VertexDescriptor::alloc()->init();
 
   auto positionDescriptor = vertexDescriptor->attributes()->object(0);
@@ -81,7 +81,8 @@ MTL::VertexDescriptor *Renderer::getVertexDescriptor() {
   return vertexDescriptor;
 }
 
-MTL::RenderPipelineState *Renderer::getRenderPipelineState(std::string shaderName, bool serialize) {
+MTL::RenderPipelineState *
+Explorer::Renderer::getRenderPipelineState(std::string shaderName, bool serialize) {
   std::string basePath = "/Users/ramonsmits/Code/Explorer/src/Shaders/";
   MTL::RenderPipelineDescriptor *descriptor = this->getRenderPipelineDescriptor(
       basePath + shaderName + ".metal", "vertexMain" + shaderName, "fragmentMain" + shaderName);
@@ -97,7 +98,7 @@ MTL::RenderPipelineState *Renderer::getRenderPipelineState(std::string shaderNam
   return state;
 }
 
-MTL::BinaryArchive *Renderer::createBinaryArchive() {
+MTL::BinaryArchive *Explorer::Renderer::createBinaryArchive() {
   NS::Error *error = nullptr;
   MTL::BinaryArchiveDescriptor *binaryArchiveDescriptor =
       MTL::BinaryArchiveDescriptor::alloc()->init();
@@ -106,7 +107,7 @@ MTL::BinaryArchive *Renderer::createBinaryArchive() {
   return binaryArchive;
 }
 
-bool Renderer::writeBinaryArchive(
+bool Explorer::Renderer::writeBinaryArchive(
     MTL::RenderPipelineDescriptor *renderPipelineDescriptor, std::string path) {
   DEBUG("Serializing binary ...");
   NS::Error *error = nullptr;
@@ -120,54 +121,42 @@ bool Renderer::writeBinaryArchive(
   return result;
 }
 
-bool Renderer::readBinaryArchive(std::string path) { return true; }
+bool Explorer::Renderer::readBinaryArchive(std::string path) { return true; }
 
-NS::String *Renderer::nsString(std::string str) {
+NS::String *Explorer::Renderer::nsString(std::string str) {
   return NS::String::string(str.c_str(), this->stringEncoding);
 }
 
-NS::URL *Renderer::nsUrl(std::string path) {
+NS::URL *Explorer::Renderer::nsUrl(std::string path) {
   return NS::URL::alloc()->initFileURLWithPath(nsString(path));
 }
 
-void Renderer::printError(NS::Error *error) {
+void Explorer::Renderer::printError(NS::Error *error) {
   Explorer::Logger::error(error->localizedDescription()->utf8String());
 }
 
-void Renderer::draw(MTK::View *view) {
-
+void Explorer::Renderer::draw(MTK::View *view, MTL::RenderCommandEncoder *encoder) {
+  NS::AutoreleasePool *pool = NS::AutoreleasePool::alloc()->init();
   t += 0.0005f;
   if (t > 360)
     t -= 360.0f;
 
-  NS::AutoreleasePool *pool = NS::AutoreleasePool::alloc()->init();
   MTL::CommandBuffer *CommandBuffer = commandQueue->commandBuffer();
-  MTL::RenderPassDescriptor *renderPass = view->currentRenderPassDescriptor();
-
-  MTL::RenderCommandEncoder *encoder = CommandBuffer->renderCommandEncoder(renderPass);
+  MTL::RenderPassDescriptor *pass = view->currentRenderPassDescriptor();
 
   encoder->setRenderPipelineState(this->generalPipeline);
 
   simd::float4x4 identityMatrix = Transformation::identity();
   encoder->setVertexBytes(&identityMatrix, sizeof(simd::float4x4), 1);
   encoder->setVertexBuffer(this->quadMesh.vertexBuffer, 0, 0);
-
   encoder->drawIndexedPrimitives(
       MTL::PrimitiveType::PrimitiveTypeTriangle, NS::UInteger(6), MTL::IndexType::IndexTypeUInt16,
       this->quadMesh.indexBuffer, NS::UInteger(0), NS::UInteger(1));
 
   encoder->setVertexBuffer(this->mesh, 0, 0);
-
   simd::float4x4 m = Transformation::translation({0.25, 0.25, 0}) * Transformation::zRotation(t) *
                      Transformation::scale(0.25);
   encoder->setVertexBytes(&m, sizeof(simd::float4x4), 1);
   encoder->drawPrimitives(
       MTL::PrimitiveType::PrimitiveTypeTriangle, NS::UInteger(0), NS::UInteger(3));
-
-  encoder->endEncoding();
-
-  CommandBuffer->presentDrawable(view->currentDrawable());
-  CommandBuffer->commit();
-
-  pool->release();
 }

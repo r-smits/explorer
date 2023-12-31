@@ -4,10 +4,6 @@
 #include <View/ViewExtender.h>
 #include <pch.h>
 
-#include <imgui.h>
-#include <imgui_impl_metal.h>
-#include <imgui_impl_osx.h>
-
 ViewExtender *extender;
 Explorer::ViewAdapter *adapter;
 
@@ -21,6 +17,8 @@ Explorer::ViewAdapter *Explorer::ViewAdapter::sharedInstance() {
 
 MTK::View *Explorer::ViewAdapter::getView(CGRect frame) const {
   [ViewExtender load:frame];
+
+
   return (__bridge MTK::View *)[ViewExtender get];
 }
 
@@ -40,19 +38,6 @@ void Explorer::ViewAdapter::onEvent(Explorer::Event &event) {
     return;
   }
   this->handler(event);
-}
-
-// Set up IMGUI
-// https://github.com/ocornut/imgui/blob/master/examples/example_apple_metal/main.mm
-void Explorer::ViewAdapter::imGuiInit(MTL::Device *device) {
-  DEBUG("Initializing ImGui ...");
-  IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
-  ImGuiIO &io = ImGui::GetIO();
-  (void)io;
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-  ImGui::StyleColorsDark();
-  ImGui_ImplMetal_Init((__bridge id<MTLDevice>)device);
 }
 
 @implementation ViewExtender

@@ -14,7 +14,6 @@ public:
   virtual void printDebug() const;
   virtual void setHandler(const std::function<void(Event &)> &func);
   virtual void onEvent(Event &event);
-  static void imGuiInit(MTL::Device* device);
 
 private:
   std::function<void(Event &)> handler;

@@ -1,11 +1,14 @@
 #pragma once
+#include "Metal/MTLCommandEncoder.hpp"
+#include <Layer/ImGuiLayer.h>
 #include <Model/MeshFactory.h>
 #include <pch.h>
 
+namespace Explorer {
 class Renderer {
 
 public:
-  Renderer(MTL::Device *device);
+  Renderer(MTL::Device *device, ImGuiLayer *imGuiLayer);
   ~Renderer();
 
   virtual void buildPipeline();
@@ -21,10 +24,11 @@ public:
   virtual bool readBinaryArchive(std::string path);
   virtual NS::String *nsString(std::string str);
   virtual NS::URL *nsUrl(std::string path);
-  virtual void draw(MTK::View *);
+  virtual void draw(MTK::View* view, MTL::RenderCommandEncoder* encoder);
 
 private:
   virtual void printError(NS::Error *error);
+  ImGuiLayer *imGuiLayer;
   MTL::Device *device;
   MTL::CommandQueue *commandQueue;
   MTL::RenderPipelineState *generalPipeline;
@@ -33,3 +37,4 @@ private:
   MeshFactory::Mesh quadMesh;
   float t;
 };
+}; // namespace Explorer

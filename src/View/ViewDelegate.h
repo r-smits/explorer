@@ -1,8 +1,9 @@
 #pragma once
+#include "Metal/MTLCommandQueue.hpp"
 #include <Events/Events.h>
 #include <Events/KeyEvent.h>
 #include <Layer/LayerStack.h>
-#include <View/Renderer.h>
+#include <Renderer/Renderer.h>
 #include <pch.h>
 
 // ViewDelegate with extensions from objc
@@ -14,7 +15,7 @@ namespace Explorer {
 class ViewDelegate : public MTK::ViewDelegate {
 
 public:
-  ViewDelegate(MTL::Device *device);
+  ViewDelegate(MTK::View *view);
   virtual ~ViewDelegate() override;
   virtual void drawInMTKView(MTK::View *view) override;
   virtual void drawableSizeWillChange(MTK::View *view, CGSize) override;
@@ -25,6 +26,7 @@ public:
   virtual void pushOverlay(Layer *layer);
 
 private:
+	MTL::CommandQueue* queue;
   LayerStack layerStack;
   Renderer *renderer;
 };
