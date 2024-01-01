@@ -70,10 +70,6 @@ target_link_libraries(EXPLORER PUBLIC
         "-framework MetalKit"
         "-framework AppKit"
         "-framework Foundation"
-        "-framework QuartzCore"
-				"-framework Cocoa"
-				"-framework GameController"
-
 )
 
 # Add precompiled headers

@@ -3,7 +3,7 @@
 
 Explorer::BaseLayer::BaseLayer(MTL::Device *device)
     : Layer(device->retain()), stringEncoding(NS::StringEncoding::UTF8StringEncoding) {
-	this->device = device;
+  this->device = device;
   this->buildPipeline();
   this->buildMeshes();
 }
@@ -15,6 +15,35 @@ Explorer::BaseLayer::~BaseLayer() {
   this->device->release();
   this->generalPipeline->release();
   this->mesh->release();
+}
+
+void Explorer::BaseLayer::onEvent(Event &event) {
+  EventDispatcher dispatcher = EventDispatcher(event);
+  dispatcher.dispatch<KeyPressedEvent>(BIND_EVENT(BaseLayer::onKeyPressed));
+  dispatcher.dispatch<KeyReleasedEvent>(BIND_EVENT(BaseLayer::onKeyReleased));
+  dispatcher.dispatch<MouseButtonPressedEvent>(BIND_EVENT(BaseLayer::onMouseButtonPressed));
+  dispatcher.dispatch<MouseButtonReleasedEvent>(BIND_EVENT(BaseLayer::onMouseButtonReleased));
+  dispatcher.dispatch<MouseMoveEvent>(BIND_EVENT(BaseLayer::onMouseMove));
+}
+
+bool Explorer::BaseLayer::onKeyPressed(KeyPressedEvent& event) {
+	return true;
+}
+
+bool Explorer::BaseLayer::onKeyReleased(KeyReleasedEvent& event) {
+	return true;
+}
+
+bool Explorer::BaseLayer::onMouseButtonPressed(MouseButtonPressedEvent& event) {
+	return true;
+}
+
+bool Explorer::BaseLayer::onMouseButtonReleased(MouseButtonReleasedEvent& event) {
+	return true;
+}
+
+bool Explorer::BaseLayer::onMouseMove(MouseMoveEvent& event) {
+	return true;
 }
 
 void Explorer::BaseLayer::buildPipeline() {
@@ -40,9 +69,9 @@ MTL::Library *Explorer::BaseLayer::getLibrary(std::string path) {
   DEBUG("Creating library ... ");
   NS::Error *error = nullptr;
   MTL::CompileOptions *options = nullptr;
-	if (!device) {
-		WARN("No device found!");	
-	}
+  if (!device) {
+    WARN("No device found!");
+  }
   MTL::Library *library = device->newLibrary(open(path), options, &error);
   if (!library)
     this->printError(error);
@@ -54,7 +83,7 @@ MTL::Library *Explorer::BaseLayer::getLibrary(std::string path) {
 MTL::RenderPipelineDescriptor *Explorer::BaseLayer::getRenderPipelineDescriptor(
     std::string path, std::string vertexFnName, std::string fragmentFnName) {
   MTL::Library *library = this->getLibrary(path);
-	DEBUG("Initializing render pipeline descriptor ...");
+  DEBUG("Initializing render pipeline descriptor ...");
   MTL::RenderPipelineDescriptor *renderPipelineDescriptor =
       MTL::RenderPipelineDescriptor::alloc()->init();
   renderPipelineDescriptor->setVertexFunction(library->newFunction(nsString(vertexFnName)));
@@ -63,7 +92,7 @@ MTL::RenderPipelineDescriptor *Explorer::BaseLayer::getRenderPipelineDescriptor(
       MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB);
   renderPipelineDescriptor->setVertexDescriptor(this->getVertexDescriptor());
   library->release();
-	DEBUG("Returning renderer pipeline descriptor ...");
+  DEBUG("Returning renderer pipeline descriptor ...");
   return renderPipelineDescriptor;
 }
 

@@ -1,5 +1,4 @@
 #pragma once
-#include <Events/Events.h>
 #include <pch.h>
 /**
  * 1) AppDelegate -> ViewAdapter -> ViewExtender (C++ -> Obj-C)

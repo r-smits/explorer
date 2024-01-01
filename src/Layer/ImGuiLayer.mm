@@ -4,7 +4,6 @@
 #include <View/ViewExtender.h>
 #include <imgui.h>
 #include <imgui_impl_metal.h>
-#include <imgui_impl_osx.h>
 
 Explorer::ImGuiLayer::ImGuiLayer(MTK::View *view)
     : Layer(view->device(), "ImGuiLayer") {
@@ -22,25 +21,19 @@ void Explorer::ImGuiLayer::onAttach(MTK::View *view) {
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
   ImGui::StyleColorsDark();
   ImGui_ImplMetal_Init((__bridge id<MTLDevice>)this->device);
-  ImGui_ImplOSX_Init((__bridge MTKView *)view);
 }
 
 void Explorer::ImGuiLayer::onDetach() {
   ImGui_ImplMetal_Shutdown();
-  ImGui_ImplOSX_Shutdown();
   ImGui::DestroyContext();
 }
 
 void Explorer::ImGuiLayer::onUpdate(MTK::View *pView,
                                     MTL::RenderCommandEncoder *encoder) {
 
-  // Answer: Yes, you only need the view and the encoder. That's it.
-  // So let's make that the key -- passing the view and encoder.
-
   MTL::CommandBuffer *buffer = this->queue->commandBuffer();
   MTL::RenderPassDescriptor *descriptor = pView->currentRenderPassDescriptor();
 
-  // MTL::CommandEncoder* encoder = buffer->renderCommandEncoder(descriptor);
   MTKView *view = (__bridge MTKView *)pView;
   ImGuiIO &io = ImGui::GetIO();
 
@@ -51,7 +44,6 @@ void Explorer::ImGuiLayer::onUpdate(MTK::View *pView,
   io.DisplayFramebufferScale = ImVec2(scale, scale);
 
   ImGui_ImplMetal_NewFrame((__bridge MTLRenderPassDescriptor *)descriptor);
-  ImGui_ImplOSX_NewFrame(view);
   ImGui::NewFrame();
 
   static bool showDemo = true;
@@ -62,8 +54,53 @@ void Explorer::ImGuiLayer::onUpdate(MTK::View *pView,
   ImGui_ImplMetal_RenderDrawData(drawData,
                                  (__bridge id<MTLCommandBuffer>)buffer,
                                  (__bridge id<MTLRenderCommandEncoder>)encoder);
-
-  // encoder->endEncoding();
 }
 
-void Explorer::ImGuiLayer::onEvent(Event &event) {}
+void Explorer::ImGuiLayer::onEvent(Event &event) {
+  EventDispatcher dispatcher = EventDispatcher(event);
+  dispatcher.dispatch<MouseButtonReleasedEvent>(
+      BIND_EVENT(ImGuiLayer::onMouseButtonReleased));
+  dispatcher.dispatch<MouseButtonPressedEvent>(
+      BIND_EVENT(ImGuiLayer::onMouseButtonPressed));
+  dispatcher.dispatch<MouseMoveEvent>(BIND_EVENT(ImGuiLayer::onMouseMove));
+  dispatcher.dispatch<KeyPressedEvent>(BIND_EVENT(ImGuiLayer::onKeyPressed));
+  dispatcher.dispatch<KeyReleasedEvent>(BIND_EVENT(ImGuiLayer::onKeyReleased));
+}
+
+bool Explorer::ImGuiLayer::onMouseButtonPressed(
+    MouseButtonPressedEvent &event) {
+  ImGuiIO &io = ImGui::GetIO();
+  io.AddMouseSourceEvent(ImGuiMouseSource_Mouse);
+  io.AddMouseButtonEvent(event.getMouseButton(), true);
+	event.done();
+  return io.WantCaptureMouse;
+}
+
+bool Explorer::ImGuiLayer::onMouseButtonReleased(
+    MouseButtonReleasedEvent &event) {
+  ImGuiIO &io = ImGui::GetIO();
+  io.AddMouseSourceEvent(ImGuiMouseSource_Mouse);
+  io.AddMouseButtonEvent(event.getMouseButton(), false);
+	event.done();
+  return io.WantCaptureMouse;
+}
+
+bool Explorer::ImGuiLayer::onMouseMove(MouseMoveEvent &event) {
+  ImGuiIO &io = ImGui::GetIO();
+  io.AddMouseSourceEvent(ImGuiMouseSource_Mouse);
+  io.AddMousePosEvent(event.getX(), event.getY());
+	event.done();
+  return io.WantCaptureMouse;
+}
+
+bool Explorer::ImGuiLayer::onKeyPressed(KeyPressedEvent &event) {
+  // Not implemented yet
+  return true;
+}
+
+bool Explorer::ImGuiLayer::onKeyReleased(KeyReleasedEvent &event) {
+  // Not implemented yet
+  return true;
+}
+
+

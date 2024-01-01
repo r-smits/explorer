@@ -1,4 +1,5 @@
-#include <Events/KeyEvent.h>
+#include <AppKit/AppKit.h>
+#include <AppKit/NSTrackingArea.h>
 #include <Metal/Metal.h>
 #include <View/ViewAdapter.hpp>
 #include <View/ViewExtender.h>
@@ -20,11 +21,11 @@ MTK::View *Explorer::ViewAdapter::initView(CGRect frame) {
   return (__bridge MTK::View *)[ViewExtender get];
 }
 
-MTK::View* Explorer::ViewAdapter::getView() {
-	if (!extender) {
-		WARN("Atempted to retrieve MTK::View but not initialized!");
-	}
-	return (__bridge MTK::View*)[ViewExtender get];
+MTK::View *Explorer::ViewAdapter::getView() {
+  if (!extender) {
+    WARN("Atempted to retrieve MTK::View but not initialized!");
+  }
+  return (__bridge MTK::View *)[ViewExtender get];
 }
 
 void Explorer::ViewAdapter::printDebug() const {
@@ -73,15 +74,99 @@ void Explorer::ViewAdapter::onEvent(Explorer::Event &event) {
   return YES;
 }
 
+- (BOOL)acceptsFirstMouse:(NSEvent *)event {
+  return YES;
+}
+
+- (void)updateTrackingAreas {
+  DEBUG("Update tracking areas ...");
+  NSTrackingArea *areaInit = [[NSTrackingArea alloc]
+      initWithRect:[self bounds]
+           options:(NSTrackingMouseMoved | NSTrackingActiveAlways)
+             owner:self
+          userInfo:nil];
+  [self addTrackingArea:areaInit];
+}
+
+- (void)mouseUp:(NSEvent *)event {
+  if ([event type] == NSEventType::NSEventTypeLeftMouseUp ||
+      NSEventType::NSEventTypeRightMouseUp) {
+    Explorer::MouseButtonReleasedEvent released =
+        Explorer::MouseButtonReleasedEvent([event buttonNumber]);
+    Explorer::ViewAdapter::sharedInstance()->onEvent(
+        (Explorer::Event &)released);
+  } else {
+    NSLog(@"MouseUp :: Unknown event: %lu", [event type]);
+  }
+}
+
+- (void)mouseDown:(NSEvent *)event {
+  if ([event type] == NSEventType::NSEventTypeLeftMouseDown ||
+      NSEventType::NSEventTypeRightMouseDown) {
+    Explorer::MouseButtonPressedEvent pressed =
+        Explorer::MouseButtonPressedEvent([event buttonNumber]);
+    Explorer::ViewAdapter::sharedInstance()->onEvent(
+        (Explorer::Event &)pressed);
+  } else {
+    NSLog(@"MouseDown :: Unknown event: %lu", [event type]);
+  }
+}
+
+- (void)mouseMoved:(NSEvent *)event {
+  if ([event type] == NSEventType::NSEventTypeMouseMoved) {
+    NSPoint mousePoint = event.locationInWindow;
+    mousePoint = [self convertPoint:mousePoint fromView:nil];
+    mousePoint =
+        NSMakePoint(mousePoint.x, self.bounds.size.height - mousePoint.y);
+    Explorer::MouseMoveEvent moved =
+        Explorer::MouseMoveEvent(mousePoint.x, mousePoint.y);
+    Explorer::ViewAdapter::sharedInstance()->onEvent((Explorer::Event &)moved);
+  } else {
+    NSLog(@"MouseMoved :: Unknown event: %lu", [event type]);
+  }
+}
+
+- (void)mouseDragged:(NSEvent *)event {
+  if ([event type] == NSEventType::NSEventTypeLeftMouseDragged ||
+      NSEventType::NSEventTypeRightMouseDragged) {
+    NSPoint mousePoint = event.locationInWindow;
+    mousePoint = [self convertPoint:mousePoint fromView:nil];
+    mousePoint =
+        NSMakePoint(mousePoint.x, self.bounds.size.height - mousePoint.y);
+    Explorer::MouseMoveEvent moved =
+        Explorer::MouseMoveEvent(mousePoint.x, mousePoint.y);
+    Explorer::ViewAdapter::sharedInstance()->onEvent((Explorer::Event &)moved);
+
+  } else {
+    NSLog(@"MouseDragged :: Unknown event: %lu", [event type]);
+  }
+}
+
+- (void)mouseExited:(NSEvent *)event {
+  [event type];
+  std::stringstream ss;
+  ss << [event type] << "!";
+  DEBUG(ss.str());
+}
+
+- (void)mouseEntered:(NSEvent *)event {
+  [event type];
+  std::stringstream ss;
+  ss << [event type] << "!";
+  DEBUG(ss.str());
+}
+
 - (void)keyDown:(NSEvent *)event {
   NSEventType eventType = [event type];
   if (eventType == NSEventTypeKeyDown) {
     const char *ckey =
         [[event characters] cStringUsingEncoding:NSUTF8StringEncoding];
-    const Explorer::KeyPressedEvent event = Explorer::KeyPressedEvent(ckey, 0);
-    Explorer::ViewAdapter::sharedInstance()->onEvent((Explorer::Event &)event);
+    const Explorer::KeyPressedEvent pressed =
+        Explorer::KeyPressedEvent(ckey, [event isARepeat]);
+    Explorer::ViewAdapter::sharedInstance()->onEvent(
+        (Explorer::Event &)pressed);
   } else {
-    NSLog(@"[keyDown] Unknown event: %lu", eventType);
+    NSLog(@"KeyDown :: Unknown event: %lu", eventType);
   }
 }
 
@@ -92,7 +177,7 @@ void Explorer::ViewAdapter::onEvent(Explorer::Event &event) {
     const Explorer::KeyReleasedEvent event = Explorer::KeyReleasedEvent(ckey);
     Explorer::ViewAdapter::sharedInstance()->onEvent((Explorer::Event &)event);
   } else {
-    NSLog(@"[keyUp] Unknown event: %lu", [event type]);
+    NSLog(@"KeyUp :: Unknown event: %lu", [event type]);
   }
 }
 
