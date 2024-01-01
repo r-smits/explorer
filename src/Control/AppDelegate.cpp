@@ -4,7 +4,7 @@
 Explorer::AppDelegate::AppDelegate(Explorer::AppProperties *properties) {
   this->properties = properties;
   ViewAdapter *viewAdapter = ViewAdapter::sharedInstance();
-  this->mtkView = viewAdapter->getView(properties->cgRect);
+  this->mtkView = ViewAdapter::initView(properties->cgRect);
 }
 
 Explorer::AppDelegate::~AppDelegate() {
@@ -42,10 +42,6 @@ void Explorer::AppDelegate::applicationDidFinishLaunching(NS::Notification *msg)
   this->device = MTL::CreateSystemDefaultDevice();
   this->mtkView->setDevice(this->device);
 
-	// Dedicate same gpu to imgui
-	// This is going to be called in layer stack instead;
-	//ViewAdapter::imGuiInit(this->device);
-	
   // Set MTK::View defaults
   this->mtkView->setPreferredFramesPerSecond((NS::Integer)120);
   this->mtkView->setColorPixelFormat(MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB);

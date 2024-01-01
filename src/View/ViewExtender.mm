@@ -15,11 +15,16 @@ Explorer::ViewAdapter *Explorer::ViewAdapter::sharedInstance() {
   return adapter;
 }
 
-MTK::View *Explorer::ViewAdapter::getView(CGRect frame) const {
+MTK::View *Explorer::ViewAdapter::initView(CGRect frame) {
   [ViewExtender load:frame];
-
-
   return (__bridge MTK::View *)[ViewExtender get];
+}
+
+MTK::View* Explorer::ViewAdapter::getView() {
+	if (!extender) {
+		WARN("Atempted to retrieve MTK::View but not initialized!");
+	}
+	return (__bridge MTK::View*)[ViewExtender get];
 }
 
 void Explorer::ViewAdapter::printDebug() const {

@@ -10,7 +10,8 @@ namespace Explorer {
 class ViewAdapter {
 public:
   static ViewAdapter *sharedInstance();
-  virtual MTK::View *getView(CGRect frame) const;
+	static MTK::View* getView();
+  static MTK::View *initView(CGRect frame);
   virtual void printDebug() const;
   virtual void setHandler(const std::function<void(Event &)> &func);
   virtual void onEvent(Event &event);

@@ -18,8 +18,6 @@ add_executable(EXPLORER
 				${CMAKE_CURRENT_SOURCE_DIR}/src/View/ViewExtender.mm
 				${CMAKE_CURRENT_SOURCE_DIR}/src/Log/Logger.h
 				${CMAKE_CURRENT_SOURCE_DIR}/src/Log/Logger.cpp
-				${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/Renderer.h
-				${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/Renderer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/Model/Meshfactory.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/Model/MeshFactory.cpp
 				${CMAKE_CURRENT_SOURCE_DIR}/src/Math/Transformation.h
@@ -33,6 +31,8 @@ add_executable(EXPLORER
 				${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/LayerStack.cpp
 				${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/ImGuiLayer.h
 				${CMAKE_CURRENT_SOURCE_DIR}/src/layer/ImGuiLayer.mm
+				${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/BaseLayer.h
+				${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/BaseLayer.cpp
 )
 
 # Configure compilation variables

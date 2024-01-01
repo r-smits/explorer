@@ -3,7 +3,6 @@
 #include <Events/Events.h>
 #include <Events/KeyEvent.h>
 #include <Layer/LayerStack.h>
-#include <Renderer/Renderer.h>
 #include <pch.h>
 
 // ViewDelegate with extensions from objc
@@ -22,12 +21,9 @@ public:
   virtual void onEvent(Event &event);
   virtual bool onKeyPressed(KeyPressedEvent &event);
   virtual bool onKeyReleased(KeyReleasedEvent &event);
-  virtual void pushLayer(Layer *layer);
-  virtual void pushOverlay(Layer *layer);
 
 private:
 	MTL::CommandQueue* queue;
   LayerStack layerStack;
-  Renderer *renderer;
 };
 } // namespace Explorer
