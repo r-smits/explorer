@@ -7,18 +7,22 @@ namespace Explorer {
 class Layer {
 
 public:
-  Layer(const std::string &name = "Layer");
+  Layer(MTL::Device* device, const std::string &name = "Layer");
   virtual ~Layer();
 
   virtual void onAttach();
   virtual void onDetach();
-  virtual void onUpdate();
+  virtual void onUpdate(MTK::View* view, MTL::RenderCommandEncoder* encoder);
   virtual void onEvent(Event &event);
 
   inline const std::string &getName() { return name; }
 
+protected:
+	MTL::Device* device;
+	MTL::CommandQueue* queue;
+
 private:
-  std::string name;
+	const std::string name;
 };
 
 } // namespace Explorer

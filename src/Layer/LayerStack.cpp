@@ -1,6 +1,14 @@
 #include <Layer/LayerStack.h>
+#include <Layer/ImGuiLayer.h>
+#include <Layer/BaseLayer.h>
+#include <View/ViewAdapter.hpp>
 
-Explorer::LayerStack::LayerStack() { this->insert = layers.begin(); }
+Explorer::LayerStack::LayerStack() {
+	DEBUG("Initializing LayerStack ...");
+	this->insert = layers.begin();
+	//this->pushLayer(new BaseLayer(view->device()));
+	//this->pushOverlay(new ImGuiLayer(view));
+}
 
 Explorer::LayerStack::~LayerStack() {
   for (Layer *layer : layers)

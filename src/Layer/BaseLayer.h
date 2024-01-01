@@ -1,12 +1,14 @@
 #pragma once
+#include <Layer/Layer.h>
 #include <Model/MeshFactory.h>
 #include <pch.h>
 
-class Renderer {
+namespace Explorer {
+class BaseLayer : public Layer {
 
 public:
-  Renderer(MTL::Device *device);
-  ~Renderer();
+  BaseLayer(MTL::Device *device);
+  ~BaseLayer();
 
   virtual void buildPipeline();
   virtual void buildMeshes();
@@ -21,7 +23,7 @@ public:
   virtual bool readBinaryArchive(std::string path);
   virtual NS::String *nsString(std::string str);
   virtual NS::URL *nsUrl(std::string path);
-  virtual void draw(MTK::View *);
+  virtual void onUpdate(MTK::View* view, MTL::RenderCommandEncoder* encoder);
 
 private:
   virtual void printError(NS::Error *error);
@@ -33,3 +35,4 @@ private:
   MeshFactory::Mesh quadMesh;
   float t;
 };
+}; // namespace Explorer
