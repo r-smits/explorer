@@ -1,3 +1,4 @@
+#include "Events/IOState.h"
 #include <Layer/BaseLayer.h>
 #include <Layer/ImGuiLayer.h>
 #include <View/ViewAdapter.hpp>
@@ -21,7 +22,10 @@ Explorer::ViewDelegate::ViewDelegate(MTK::View *view) : MTK::ViewDelegate() {
 Explorer::ViewDelegate::~ViewDelegate() {}
 
 void Explorer::ViewDelegate::onEvent(Event &event) {
-  
+	IO::onEvent(event);
+	std::stringstream ss;
+	ss << IO::isPressed(KEY_SPACE);
+	DEBUG(ss.str());
   for (std::vector<Layer *>::iterator index = layerStack.end(); index != layerStack.begin();) {
     (*--index)->onEvent(event);
     if (event.isHandled())

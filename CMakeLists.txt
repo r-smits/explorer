@@ -33,6 +33,8 @@ add_executable(EXPLORER
 				${CMAKE_CURRENT_SOURCE_DIR}/src/layer/ImGuiLayer.mm
 				${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/BaseLayer.h
 				${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/BaseLayer.cpp
+				${CMAKE_CURRENT_SOURCE_DIR}/src/Events/IOState.h
+				${CMAKE_CURRENT_SOURCE_DIR}/src/Events/IOState.cpp
 )
 
 # Configure compilation variables

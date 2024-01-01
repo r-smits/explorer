@@ -157,25 +157,21 @@ void Explorer::ViewAdapter::onEvent(Explorer::Event &event) {
 }
 
 - (void)keyDown:(NSEvent *)event {
-  NSEventType eventType = [event type];
-  if (eventType == NSEventTypeKeyDown) {
-    const char *ckey =
-        [[event characters] cStringUsingEncoding:NSUTF8StringEncoding];
+
+  if ([event type] == NSEventTypeKeyDown) {
     const Explorer::KeyPressedEvent pressed =
-        Explorer::KeyPressedEvent(ckey, [event isARepeat]);
+        Explorer::KeyPressedEvent([event keyCode], [event isARepeat]);
     Explorer::ViewAdapter::sharedInstance()->onEvent(
         (Explorer::Event &)pressed);
   } else {
-    NSLog(@"KeyDown :: Unknown event: %lu", eventType);
+    NSLog(@"KeyDown :: Unknown event: %lu", [event type]);
   }
 }
 
 - (void)keyUp:(NSEvent *)event {
   if ([event type] == NSEventTypeKeyUp) {
-    const char *ckey =
-        [[event characters] cStringUsingEncoding:NSUTF8StringEncoding];
-    const Explorer::KeyReleasedEvent event = Explorer::KeyReleasedEvent(ckey);
-    Explorer::ViewAdapter::sharedInstance()->onEvent((Explorer::Event &)event);
+    const Explorer::KeyReleasedEvent pressed = Explorer::KeyReleasedEvent([event keyCode]);
+    Explorer::ViewAdapter::sharedInstance()->onEvent((Explorer::Event &)pressed);
   } else {
     NSLog(@"KeyUp :: Unknown event: %lu", [event type]);
   }
