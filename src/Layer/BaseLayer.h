@@ -23,7 +23,14 @@ public:
   virtual bool readBinaryArchive(std::string path);
   virtual NS::String *nsString(std::string str);
   virtual NS::URL *nsUrl(std::string path);
-  virtual void onUpdate(MTK::View* view, MTL::RenderCommandEncoder* encoder);
+  virtual void onUpdate(MTK::View* view, MTL::RenderCommandEncoder* encoder) override;
+public:
+	virtual void onEvent(Event& event) override;
+	virtual bool onKeyPressed(KeyPressedEvent &event);
+  virtual bool onKeyReleased(KeyReleasedEvent &event);
+  virtual bool onMouseButtonPressed(MouseButtonPressedEvent &event);
+  virtual bool onMouseButtonReleased(MouseButtonReleasedEvent &event);
+  virtual bool onMouseMove(MouseMoveEvent &event);
 
 private:
   virtual void printError(NS::Error *error);

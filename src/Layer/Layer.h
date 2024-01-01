@@ -1,5 +1,4 @@
 #pragma once
-#include <Events/Events.h>
 #include <pch.h>
 
 namespace Explorer {

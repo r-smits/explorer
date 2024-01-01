@@ -6,6 +6,10 @@
 #include <MetalKit/MetalKit.hpp>
 #include <simd/simd.h>
 
+#include <Events/Events.h>
+#include <Events/KeyEvent.h>
+#include <Events/MouseEvent.h>
+
 #include <algorithm>
 #include <cmath>
 #include <fstream>
@@ -18,6 +22,8 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+
+#define BIND_EVENT(fn) std::bind(&fn, this, std::placeholders::_1)
 
 /**
  * This file is meant to be a pre-compiled header.

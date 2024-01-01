@@ -1,5 +1,5 @@
 #pragma once
-#include <Events/Events.h>
+#include <pch.h>
 #include <sstream>
 #include <string>
 
@@ -26,7 +26,7 @@ public:
 
   std::string toString() const override {
     std::stringstream ss;
-    ss << "[KeyPressed] " << this->key << " (" << this->repeatCount << ")";
+    ss << "KeyPressed :: (" << this->key << ")(" << this->repeatCount << ")";
     return ss.str();
   }
 
@@ -43,7 +43,7 @@ public:
 
   std::string toString() const override {
     std::stringstream stringstream;
-    stringstream << "[KeyReleased] " << this->key;
+    stringstream << "KeyReleased :: (" << this->key << ")";
     return stringstream.str();
   }
 

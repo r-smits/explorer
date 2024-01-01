@@ -1,5 +1,5 @@
 #pragma once
-#include <pch.h>
+#include <iostream>
 
 #define BIT(x) (1 << x)
 
