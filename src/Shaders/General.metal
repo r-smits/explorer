@@ -2,8 +2,14 @@
 
 using namespace metal;
 
+constant float PI = 3.1415926535897932384626433832795;
+
+struct Light {
+		float4 position;
+};
+
 struct VertexInput {
-    float2 position [[attribute(0)]];
+		float4 position [[attribute(0)]];
     float3 color [[attribute(1)]];
 };
 
@@ -17,12 +23,16 @@ VertexOutput vertex vertexMainGeneral(
     constant float4x4& transform [[buffer(1)]]
 ) {
     VertexOutput vertexOutput;
-    vertexOutput.position = float4(half4x4(transform) * half4(half2(input.position), 0.0, 1.0));
+    vertexOutput.position = float4(half4x4(transform) * half4(input.position));
     vertexOutput.color = half3(input.color);
     return vertexOutput;
 }
 
-half4 fragment fragmentMainGeneral(VertexOutput frag [[stage_in]]) {
-    return half4(frag.color, 1.0);
+half4 fragment fragmentMainGeneral(
+		VertexOutput frag [[stage_in]], 
+		constant Light& light [[buffer(1)]]
+) {
+		float brightness = 100 / length(frag.position.xy - light.position.xy);
+    return half4(frag.color * brightness, 1.0);
 }
 

@@ -33,8 +33,7 @@ void Explorer::ViewAdapter::printDebug() const {
   [ref printDebug];
 }
 
-void Explorer::ViewAdapter::setHandler(
-    const std::function<void(Explorer::Event &)> &func) {
+void Explorer::ViewAdapter::setHandler(const std::function<void(Explorer::Event &)> &func) {
   this->handler = func;
 }
 
@@ -80,21 +79,19 @@ void Explorer::ViewAdapter::onEvent(Explorer::Event &event) {
 
 - (void)updateTrackingAreas {
   DEBUG("Update tracking areas ...");
-  NSTrackingArea *areaInit = [[NSTrackingArea alloc]
-      initWithRect:[self bounds]
-           options:(NSTrackingMouseMoved | NSTrackingActiveAlways)
-             owner:self
-          userInfo:nil];
+  NSTrackingArea *areaInit =
+      [[NSTrackingArea alloc] initWithRect:[self bounds]
+                                   options:(NSTrackingMouseMoved | NSTrackingActiveAlways)
+                                     owner:self
+                                  userInfo:nil];
   [self addTrackingArea:areaInit];
 }
 
 - (void)mouseUp:(NSEvent *)event {
-  if ([event type] == NSEventType::NSEventTypeLeftMouseUp ||
-      NSEventType::NSEventTypeRightMouseUp) {
+  if ([event type] == NSEventType::NSEventTypeLeftMouseUp || NSEventType::NSEventTypeRightMouseUp) {
     Explorer::MouseButtonReleasedEvent released =
         Explorer::MouseButtonReleasedEvent([event buttonNumber]);
-    Explorer::ViewAdapter::sharedInstance()->onEvent(
-        (Explorer::Event &)released);
+    Explorer::ViewAdapter::sharedInstance()->onEvent((Explorer::Event &)released);
   } else {
     NSLog(@"MouseUp :: Unknown event: %lu", [event type]);
   }
@@ -105,8 +102,7 @@ void Explorer::ViewAdapter::onEvent(Explorer::Event &event) {
       NSEventType::NSEventTypeRightMouseDown) {
     Explorer::MouseButtonPressedEvent pressed =
         Explorer::MouseButtonPressedEvent([event buttonNumber]);
-    Explorer::ViewAdapter::sharedInstance()->onEvent(
-        (Explorer::Event &)pressed);
+    Explorer::ViewAdapter::sharedInstance()->onEvent((Explorer::Event &)pressed);
   } else {
     NSLog(@"MouseDown :: Unknown event: %lu", [event type]);
   }
@@ -116,10 +112,8 @@ void Explorer::ViewAdapter::onEvent(Explorer::Event &event) {
   if ([event type] == NSEventType::NSEventTypeMouseMoved) {
     NSPoint mousePoint = event.locationInWindow;
     mousePoint = [self convertPoint:mousePoint fromView:nil];
-    mousePoint =
-        NSMakePoint(mousePoint.x, self.bounds.size.height - mousePoint.y);
-    Explorer::MouseMoveEvent moved =
-        Explorer::MouseMoveEvent(mousePoint.x, mousePoint.y);
+    mousePoint = NSMakePoint(mousePoint.x, self.bounds.size.height - mousePoint.y);
+    Explorer::MouseMoveEvent moved = Explorer::MouseMoveEvent(mousePoint.x, mousePoint.y);
     Explorer::ViewAdapter::sharedInstance()->onEvent((Explorer::Event &)moved);
   } else {
     NSLog(@"MouseMoved :: Unknown event: %lu", [event type]);
@@ -131,10 +125,8 @@ void Explorer::ViewAdapter::onEvent(Explorer::Event &event) {
       NSEventType::NSEventTypeRightMouseDragged) {
     NSPoint mousePoint = event.locationInWindow;
     mousePoint = [self convertPoint:mousePoint fromView:nil];
-    mousePoint =
-        NSMakePoint(mousePoint.x, self.bounds.size.height - mousePoint.y);
-    Explorer::MouseMoveEvent moved =
-        Explorer::MouseMoveEvent(mousePoint.x, mousePoint.y);
+    mousePoint = NSMakePoint(mousePoint.x, self.bounds.size.height - mousePoint.y);
+    Explorer::MouseMoveEvent moved = Explorer::MouseMoveEvent(mousePoint.x, mousePoint.y);
     Explorer::ViewAdapter::sharedInstance()->onEvent((Explorer::Event &)moved);
 
   } else {
@@ -161,8 +153,7 @@ void Explorer::ViewAdapter::onEvent(Explorer::Event &event) {
   if ([event type] == NSEventTypeKeyDown) {
     const Explorer::KeyPressedEvent pressed =
         Explorer::KeyPressedEvent([event keyCode], [event isARepeat]);
-    Explorer::ViewAdapter::sharedInstance()->onEvent(
-        (Explorer::Event &)pressed);
+    Explorer::ViewAdapter::sharedInstance()->onEvent((Explorer::Event &)pressed);
   } else {
     NSLog(@"KeyDown :: Unknown event: %lu", [event type]);
   }

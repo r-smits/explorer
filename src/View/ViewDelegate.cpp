@@ -23,10 +23,7 @@ Explorer::ViewDelegate::~ViewDelegate() {}
 
 void Explorer::ViewDelegate::onEvent(Event &event) {
 	IO::onEvent(event);
-	std::stringstream ss;
-	ss << IO::isPressed(KEY_SPACE);
-	DEBUG(ss.str());
-  for (std::vector<Layer *>::iterator index = layerStack.end(); index != layerStack.begin();) {
+	for (std::vector<Layer *>::iterator index = layerStack.end(); index != layerStack.begin();) {
     (*--index)->onEvent(event);
     if (event.isHandled())
       break;
@@ -73,4 +70,6 @@ void Explorer::ViewDelegate::drawInMTKView(MTK::View *view) {
   pool->release();
 }
 
-void Explorer::ViewDelegate::drawableSizeWillChange(MTK::View *view, CGSize size) {}
+void Explorer::ViewDelegate::drawableSizeWillChange(MTK::View *view, CGSize size) {
+	
+}

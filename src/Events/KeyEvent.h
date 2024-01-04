@@ -20,7 +20,7 @@ class KeyPressedEvent : public KeyEvent {
 
 public:
   KeyPressedEvent(const int keyCode, int repeatCount)
-      : Explorer::KeyEvent(keyCode), repeatCount(repeatCount) {}
+      : KeyEvent(keyCode), repeatCount(repeatCount) {}
 
   inline int getRepeatCount() const { return this->repeatCount; }
 
@@ -39,7 +39,7 @@ private:
 class KeyReleasedEvent : public KeyEvent {
 
 public:
-  KeyReleasedEvent(const int keyCode) : Explorer::KeyEvent(keyCode) {}
+  KeyReleasedEvent(const int keyCode) : KeyEvent(keyCode) {}
 
   std::string toString() const override {
     std::stringstream stringstream;
