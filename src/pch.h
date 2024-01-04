@@ -4,11 +4,12 @@
 #include <Log/Logger.h>
 #include <Metal/Metal.hpp>
 #include <MetalKit/MetalKit.hpp>
-#include <simd/simd.h>
 
 #include <Events/Events.h>
 #include <Events/KeyEvent.h>
 #include <Events/MouseEvent.h>
+#include <util.h>
+
 
 #include <algorithm>
 #include <cmath>

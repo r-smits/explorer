@@ -13,6 +13,9 @@ public:
   void onDetach() override;
   void onUpdate(MTK::View *view, MTL::RenderCommandEncoder *encoder) override;
 
+public:
+	void showDebugWindow(bool* open);
+
 public: // Event
   void onEvent(Event &event) override;
   virtual bool onKeyPressed(KeyPressedEvent &event);

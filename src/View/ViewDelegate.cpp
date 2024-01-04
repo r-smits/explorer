@@ -1,3 +1,4 @@
+#include "Events/IOState.h"
 #include <Layer/BaseLayer.h>
 #include <Layer/ImGuiLayer.h>
 #include <View/ViewAdapter.hpp>
@@ -21,8 +22,8 @@ Explorer::ViewDelegate::ViewDelegate(MTK::View *view) : MTK::ViewDelegate() {
 Explorer::ViewDelegate::~ViewDelegate() {}
 
 void Explorer::ViewDelegate::onEvent(Event &event) {
-  
-  for (std::vector<Layer *>::iterator index = layerStack.end(); index != layerStack.begin();) {
+	IO::onEvent(event);
+	for (std::vector<Layer *>::iterator index = layerStack.end(); index != layerStack.begin();) {
     (*--index)->onEvent(event);
     if (event.isHandled())
       break;
@@ -69,4 +70,6 @@ void Explorer::ViewDelegate::drawInMTKView(MTK::View *view) {
   pool->release();
 }
 
-void Explorer::ViewDelegate::drawableSizeWillChange(MTK::View *view, CGSize size) {}
+void Explorer::ViewDelegate::drawableSizeWillChange(MTK::View *view, CGSize size) {
+	
+}

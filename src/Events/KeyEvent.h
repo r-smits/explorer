@@ -8,25 +8,25 @@ namespace Explorer {
 class KeyEvent : Explorer::Event {
 
 public:
-  inline const char *getKey() const { return key; }
+  inline const int getKey() const { return keyCode; }
   EVENT_CLASS_CATEGORY(EventCategoryKeyboard | EventCategoryInput)
 protected:
-  KeyEvent(const char *key) : key(key) {}
+  KeyEvent(const int keyCode) : keyCode(keyCode) {}
 
-  const char *key;
+  const int keyCode;
 };
 
-class KeyPressedEvent : KeyEvent {
+class KeyPressedEvent : public KeyEvent {
 
 public:
-  KeyPressedEvent(const char *key, int repeatCount)
-      : Explorer::KeyEvent(key), repeatCount(repeatCount) {}
+  KeyPressedEvent(const int keyCode, int repeatCount)
+      : KeyEvent(keyCode), repeatCount(repeatCount) {}
 
   inline int getRepeatCount() const { return this->repeatCount; }
 
   std::string toString() const override {
     std::stringstream ss;
-    ss << "KeyPressed :: (" << this->key << ")(" << this->repeatCount << ")";
+    ss << "KeyPressed :: (" << this->keyCode << ")(" << this->repeatCount << ")";
     return ss.str();
   }
 
@@ -36,14 +36,14 @@ private:
   int repeatCount;
 };
 
-class KeyReleasedEvent : KeyEvent {
+class KeyReleasedEvent : public KeyEvent {
 
 public:
-  KeyReleasedEvent(const char *key) : Explorer::KeyEvent(key) {}
+  KeyReleasedEvent(const int keyCode) : KeyEvent(keyCode) {}
 
   std::string toString() const override {
     std::stringstream stringstream;
-    stringstream << "KeyReleased :: (" << this->key << ")";
+    stringstream << "KeyReleased :: (" << this->keyCode << ")";
     return stringstream.str();
   }
 

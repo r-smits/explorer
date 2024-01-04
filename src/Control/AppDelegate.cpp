@@ -45,7 +45,8 @@ void Explorer::AppDelegate::applicationDidFinishLaunching(NS::Notification *msg)
   // Set MTK::View defaults
   this->mtkView->setPreferredFramesPerSecond((NS::Integer)120);
   this->mtkView->setColorPixelFormat(MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB);
-  this->mtkView->setClearColor(MTL::ClearColor::Make(1.0, 1.0, 1.0, 1.0));
+  this->mtkView->setClearColor(MTL::ClearColor::Make(0.0, 0.0, 0.0, 1.0));
+	this->mtkView->setDepthStencilPixelFormat(MTL::PixelFormat::PixelFormatDepth32Float);
 
   // Set object to be the MTK::View event handler
   this->viewDelegate = new ViewDelegate(this->mtkView);
