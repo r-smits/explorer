@@ -11,7 +11,7 @@
 int main() {
   NS::AutoreleasePool *autoreleasePool = NS::AutoreleasePool::alloc()->init();
 
-  Explorer::AppProperties properties = Explorer::AppProperties(700.0, 700.0);
+  Explorer::AppProperties properties = Explorer::AppProperties(1000.0, 700.0);
   Explorer::AppDelegate appDelegate = Explorer::AppDelegate(&properties);
   NS::Application *app = NS::Application::sharedApplication();
 

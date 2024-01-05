@@ -28,6 +28,13 @@ MTK::View *Explorer::ViewAdapter::getView() {
   return (__bridge MTK::View *)[ViewExtender get];
 }
 
+CGRect Explorer::ViewAdapter::bounds() {
+if (!extender) {
+	WARN("Attemtped to retrieve MTK::View bounds, but not initialized!");
+}
+	return (CGRect) [ViewExtender get].bounds;
+}
+
 void Explorer::ViewAdapter::printDebug() const {
   ViewExtender *ref = [ViewExtender get];
   [ref printDebug];

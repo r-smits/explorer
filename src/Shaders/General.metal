@@ -32,7 +32,7 @@ half4 fragment fragmentMainGeneral(
 		VertexOutput frag [[stage_in]], 
 		constant Light& light [[buffer(1)]]
 ) {
-		float brightness = 100 / length(frag.position.xy - light.position.xy);
+		float brightness = 100 / length(frag.position.xyz - light.position.xyz);
     return half4(frag.color * brightness, 1.0);
 }
 

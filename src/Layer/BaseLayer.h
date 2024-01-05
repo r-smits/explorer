@@ -4,6 +4,7 @@
 #include <Math/Transformation.h>
 #include <Model/MeshFactory.h>
 #include <Renderer/Buffer.h>
+#include <Model/Camera.h>
 #include <pch.h>
 
 namespace Explorer {
@@ -21,6 +22,7 @@ public: // Event
   virtual bool onMouseButtonPressed(MouseButtonPressedEvent& event);
   virtual bool onMouseButtonReleased(MouseButtonReleasedEvent& event);
   virtual bool onMouseMove(MouseMoveEvent& event);
+	virtual void checkIO();
 
 private: // Initialization
   virtual void buildPipeline();
@@ -43,6 +45,8 @@ private:
   simd::float4x4 projection;
 
 private:
+	simd::float4x4 viewMatrix;
+	Camera camera;
 	LightSource* light;
   MTL::Buffer* mesh;
   Mesh* quadMesh;
