@@ -1,12 +1,12 @@
 #pragma once
+#include <Control/AppProperties.h>
 #include <DB/Repository.h>
 #include <Layer/Layer.h>
 #include <Math/Transformation.h>
+#include <Model/Camera.h>
 #include <Model/MeshFactory.h>
 #include <Renderer/Buffer.h>
-#include <Model/Camera.h>
 #include <pch.h>
-#include <Control/AppProperties.h>
 
 namespace Explorer {
 class BaseLayer : public Layer {
@@ -23,7 +23,7 @@ public: // Event
   virtual bool onMouseButtonPressed(MouseButtonPressedEvent& event);
   virtual bool onMouseButtonReleased(MouseButtonReleasedEvent& event);
   virtual bool onMouseMove(MouseMoveEvent& event);
-	virtual void checkIO();
+  virtual void checkIO();
 
 private: // Initialization
   virtual void buildPipeline();
@@ -31,11 +31,11 @@ private: // Initialization
   virtual MTL::RenderPipelineDescriptor* getRenderPipelineDescriptor(std::string shaderName);
   virtual MTL::RenderPipelineState* getRenderPipelineState(std::string shaderName, bool serialize);
   virtual MTL::DepthStencilState* getDepthStencilState();
-	virtual MTL::SamplerState* getSamplerState();
+  virtual MTL::SamplerState* getSamplerState();
 
 private: // Rendering
-	virtual void drawLight(MTL::RenderCommandEncoder* encoder, LightSource* light);
-	virtual void drawMesh(MTL::RenderCommandEncoder* encoder, Mesh* mesh);
+  virtual void drawLight(MTL::RenderCommandEncoder* encoder, LightSource* light);
+  virtual void drawMesh(MTL::RenderCommandEncoder* encoder, Mesh* mesh);
 
 private:
   MTL::Device* device;
@@ -43,17 +43,19 @@ private:
 
 private: // States
   MTL::RenderPipelineState* generalPipelineState;
-	MTL::RenderPipelineState* lightPipelineState;
+  MTL::RenderPipelineState* lightPipelineState;
   MTL::DepthStencilState* depthStencilState;
-	MTL::SamplerState* samplerState;
+  MTL::SamplerState* samplerState;
 
 private:
-	Camera camera;
-	LightSource* light;
-	Mesh* quad;
+  Camera camera;
+  LightSource* light;
+  Mesh* quad;
   Mesh* pyramid;
   Mesh* cube;
-	MTL::Texture* island;
+  MTL::Texture* island;
+  std::vector<Mesh*> f16;
+  std::vector<Mesh*> cruiser;
   float t;
 };
 }; // namespace Explorer

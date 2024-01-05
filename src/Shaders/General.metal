@@ -47,7 +47,7 @@ half4 fragment fragmentMainGeneral(
 ) {
 		float brightness = 1000 / length(frag.position.xyz - light.position.xyz);
 		half4 textureColor = half4(texture.sample(sampler2D, frag.texture));
-		//return textureColor;
-		return half4(textureColor.rgb * brightness, 1.0);
+		return textureColor;
+		//half4(textureColor.rgb * brightness, 1.0);
 }
 

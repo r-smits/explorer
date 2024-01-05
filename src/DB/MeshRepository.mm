@@ -4,7 +4,7 @@
 #include <Renderer/Descriptor.h>
 
 std::vector<Explorer::Mesh*> Repository::Meshes::read(MTL::Device* device, std::string path) {
-  NSURL* url = (__bridge NSURL*)Explorer::nsUrl(path);
+  NSURL* url = (__bridge NSURL*)Explorer::nsUrl(path + ".obj");
   MTL::VertexDescriptor* descriptor =
       Renderer::Descriptor::vertex(device, &Renderer::Layouts::vertex);
   MDLVertexDescriptor* modelDescriptor =
@@ -15,11 +15,11 @@ std::vector<Explorer::Mesh*> Repository::Meshes::read(MTL::Device* device, std::
   [[modelDescriptor attributes] setObject:position atIndexedSubscript:0];
 
   MDLVertexAttribute* color = [[modelDescriptor attributes] objectAtIndex:1];
-  [color setName:MDLVertexAttributePosition];
+  [color setName:MDLVertexAttributeColor];
   [[modelDescriptor attributes] setObject:color atIndexedSubscript:1];
 
   MDLVertexAttribute* texture = [[modelDescriptor attributes] objectAtIndex:2];
-  [texture setName:MDLVertexAttributePosition];
+  [texture setName:MDLVertexAttributeTextureCoordinate];
   [[modelDescriptor attributes] setObject:texture atIndexedSubscript:2];
 
   MTKMeshBufferAllocator* bufferAllocator =
@@ -43,7 +43,7 @@ std::vector<Explorer::Mesh*> Repository::Meshes::read(MTL::Device* device, std::
     MTL::Buffer* vertexBuffer = (__bridge MTL::Buffer*)[mesh.vertexBuffers objectAtIndex:0].buffer;
 
     Explorer::Mesh* expMesh =
-        new Explorer::Mesh(vertexBuffer, Repository::Textures::read(device, path));
+        new Explorer::Mesh(vertexBuffer, Repository::Textures::read(device, path + ".bmp"));
 
     NSArray<MTKSubmesh*>* submeshes = mesh.submeshes;
     for (MTKSubmesh* mtkSubmesh : submeshes) {

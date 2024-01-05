@@ -46,6 +46,7 @@ add_executable(EXPLORER
 	${CMAKE_CURRENT_SOURCE_DIR}/src/DB/Repository.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/DB/ShaderRepository.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/DB/TextureRepository.mm
+	${CMAKE_CURRENT_SOURCE_DIR}/src/DB/MeshRepository.mm
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Model/Camera.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Model/Camera.cpp
 )
@@ -85,6 +86,7 @@ target_link_libraries(EXPLORER PUBLIC
 	"-framework MetalKit"
 	"-framework AppKit"
 	"-framework Foundation"
+	"-framework ModelIO"
 )
 
 # Add precompiled headers
