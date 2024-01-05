@@ -15,7 +15,8 @@ int main() {
       1000.0f,
       700.0f,
       "/Users/ramonsmits/Code/Explorer/src/Shaders/",
-      "/Users/ramonsmits/Code/Explorer/src/Assets/Textures/"
+      "/Users/ramonsmits/Code/Explorer/src/Assets/Textures/",
+			"/Users/ramonsmits/Code/Explorer/src/Assets/Meshes/"
   );
 
   Explorer::AppDelegate appDelegate = Explorer::AppDelegate(&properties);

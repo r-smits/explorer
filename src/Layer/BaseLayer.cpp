@@ -1,3 +1,4 @@
+#include <DB/Repository.h>
 #include <Events/IOState.h>
 #include <Events/KeyCodes.h>
 #include <Layer/BaseLayer.h>
@@ -55,7 +56,7 @@ void Explorer::BaseLayer::buildMeshes() {
   pyramid->position = {-0.5f, 0.0f, -2.0f};
 
   quad = MeshFactory::quad(device, config->texturePath + "island.jpg");
-	quad->scale = 0.9f;
+  quad->scale = 0.9f;
   quad->position = {0.0f, 0.0f, -3.0f};
 
   cube = MeshFactory::cube(this->device, config->texturePath + "island.jpg");
@@ -63,6 +64,16 @@ void Explorer::BaseLayer::buildMeshes() {
   cube->position = {0.25, 0.25, -2};
 
   light = MeshFactory::light(this->device);
+
+  f16 = Repository::Meshes::read(device, config->meshPath + "f16/f16");
+
+	cruiser = Repository::Meshes::read(device, config->meshPath + "cruiser/cruiser");
+
+	for (Mesh* mesh : f16) {
+	mesh->position.z -= 2.5;
+	}
+
+  camera.position.z;
   // this->light->position = {-0.25, 0.3, 0};
 }
 
@@ -205,13 +216,16 @@ void Explorer::BaseLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* e
   encoder->setDepthStencilState(this->depthStencilState);
   encoder->setFragmentSamplerState(this->samplerState, 0);
 
-  light->position.z -= t;
-  light->position.y -= t;
-  pyramid->rotation = Transformation::yRotation(t) * Transformation::xRotation(80);
-  cube->rotation = Transformation::xRotation(t) * Transformation::zRotation(t);
+  //pyramid->rotation = Transformation::yRotation(t) * Transformation::xRotation(80);
+  //cube->rotation = Transformation::xRotation(t) * Transformation::zRotation(t);
 
-  this->drawLight(encoder, light);
-	this->drawMesh(encoder, quad);
-  this->drawMesh(encoder, pyramid);
-  this->drawMesh(encoder, cube);
+  // this->drawLight(encoder, light);
+  //this->drawMesh(encoder, quad);
+
+  // this->drawMesh(encoder, pyramid);
+  // this->drawMesh(encoder, cube);
+
+  for (Mesh* mesh : f16) {
+    drawMesh(encoder, mesh);
+  }
 }
