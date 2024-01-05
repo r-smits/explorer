@@ -37,7 +37,7 @@ void Explorer::AppDelegate::applicationDidFinishLaunching(NS::Notification *msg)
   this->window = NS::Window::alloc()->init(
       properties->cgRect, NS::WindowStyleMaskClosable | NS::WindowStyleMaskTitled,
       NS::BackingStoreBuffered, false);
-
+	
   // Set gpu for view to render with
   this->device = MTL::CreateSystemDefaultDevice();
   this->mtkView->setDevice(this->device);

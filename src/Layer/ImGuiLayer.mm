@@ -93,7 +93,6 @@ bool Explorer::ImGuiLayer::onMouseButtonPressed(MouseButtonPressedEvent& event) 
   ImGuiIO& io = ImGui::GetIO();
   io.AddMouseSourceEvent(ImGuiMouseSource_Mouse);
   io.AddMouseButtonEvent(event.getMouseButton(), true);
-  event.done();
   return io.WantCaptureMouse;
 }
 
@@ -101,7 +100,6 @@ bool Explorer::ImGuiLayer::onMouseButtonReleased(MouseButtonReleasedEvent& event
   ImGuiIO& io = ImGui::GetIO();
   io.AddMouseSourceEvent(ImGuiMouseSource_Mouse);
   io.AddMouseButtonEvent(event.getMouseButton(), false);
-  event.done();
   return io.WantCaptureMouse;
 }
 
@@ -109,16 +107,15 @@ bool Explorer::ImGuiLayer::onMouseMove(MouseMoveEvent& event) {
   ImGuiIO& io = ImGui::GetIO();
   io.AddMouseSourceEvent(ImGuiMouseSource_Mouse);
   io.AddMousePosEvent(event.getX(), event.getY());
-  event.done();
   return io.WantCaptureMouse;
 }
 
 bool Explorer::ImGuiLayer::onKeyPressed(KeyPressedEvent& event) {
   // Not implemented yet
-  return true;
+  return false;
 }
 
 bool Explorer::ImGuiLayer::onKeyReleased(KeyReleasedEvent& event) {
   // Not implemented yet
-  return true;
+  return false;
 }

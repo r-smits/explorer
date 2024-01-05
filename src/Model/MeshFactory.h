@@ -6,32 +6,35 @@
 namespace Explorer {
 
 
-struct Mesh {
+struct Object {
+public:
+  Object();
+  ~Object() {};
+
+public:
+	// Computation of matrices are down right -> left.
+  // Meaning you first need to translate, then rotate, then scale
+	virtual simd::float4x4 f4x4();
+
+public:
+	simd::float3 position;
+	simd::float4x4 rotation;
+	float scale;
+};
+
+struct Mesh : public Object {
 public:
   Mesh(MTL::Buffer* vertexBuffer, MTL::Buffer* indexBuffer);
   Mesh();
   ~Mesh();
 
 public:
-  virtual Mesh* scale(float factor);
-  virtual Mesh* rotate(simd::float4x4 rotation);
-  virtual Mesh* translate(simd::float3 trans);
-  virtual simd::float4x4 transform();
-
-public:
-  virtual void printDebug() const;
-
-public:
   MTL::Buffer* vertexBuffer;
   MTL::Buffer* indexBuffer;
-
-private:
-  float factor;
-  simd::float4x4 mRotate;
-  simd::float3 trans;
 };
 
-struct LightSource {
+struct LightSource : public Object {
+
 public:
   LightSource();
   ~LightSource();

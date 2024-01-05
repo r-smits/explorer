@@ -42,6 +42,8 @@ add_executable(EXPLORER
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/Types.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Shaders/ShaderRepository.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Shaders/ShaderRepository.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/Model/Camera.h
+	${CMAKE_CURRENT_SOURCE_DIR}/src/Model/Camera.cpp
 )
 
 # Configure compilation variables

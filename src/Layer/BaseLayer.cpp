@@ -1,10 +1,11 @@
-#include "Metal/MTLVertexDescriptor.hpp"
+#include <Events/IOState.h>
+#include <Events/KeyCodes.h>
 #include <Layer/BaseLayer.h>
 #include <Math/Transformation.h>
 #include <Renderer/Buffer.h>
 
 Explorer::BaseLayer::BaseLayer(MTL::Device* device)
-    : Layer(device->retain()),
+    : Layer(device->retain()), viewMatrix(simd::float4x4(1.0f)),
       repository(ShaderRepository(device->retain(), "/Users/ramonsmits/Code/Explorer/src/Shaders/")
       ) {
   this->device = device;
@@ -31,7 +32,7 @@ void Explorer::BaseLayer::onEvent(Event& event) {
   dispatcher.dispatch<MouseMoveEvent>(BIND_EVENT(BaseLayer::onMouseMove));
 }
 
-bool Explorer::BaseLayer::onKeyPressed(KeyPressedEvent& event) { return true; }
+bool Explorer::BaseLayer::onKeyPressed(KeyPressedEvent& event) { return false; }
 
 bool Explorer::BaseLayer::onKeyReleased(KeyReleasedEvent& event) { return true; }
 
@@ -44,16 +45,22 @@ bool Explorer::BaseLayer::onMouseMove(MouseMoveEvent& event) { return true; }
 void Explorer::BaseLayer::buildPipeline() {
   this->generalPipeline = this->getRenderPipelineState("General", true);
   this->depthStencilState = this->getDepthStencilState();
-  this->projection = Transformation::perspective(45.0f, 1.0f, 0.1f, 100.0f);
+  this->camera = Camera();
 }
 
 void Explorer::BaseLayer::buildMeshes() {
-  // Computation of matrices are down right -> left.
-  // Meaning you first need to translate, then rotate, then scale
-  this->pyramid = MeshFactory::pyramid(this->device)->scale(0.25f)->translate({-0.5f, 0.0f, -2.0f});
-  this->mesh = MeshFactory::triangle(this->device);
-  this->quadMesh = MeshFactory::quad(this->device)->scale(0.9f)->translate({-0.5f, 0.0f, -3.0f});
-  this->cube = MeshFactory::cube(this->device)->scale(0.5f)->translate({0.25, 0.25, -4});
+
+  this->pyramid = MeshFactory::pyramid(this->device);
+  pyramid->scale = 0.25f;
+  pyramid->position = {-0.5f, 0.0f, -2.0f};
+
+  this->quadMesh = MeshFactory::quad(this->device);
+  this->quadMesh->scale = 0.9f;
+  this->quadMesh->position = {-0.5f, 0.0f, -3.0f};
+
+  this->cube = MeshFactory::cube(this->device);
+  this->cube->scale = 0.25f;
+  this->cube->position = {0.25, 0.25, -2};
   this->light = MeshFactory::light(this->device);
 }
 
@@ -135,8 +142,9 @@ Explorer::BaseLayer::getRenderPipelineState(std::string shaderName, bool seriali
 }
 
 void Explorer::BaseLayer::drawLight(MTL::RenderCommandEncoder* encoder, LightSource* light) {
-
-  simd::float4 lighting = {700.0f, 700.0f, 0.0f, 1.0f};
+  
+	CGRect bounds = ViewAdapter::bounds();
+	simd::float4 lighting = {1000.0f, 850.0f, 0.0f, 1.0f};
   encoder->setFragmentBytes(
       &lighting,            // Setting a buffer
       sizeof(simd::float4), // Size of the data
@@ -151,9 +159,9 @@ void Explorer::BaseLayer::drawMesh(MTL::RenderCommandEncoder* encoder, Mesh* mes
       0                   // The index in the buffer to start drawing from
   );
 
-  simd::float4x4 transform = projection * mesh->transform();
+  simd::float4x4 transform = camera.f4x4() * viewMatrix * mesh->f4x4();
   encoder->setVertexBytes(
-      &transform,             // The data set in GPU
+      &transform,             // The data set in GP
       sizeof(simd::float4x4), // The size of data set in GPU
       1                       // The location of data: [[buffer(1)]]
   );
@@ -167,17 +175,37 @@ void Explorer::BaseLayer::drawMesh(MTL::RenderCommandEncoder* encoder, Mesh* mes
   );
 }
 
+void Explorer::BaseLayer::checkIO() {
+  if (Explorer::IO::isPressed(KEY_D)) {
+		camera.rotation = Transformation::translation({0.0f, 0.0f, -2.5f}) * Transformation::yRotation(-1.0f) * Transformation::translation({0.0f, 0.0f, 2.5f}) * camera.rotation;
+  }
+
+  if (Explorer::IO::isPressed(KEY_A)) {
+		camera.rotation = Transformation::translation({0.0f, 0.0f, -2.5f}) * Transformation::yRotation(1.0f) * Transformation::translation({0.0f, 0.0f, 2.5f}) * camera.rotation;
+  }
+
+  if (IO::isPressed(KEY_W)) {
+	camera.rotation = Transformation::translation({0.0f, 0.0f, -2.5f}) * Transformation::xRotation(-1.0f) * Transformation::translation({0.0f, 0.0f, 2.5f}) * camera.rotation;
+  }
+
+  if (IO::isPressed(KEY_S)) {
+camera.rotation = Transformation::translation({0.0f, 0.0f, -2.5f}) * Transformation::xRotation(1.0f) * Transformation::translation({0.0f, 0.0f, 2.5f}) * camera.rotation;
+  }
+}
+
 void Explorer::BaseLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* encoder) {
   t += 1.0f;
   if (t > 360) t -= 360.0f;
-	
-	this->drawLight(encoder, this->light);
+
+  checkIO();
+
   encoder->setRenderPipelineState(this->generalPipeline);
   encoder->setDepthStencilState(this->depthStencilState);
+  
+	pyramid->rotation = Transformation::yRotation(t) * Transformation::xRotation(80);
+	cube->rotation = Transformation::xRotation(t) * Transformation::zRotation(t);
 
-  this->pyramid->rotate(Transformation::yRotation(t) * Transformation::xRotation(80));
-
-  this->cube->rotate(Transformation::xRotation(t) * Transformation::zRotation(t));
+  this->drawLight(encoder, this->light);
   this->drawMesh(encoder, this->quadMesh);
   this->drawMesh(encoder, this->pyramid);
   this->drawMesh(encoder, this->cube);

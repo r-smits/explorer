@@ -23,6 +23,7 @@ simd::float4x4 translation(simd::float3);
 simd::float4x4 zRotation(float theta);
 simd::float4x4 xRotation(float theta);
 simd::float4x4 yRotation(float theta);
+simd::float4x4 rotate(simd::float3 axis);
 simd::float4x4 scale(float factor);
 simd::float4x4 perspective(float fov, float aspectRatio, float nearZ, float farZ);
 // simd::float4x4 xRotation();
