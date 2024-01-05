@@ -22,6 +22,9 @@ private:
   float aspectRatio;
   float nearZ;
   float farZ;
+
+public:
+	float rotateSpeed;
 };
 
 }; // namespace Explorer

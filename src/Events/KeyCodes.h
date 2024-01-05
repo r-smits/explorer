@@ -50,4 +50,6 @@
 #define ARROW_DOWN			125
 #define ARROW_RIGHT			124
 #define ARROW_UP				126
+#define MOUSE						555
+#define MOUSE_DRAG			777
 

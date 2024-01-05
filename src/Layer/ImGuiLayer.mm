@@ -5,7 +5,7 @@
 #include <imgui.h>
 #include <imgui_impl_metal.h>
 
-Explorer::ImGuiLayer::ImGuiLayer(MTK::View* view) : Layer(view->device(), "ImGuiLayer") {
+Explorer::ImGuiLayer::ImGuiLayer(MTK::View* view, AppProperties* config) : Layer(view->device(), config, "ImGuiLayer") {
   this->onAttach(view);
 }
 Explorer::ImGuiLayer::~ImGuiLayer() {}

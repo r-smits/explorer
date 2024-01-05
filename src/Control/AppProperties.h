@@ -16,11 +16,16 @@ class AppProperties {
    **/
 
 public:
-  AppProperties(double width, double height) { cgRect = (CGRect){{100, 100}, {width, height}}; }
+  AppProperties(double width, double height, std::string shaderPath, std::string texturePath)
+      : shaderPath(shaderPath), texturePath(texturePath), cgRect({
+                                                              {100.0f, 100.0f},
+                                                              { width, height}
+  }) {}
   ~AppProperties() {}
   CGRect cgRect;
-	std::string shaderBasePath;
-	std::string vertexFnName;
-	std::string fragmentFnName;
+  const std::string shaderPath;
+  const std::string texturePath;
+  std::string vertexFnName;
+  std::string fragmentFnName;
 };
 }; // namespace Explorer

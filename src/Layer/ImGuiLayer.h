@@ -7,7 +7,7 @@ namespace Explorer {
 class ImGuiLayer : public Layer {
 
 public:
-  ImGuiLayer(MTK::View *view);
+  ImGuiLayer(MTK::View *view, AppProperties* config);
   ~ImGuiLayer();
   void onAttach(MTK::View *view);
   void onDetach() override;

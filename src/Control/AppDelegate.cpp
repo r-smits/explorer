@@ -49,7 +49,7 @@ void Explorer::AppDelegate::applicationDidFinishLaunching(NS::Notification *msg)
 	this->mtkView->setDepthStencilPixelFormat(MTL::PixelFormat::PixelFormatDepth32Float);
 
   // Set object to be the MTK::View event handler
-  this->viewDelegate = new ViewDelegate(this->mtkView);
+  this->viewDelegate = new ViewDelegate(this->mtkView, this->properties);
   this->mtkView->setDelegate(this->viewDelegate);
 
   // Set NS::Window defaults

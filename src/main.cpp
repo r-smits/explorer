@@ -9,11 +9,17 @@
 #include <pch.h>
 
 int main() {
-  NS::AutoreleasePool *autoreleasePool = NS::AutoreleasePool::alloc()->init();
+  NS::AutoreleasePool* autoreleasePool = NS::AutoreleasePool::alloc()->init();
 
-  Explorer::AppProperties properties = Explorer::AppProperties(1000.0, 700.0);
+  Explorer::AppProperties properties = Explorer::AppProperties(
+      1000.0f,
+      700.0f,
+      "/Users/ramonsmits/Code/Explorer/src/Shaders/",
+      "/Users/ramonsmits/Code/Explorer/src/Assets/Textures/"
+  );
+
   Explorer::AppDelegate appDelegate = Explorer::AppDelegate(&properties);
-  NS::Application *app = NS::Application::sharedApplication();
+  NS::Application* app = NS::Application::sharedApplication();
 
   app->setDelegate(&appDelegate);
   app->run();
