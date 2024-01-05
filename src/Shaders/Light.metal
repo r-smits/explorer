@@ -2,8 +2,6 @@
 
 using namespace metal;
 
-constant float PI = 3.1415926535897932384626433832795;
-
 struct Light {
 		float4 position;
 };
@@ -31,23 +29,11 @@ VertexOutput vertex vertexMainGeneral(
     return vertexOutput;
 }
 
-half4 fragment oldFragmentMainGeneral(
+half4 fragment fragmentMainGeneral(
 		VertexOutput frag [[stage_in]], 
 		constant Light& light [[buffer(1)]]
 ) {
 		float brightness = 100 / length(frag.position.xyz - light.position.xyz);
     return half4(frag.color * brightness, 1.0);
-}
-
-half4 fragment fragmentMainGeneral(
-		VertexOutput frag [[stage_in]],
-		constant Light& light [[buffer(1)]],
-		sampler sampler2D [[sampler(0)]],
-		texture2d<float> texture [[ texture(0) ]]
-) {
-		float brightness = 1000 / length(frag.position.xyz - light.position.xyz);
-		half4 textureColor = half4(texture.sample(sampler2D, frag.texture));
-		//return textureColor;
-		return half4(textureColor.rgb * brightness, 1.0);
 }
 

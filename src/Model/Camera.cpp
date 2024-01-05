@@ -3,12 +3,9 @@
 
 namespace Explorer {
 
-Camera::Camera() {
-  this->fov = 45;
+Camera::Camera() : fov(45.0f), nearZ(0.1f), farZ(100.0f), rotateSpeed(1.0f) {
   CGRect bounds = ViewAdapter::bounds();
   this->aspectRatio = bounds.size.width / bounds.size.height;
-  this->nearZ = 0.1;
-  this->farZ = 100;
 }
 
 simd::float4x4 Camera::f4x4() {

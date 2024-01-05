@@ -40,8 +40,12 @@ add_executable(EXPLORER
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/Buffer.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/Buffer.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/Types.h
-	${CMAKE_CURRENT_SOURCE_DIR}/src/Shaders/ShaderRepository.h
-	${CMAKE_CURRENT_SOURCE_DIR}/src/Shaders/ShaderRepository.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/Layout.h
+	${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/Descriptor.h
+	${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/Descriptor.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/DB/Repository.h
+	${CMAKE_CURRENT_SOURCE_DIR}/src/DB/ShaderRepository.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/DB/TextureRepository.mm
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Model/Camera.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Model/Camera.cpp
 )

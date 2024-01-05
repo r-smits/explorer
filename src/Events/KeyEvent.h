@@ -5,7 +5,7 @@
 
 namespace Explorer {
 
-class KeyEvent : Explorer::Event {
+class KeyEvent : public Event {
 
 public:
   inline const int getKey() const { return keyCode; }

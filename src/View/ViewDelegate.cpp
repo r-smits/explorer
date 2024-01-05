@@ -4,7 +4,7 @@
 #include <View/ViewAdapter.hpp>
 #include <View/ViewDelegate.h>
 
-Explorer::ViewDelegate::ViewDelegate(MTK::View* view) : MTK::ViewDelegate() {
+Explorer::ViewDelegate::ViewDelegate(MTK::View* view, AppProperties* config) : MTK::ViewDelegate() {
   DEBUG("Initializing ViewDelegate ...");
   this->queue = view->device()->newCommandQueue();
 
@@ -14,8 +14,8 @@ Explorer::ViewDelegate::ViewDelegate(MTK::View* view) : MTK::ViewDelegate() {
   viewAdapter->setHandler(callback);
 
   // Initialize layers & renderer (will be a layer in the future)
-  this->layerStack.pushLayer(new BaseLayer(view->device()));
-  this->layerStack.pushOverlay(new ImGuiLayer(view));
+  this->layerStack.pushLayer(new BaseLayer(view->device(), config));
+  this->layerStack.pushOverlay(new ImGuiLayer(view, config));
 }
 
 Explorer::ViewDelegate::~ViewDelegate() {}

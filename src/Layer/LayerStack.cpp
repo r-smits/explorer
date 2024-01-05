@@ -1,40 +1,34 @@
-#include <Layer/LayerStack.h>
-#include <Layer/ImGuiLayer.h>
 #include <Layer/BaseLayer.h>
+#include <Layer/ImGuiLayer.h>
+#include <Layer/LayerStack.h>
 #include <View/ViewAdapter.hpp>
 
 Explorer::LayerStack::LayerStack() {
-	DEBUG("Initializing LayerStack ...");
-	this->insert = layers.begin();
-	//this->pushLayer(new BaseLayer(view->device()));
-	//this->pushOverlay(new ImGuiLayer(view));
+  DEBUG("Initializing LayerStack ...");
+  this->insert = layers.begin();
 }
 
 Explorer::LayerStack::~LayerStack() {
-  for (Layer *layer : layers)
+  for (Layer* layer : layers)
     delete layer;
 }
 
-void Explorer::LayerStack::pushLayer(Layer *layer) { this->layers.emplace(this->insert, layer); }
+void Explorer::LayerStack::pushLayer(Layer* layer) { this->layers.emplace(this->insert, layer); }
 
-void Explorer::LayerStack::pushOverlay(Layer* overlay) {
-	this->layers.emplace_back(overlay);
-}
+void Explorer::LayerStack::pushOverlay(Layer* overlay) { this->layers.emplace_back(overlay); }
 
 void Explorer::LayerStack::popLayer(Layer* layer) {
-	std::vector<Layer*>::iterator position = std::find(layers.begin(), layers.end(), layer);
-	if (position != layers.end()) {
-		layers.erase(position);
-		insert--;
-	}
+  std::vector<Layer*>::iterator position = std::find(layers.begin(), layers.end(), layer);
+  if (position != layers.end()) {
+    layers.erase(position);
+    insert--;
+  }
 }
-
 
 void Explorer::LayerStack::popOverlay(Layer* overlay) {
 
-	std::vector<Layer*>::iterator position = std::find(layers.begin(), layers.end(), overlay);
-	if (position != layers.end()) {
-		layers.erase(position);
-	}
-
+  std::vector<Layer*>::iterator position = std::find(layers.begin(), layers.end(), overlay);
+  if (position != layers.end()) {
+    layers.erase(position);
+  }
 }

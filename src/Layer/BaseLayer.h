@@ -1,17 +1,18 @@
 #pragma once
-#include <Shaders/ShaderRepository.h>
+#include <DB/Repository.h>
 #include <Layer/Layer.h>
 #include <Math/Transformation.h>
 #include <Model/MeshFactory.h>
 #include <Renderer/Buffer.h>
 #include <Model/Camera.h>
 #include <pch.h>
+#include <Control/AppProperties.h>
 
 namespace Explorer {
 class BaseLayer : public Layer {
 
 public: // Setting up layer
-  BaseLayer(MTL::Device* device);
+  BaseLayer(MTL::Device* device, AppProperties* config);
   ~BaseLayer();
 
 public: // Event
@@ -28,30 +29,31 @@ private: // Initialization
   virtual void buildPipeline();
   virtual void buildMeshes();
   virtual MTL::RenderPipelineDescriptor* getRenderPipelineDescriptor(std::string shaderName);
-  virtual MTL::VertexDescriptor* getVertexDescriptor(BufferLayout* layout);
   virtual MTL::RenderPipelineState* getRenderPipelineState(std::string shaderName, bool serialize);
   virtual MTL::DepthStencilState* getDepthStencilState();
+	virtual MTL::SamplerState* getSamplerState();
 
 private: // Rendering
 	virtual void drawLight(MTL::RenderCommandEncoder* encoder, LightSource* light);
-  virtual void drawMesh(MTL::RenderCommandEncoder* encoder, Mesh* mesh);
+	virtual void drawMesh(MTL::RenderCommandEncoder* encoder, Mesh* mesh);
 
 private:
-  ShaderRepository repository;
   MTL::Device* device;
   MTL::CommandQueue* commandQueue;
-  MTL::RenderPipelineState* generalPipeline;
+
+private: // States
+  MTL::RenderPipelineState* generalPipelineState;
+	MTL::RenderPipelineState* lightPipelineState;
   MTL::DepthStencilState* depthStencilState;
-  simd::float4x4 projection;
+	MTL::SamplerState* samplerState;
 
 private:
-	simd::float4x4 viewMatrix;
 	Camera camera;
 	LightSource* light;
-  MTL::Buffer* mesh;
-  Mesh* quadMesh;
+	Mesh* quad;
   Mesh* pyramid;
   Mesh* cube;
+	MTL::Texture* island;
   float t;
 };
 }; // namespace Explorer
