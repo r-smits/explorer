@@ -1,17 +1,20 @@
-#include <DB/Repository.h>
+#include <DB/Repository.hpp>
 #include <Events/IOState.h>
 #include <Events/KeyCodes.h>
 #include <Layer/BaseLayer.h>
 #include <Math/Transformation.h>
 #include <Renderer/Buffer.h>
 #include <Renderer/Descriptor.h>
+#include <Renderer/Draw.h>
 #include <Renderer/Layout.h>
+#include <Renderer/State.h>
 
 Explorer::BaseLayer::BaseLayer(MTL::Device* device, AppProperties* config)
     : Layer(device->retain(), config) {
   this->device = device;
   this->buildPipeline();
   this->buildMeshes();
+	DEBUG("BaseLayer :: Initialization done.");
 }
 
 Explorer::BaseLayer::~BaseLayer() {
@@ -20,6 +23,13 @@ Explorer::BaseLayer::~BaseLayer() {
   this->generalPipelineState->release();
   this->depthStencilState->release();
   this->samplerState->release();
+
+  delete f16;
+  delete bugatti;
+  delete cruiser;
+  delete pyramid;
+  delete quad;
+  delete cube;
 }
 
 void Explorer::BaseLayer::onEvent(Event& event) {
@@ -39,43 +49,51 @@ bool Explorer::BaseLayer::onMouseButtonPressed(MouseButtonPressedEvent& event) {
 
 bool Explorer::BaseLayer::onMouseButtonReleased(MouseButtonReleasedEvent& event) { return true; }
 
-bool Explorer::BaseLayer::onMouseMove(MouseMoveEvent& event) { return true; }
+bool Explorer::BaseLayer::onMouseMove(MouseMoveEvent& event) {
+	mouseX = event.getX();
+	mouseY = event.getY();
+	return true; 
+}
 
 void Explorer::BaseLayer::buildPipeline() {
   this->generalPipelineState = this->getRenderPipelineState("General", false);
-  // this->lightPipelineState = this->getRenderPipelineState("Light", false);
-  this->depthStencilState = this->getDepthStencilState();
-  this->samplerState = this->getSamplerState();
-  this->camera = Camera();
+
+  this->depthStencilState = Renderer::State::depthStencil(device); // Z coordinate interpretation
+  this->samplerState = Renderer::State::sampler(device);           // For textures
+  this->camera = Camera(); // Transformations specific to the view
 }
 
 void Explorer::BaseLayer::buildMeshes() {
 
-  pyramid = MeshFactory::pyramid(this->device, config->texturePath + "island.jpg");
-  pyramid->scale = 0.25f;
-  pyramid->position = {-0.5f, 0.0f, -2.0f};
+  // pyramid = MeshFactory::pyramid(this->device, config->texturePath +
+  // "island.jpg"); pyramid->scale = 0.25f; pyramid->position = {-0.5f, 0.0f,
+  // -2.0f};
 
-  quad = MeshFactory::quad(device, config->texturePath + "island.jpg");
-  quad->scale = 0.9f;
-  quad->position = {0.0f, 0.0f, -3.0f};
+  //quad = MeshFactory::quad(device, config->texturePath + "island.jpg");
+  //quad->scale(0.25f);
+  //quad->translate({0.0f, 0.75f, -2.5f});
+	//quad->f4x4();
+	
+	// cube = MeshFactory::cube(this->device, config->texturePath + "island.jpg");
+  // cube->scale = 0.25f;
+  // cube->position = {0.25, 0.25, -2};
 
-  cube = MeshFactory::cube(this->device, config->texturePath + "island.jpg");
-  cube->scale = 0.25f;
-  cube->position = {0.25, 0.25, -2};
+	// cruiser = Repository::Meshes::read(device, config->meshPath +
+  // "cruiser/cruiser");
 
-  light = MeshFactory::light(this->device);
+  // bugatti = Repository::Meshes::read(device, config->meshPath +
+  // "bugatti/bugatti"); bugatti->position.z -= 80;
 
+  sphere = Repository::Meshes::read(device, config->meshPath + "sphere/sphere", false); 
+	sphere->translate({0.0f, 0.75f, -2.5f})->scale(0.2)->f4x4();
+	
   f16 = Repository::Meshes::read(device, config->meshPath + "f16/f16");
+  f16->translate({0.0f, 0.0f, -2.5f});
+	
+	light = MeshFactory::light(this->device);
+	light->translate({0.0f, 0.75f, -2.0f});
 
-	cruiser = Repository::Meshes::read(device, config->meshPath + "cruiser/cruiser");
-
-	for (Mesh* mesh : f16) {
-	mesh->position.z -= 2.5;
 	}
-
-  camera.position.z;
-  // this->light->position = {-0.25, 0.3, 0};
-}
 
 MTL::RenderPipelineDescriptor*
 Explorer::BaseLayer::getRenderPipelineDescriptor(std::string shaderName) {
@@ -97,20 +115,6 @@ Explorer::BaseLayer::getRenderPipelineDescriptor(std::string shaderName) {
   descriptor->setVertexDescriptor(Renderer::Descriptor::vertex(device, &Renderer::Layouts::vertex));
   library->release();
   return descriptor;
-}
-
-MTL::DepthStencilState* Explorer::BaseLayer::getDepthStencilState() {
-  MTL::DepthStencilDescriptor* descriptor = MTL::DepthStencilDescriptor::alloc()->init();
-  descriptor->setDepthWriteEnabled(true);
-  descriptor->setDepthCompareFunction(MTL::CompareFunctionLess);
-  return device->newDepthStencilState(descriptor);
-}
-
-MTL::SamplerState* Explorer::BaseLayer::getSamplerState() {
-  MTL::SamplerDescriptor* descriptor = MTL::SamplerDescriptor::alloc()->init();
-  descriptor->setMinFilter(MTL::SamplerMinMagFilterLinear);
-  descriptor->setMagFilter(MTL::SamplerMinMagFilterLinear);
-  return device->newSamplerState(descriptor);
 }
 
 MTL::RenderPipelineState*
@@ -136,51 +140,11 @@ Explorer::BaseLayer::getRenderPipelineState(std::string shaderName, bool seriali
   return state;
 }
 
-void Explorer::BaseLayer::drawLight(MTL::RenderCommandEncoder* encoder, LightSource* light) {
-
-  CGRect bounds = ViewAdapter::bounds();
-  simd::float4 lighting = {1000.0f, 850.0f, 00.0f, 1.0f};
-  simd::float4 transformation = camera.f4x4() * light->f4x4() * lighting;
-
-  // simd::float4 transform = light-> * light->f4x4();
-  encoder->setFragmentBytes(
-      &lighting,            // Setting a buffer
-      sizeof(simd::float4), // Size of the data
-      1                     // Index of the buffer
-  );
-}
-
-void Explorer::BaseLayer::drawMesh(MTL::RenderCommandEncoder* encoder, Mesh* mesh) {
-
-  encoder->setFragmentTexture(mesh->texture,
-                              0); // Setting texture to render onto mesh
-
-  encoder->setVertexBuffer(
-      mesh->vertexBuffer, // The data to use for vertex buffer
-      0,                  // The offset of the vertex buffer
-      0                   // The index in the buffer to start drawing from
-  );
-
-  simd::float4x4 transform = camera.f4x4() * mesh->f4x4();
-  encoder->setVertexBytes(
-      &transform,             // The data set in GP
-      sizeof(simd::float4x4), // The size of data set in GPU
-      1                       // The location of data: [[buffer(1)]]
-  );
-
-  for (Submesh* submesh : mesh->submeshes) {
-    encoder->drawIndexedPrimitives(
-        submesh->primitiveType, // Type of object to draw
-        submesh->indexCount,    // Number of elements in the index buffer
-        submesh->indexType,     // The data type of the data in buffer
-        submesh->indexBuffer,   // The index buffer holding the indice data
-        submesh->offset,        // The index buffer offset
-        NS::UInteger(1)         // For instanced rendering. We render 1 object
-    );
-  }
-}
-
 void Explorer::BaseLayer::checkIO() {
+	
+	//light->translate({mouseX, mouseY, 0.0f});
+	//light->f4x4();
+
   if (Explorer::IO::isPressed(KEY_D)) {
     camera.rotation = Transformation::translation({0.0f, 0.0f, -2.5f}) *
                       Transformation::yRotation(-camera.rotateSpeed) *
@@ -195,15 +159,31 @@ void Explorer::BaseLayer::checkIO() {
 
   if (IO::isPressed(KEY_W)) {
     camera.rotation = Transformation::translation({0.0f, 0.0f, -2.5f}) *
-                      Transformation::xRotation(-camera.rotateSpeed) *
+                      Transformation::xRotation(camera.rotateSpeed) *
                       Transformation::translation({0.0f, 0.0f, 2.5f}) * camera.rotation;
   }
 
   if (IO::isPressed(KEY_S)) {
     camera.rotation = Transformation::translation({0.0f, 0.0f, -2.5f}) *
-                      Transformation::xRotation(camera.rotateSpeed) *
+                      Transformation::xRotation(-camera.rotateSpeed) *
                       Transformation::translation({0.0f, 0.0f, 2.5f}) * camera.rotation;
   }
+	camera.f4x4();
+
+  if (IO::isPressed(ARROW_UP)) {
+		
+    f16->rotation = Transformation::xRotation(camera.rotateSpeed) * f16->rotation;
+  }
+  if (IO::isPressed(ARROW_DOWN)) {
+    f16->rotation = Transformation::xRotation(-camera.rotateSpeed) * f16->rotation;
+  }
+  if (IO::isPressed(ARROW_LEFT)) {
+    f16->rotation = Transformation::yRotation(camera.rotateSpeed) * f16->rotation;
+  }
+  if (IO::isPressed(ARROW_RIGHT)) {
+    f16->rotation = Transformation::yRotation(-camera.rotateSpeed) * f16->rotation;
+  }
+	f16->f4x4();
 }
 
 void Explorer::BaseLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* encoder) {
@@ -211,21 +191,11 @@ void Explorer::BaseLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* e
   if (t > 360) t -= 360.0f;
 
   checkIO();
-
   encoder->setRenderPipelineState(this->generalPipelineState);
   encoder->setDepthStencilState(this->depthStencilState);
   encoder->setFragmentSamplerState(this->samplerState, 0);
 
-  //pyramid->rotation = Transformation::yRotation(t) * Transformation::xRotation(80);
-  //cube->rotation = Transformation::xRotation(t) * Transformation::zRotation(t);
-
-  // this->drawLight(encoder, light);
-  //this->drawMesh(encoder, quad);
-
-  // this->drawMesh(encoder, pyramid);
-  // this->drawMesh(encoder, cube);
-
-  for (Mesh* mesh : f16) {
-    drawMesh(encoder, mesh);
-  }
+  Renderer::Draw::light(encoder, camera, light);
+  Renderer::Draw::model(encoder, camera, sphere);
+  Renderer::Draw::model(encoder, camera, f16);
 }

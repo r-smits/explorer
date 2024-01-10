@@ -43,6 +43,11 @@ add_executable(EXPLORER
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/Layout.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/Descriptor.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/Descriptor.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/State.h
+	${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/State.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/Draw.h
+	${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/Draw.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/DB/Repository.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/DB/Repository.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/DB/ShaderRepository.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/DB/TextureRepository.mm

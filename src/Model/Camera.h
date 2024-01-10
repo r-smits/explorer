@@ -13,7 +13,7 @@ public:
   ~Camera() {};
 
 public:
-  virtual simd::float4x4 f4x4() override;
+  virtual Camera* f4x4() override;
   virtual simd::float4x4 projection();
   virtual simd::float4x4 model();
 

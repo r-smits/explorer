@@ -1,5 +1,7 @@
 #pragma once
+#include <Math/Transformation.h>
 #include <Renderer/Types.h>
+#include <View/ViewAdapter.hpp>
 #include <pch.h>
 #include <simd/simd.h>
 
@@ -11,27 +13,41 @@ public:
   ~Object(){};
 
 public:
-  virtual simd::float4x4 f4x4();
+  virtual Object* f4x4();
+  virtual Object* translate(simd::float3 pos);
+  virtual Object* scale(float factor);
+  virtual Object* rotate(simd::float4x4 rotation);
+  virtual simd::float4x4 get() { return orientation; }
 
 public:
-  simd::float3 position;
   simd::float4x4 rotation;
-  float scale;
+
+public:
+  simd::float4x4 orientation;
+  simd::float3 position;
+  float factor;
 };
 
 struct Submesh {
 
   Submesh(
+      Renderer::Material material,
+      MTL::Texture* texture,
       MTL::PrimitiveType primitiveType,
       int indexCount,
       MTL::IndexType indexType,
       MTL::Buffer* indexBuffer,
       int offset
   )
-      : primitiveType(primitiveType), indexCount(indexCount), indexType(indexType),
-        indexBuffer(indexBuffer), offset(offset) {}
-  ~Submesh() { indexBuffer->release(); }
+      : material(material), texture(texture), primitiveType(primitiveType), indexCount(indexCount),
+        indexType(indexType), indexBuffer(indexBuffer), offset(offset) {}
+  ~Submesh() {
+    indexBuffer->release();
+    texture->release();
+  }
 
+  Renderer::Material material;
+  MTL::Texture* texture;
   MTL::PrimitiveType primitiveType;
   NS::UInteger indexCount;
   MTL::IndexType indexType;
@@ -41,14 +57,13 @@ struct Submesh {
 
 struct Mesh : public Object {
 public:
-  Mesh(MTL::Buffer* vertexBuffer, MTL::Texture* texture);
-  Mesh(){};
+  Mesh(MTL::Buffer* vertexBuffer);
+  Mesh(Submesh* submesh) { submeshes.push_back(submesh); };
   ~Mesh() {
     for (Submesh* subMesh : submeshes) {
       delete subMesh;
     }
     vertexBuffer->release();
-    texture->release();
   };
 
 public:
@@ -57,15 +72,53 @@ public:
 public:
   MTL::Buffer* vertexBuffer;
   std::vector<Submesh*> submeshes;
-  MTL::Texture* texture;
 };
 
-struct LightSource : public Object {
+struct Model : public Object {
+public:
+  Model(std::vector<Mesh*> meshes) : meshes(meshes) {}
+  Model(Mesh* mesh) { meshes.push_back(mesh); }
+  ~Model() {
+    for (Mesh* mesh : meshes) {
+      delete mesh;
+    };
+  }
 
 public:
-  LightSource(){};
-  ~LightSource() { lightBuffer->release(); };
-  LightSource(MTL::Buffer* fragmentBuffer);
+  std::vector<Mesh*> meshes;
+};
+
+struct Light : public Object {
+
+  Light(Renderer::Light data) : data(data) {
+		DEBUG("Light :: Getting bounds inside of initializer ...");
+    CGRect frame = ViewAdapter::bounds();
+    origin = {(float)frame.size.width, (float)frame.size.height, 0};
+		DEBUG("Light :: Initializer done");
+  };
+  ~Light(){};
+
+public:
+  virtual Light* translate(simd::float3 pos) override;
+  virtual simd::float3 convert();
+
+public:
+  Renderer::Light data;
+  simd::float3 origin;
+};
+
+struct Lights : Object {
+
+public:
+  Lights(Renderer::Light light, MTL::Buffer* buffer) : lightBuffer(buffer) {
+    array.push_back(light);
+  };
+  ~Lights() { lightBuffer->release(); };
+
+public:
+  std::vector<Renderer::Light> array;
+
+  // LightSource(MTL::Buffer* fragmentBuffer);
 
 public:
   MTL::Buffer* lightBuffer;
@@ -74,10 +127,10 @@ public:
 class MeshFactory {
 
 public:
-  static Mesh* pyramid(MTL::Device* device, std::string texture);
-  static Mesh* quad(MTL::Device* device, std::string texture);
-  static Mesh* cube(MTL::Device* device, std::string texture);
-  static LightSource* light(MTL::Device* device);
+  static Model* pyramid(MTL::Device* device, std::string texture);
+  static Model* quad(MTL::Device* device, std::string texture);
+  static Model* cube(MTL::Device* device, std::string texture);
+  static Light* light(MTL::Device* device);
 };
 
 } // namespace Explorer

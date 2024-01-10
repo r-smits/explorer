@@ -58,7 +58,11 @@ std::unordered_map<int, bool> keyState = {
     {      KEY_THREE, false},
     {      KEY_THREE, false},
     {          MOUSE, false},
-    {     MOUSE_DRAG, false}
+    {     MOUSE_DRAG, false},
+    {       ARROW_UP, false},
+    {     ARROW_DOWN, false},
+    {     ARROW_LEFT, false},
+    {    ARROW_RIGHT, false}
 };
 }
 

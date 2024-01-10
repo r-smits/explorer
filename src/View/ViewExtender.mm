@@ -118,8 +118,10 @@ void Explorer::ViewAdapter::onEvent(Explorer::Event &event) {
 - (void)mouseMoved:(NSEvent *)event {
   if ([event type] == NSEventType::NSEventTypeMouseMoved) {
     NSPoint mousePoint = event.locationInWindow;
-    mousePoint = [self convertPoint:mousePoint fromView:nil];
-    mousePoint = NSMakePoint(mousePoint.x, self.bounds.size.height - mousePoint.y);
+    //mousePoint = [self convertPoint:mou:ePoint fromView:nil];
+		
+			
+    mousePoint = NSMakePoint(mousePoint.x*2, (self.bounds.size.height - mousePoint.y)*2);
     Explorer::MouseMoveEvent moved = Explorer::MouseMoveEvent(mousePoint.x, mousePoint.y);
     Explorer::ViewAdapter::sharedInstance()->onEvent((Explorer::Event &)moved);
   } else {

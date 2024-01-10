@@ -1,6 +1,6 @@
 #pragma once
 #include <Control/AppProperties.h>
-#include <DB/Repository.h>
+#include <DB/Repository.hpp>
 #include <Layer/Layer.h>
 #include <Math/Transformation.h>
 #include <Model/Camera.h>
@@ -30,16 +30,13 @@ private: // Initialization
   virtual void buildMeshes();
   virtual MTL::RenderPipelineDescriptor* getRenderPipelineDescriptor(std::string shaderName);
   virtual MTL::RenderPipelineState* getRenderPipelineState(std::string shaderName, bool serialize);
-  virtual MTL::DepthStencilState* getDepthStencilState();
-  virtual MTL::SamplerState* getSamplerState();
-
-private: // Rendering
-  virtual void drawLight(MTL::RenderCommandEncoder* encoder, LightSource* light);
-  virtual void drawMesh(MTL::RenderCommandEncoder* encoder, Mesh* mesh);
 
 private:
   MTL::Device* device;
   MTL::CommandQueue* commandQueue;
+
+	float mouseX = 0;
+	float mouseY = 0;
 
 private: // States
   MTL::RenderPipelineState* generalPipelineState;
@@ -49,13 +46,15 @@ private: // States
 
 private:
   Camera camera;
-  LightSource* light;
-  Mesh* quad;
-  Mesh* pyramid;
-  Mesh* cube;
+  Light* light;
+  Model* quad;
+  Model* pyramid;
+  Model* cube;
   MTL::Texture* island;
-  std::vector<Mesh*> f16;
-  std::vector<Mesh*> cruiser;
+  Model* f16;
+  Model* cruiser;
+	Model* bugatti;
+	Model* sphere;
   float t;
 };
 }; // namespace Explorer
