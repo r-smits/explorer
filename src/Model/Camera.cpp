@@ -8,9 +8,10 @@ Camera::Camera() : fov(45.0f), nearZ(0.1f), farZ(100.0f), rotateSpeed(1.0f) {
   this->aspectRatio = bounds.size.width / bounds.size.height;
 }
 
-simd::float4x4 Camera::f4x4() {
-  return projection() * Transformation::translation(position) * rotation *
-         Transformation::scale(scale);
+Explorer::Camera* Camera::f4x4() {
+  orientation = projection() * Transformation::translation(position) * rotation *
+                Transformation::scale(factor);
+	return this;
 }
 
 simd::float4x4 Camera::projection() {

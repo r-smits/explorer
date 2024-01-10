@@ -17,5 +17,11 @@ MTL::VertexDescriptor* Renderer::Descriptor::vertex(MTL::Device* device, BufferL
   MTL::VertexBufferLayoutDescriptor* layoutDescriptor = vertexDescriptor->layouts()->object(0);
   layoutDescriptor->setStride(stride);
 
+	std::stringstream ss;
+
+	ss << "Total objects: " << i << ", stride: " << stride;
+	DEBUG(ss.str());
+
   return vertexDescriptor;
 }
+

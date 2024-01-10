@@ -65,11 +65,12 @@ private:
 };
 
 struct Layouts {
-	inline static BufferLayout vertex = {
-    {Renderer::ShaderDataType::Float4, "position"},
-    {          ShaderDataType::Float3,    "color"},
-    {          ShaderDataType::Float2,  "texture"}
-};
+  inline static BufferLayout vertex = {
+      {Renderer::ShaderDataType::Float4, "position"},
+      {          ShaderDataType::Float3,    "color"},
+      {          ShaderDataType::Float2,  "texture"},
+      {          ShaderDataType::Float3,   "normal"},
+  };
 };
 
 }; // namespace Renderer

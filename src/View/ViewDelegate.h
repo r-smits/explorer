@@ -5,9 +5,6 @@
 
 // ViewDelegate with extensions from objc
 
-// #define BIND_EVENT(fn) std::bind(&Explorer::ViewDelegate::fn, this,
-// std::placeholders::_1)
-
 namespace Explorer {
 
 class ViewDelegate : public MTK::ViewDelegate {

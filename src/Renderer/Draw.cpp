@@ -1,0 +1,57 @@
+#include <Renderer/Draw.h>
+#include <View/ViewAdapter.hpp>
+
+void Renderer::Draw::light(
+    MTL::RenderCommandEncoder* encoder, Explorer::Camera camera, Explorer::Light* light
+) {
+	light->data.position = light->data.position;
+  encoder->setFragmentBytes(
+      &light->data,            // Setting a buffer
+      sizeof(Renderer::Light), // Size of the data
+      1                        // Index of the buffer
+  );
+}
+
+void Renderer::Draw::model(
+    MTL::RenderCommandEncoder* encoder, Explorer::Camera camera, Explorer::Model* model
+) {
+  // All calculations of the world are set only once and applied per vertex in
+  // shader
+
+  Renderer::Projection projection = {{camera.get()}, {model->get()}};
+  encoder->setVertexBytes(
+      &projection,                  // The data set in GP
+      sizeof(Renderer::Projection), // The size of data set in GPU
+      1                             // The location of data: [[buffer(1)]]
+  );
+
+  // Renderer::Projection proj = {
+  //     {camera.position.x, camera.position.y, camera.position.z}
+  // };
+  // encoder->setVertexBytes(&proj, sizeof(Renderer::Projection), 2);
+
+  // For all meshes set vertex buffer, for all submeshes, index buffer and
+  // materials
+  for (Explorer::Mesh* mesh : model->meshes) {
+    encoder->setVertexBuffer(
+        mesh->vertexBuffer, // The data to use for vertex buffer
+        0,                  // The offset of the vertex buffer
+        0                   // The index in the buffer to start drawing from
+    );
+
+    for (Explorer::Submesh* submesh : mesh->submeshes) {
+      encoder->setFragmentBytes(&submesh->material, sizeof(Renderer::Material), 2);
+      encoder->setFragmentTexture(submesh->texture,
+                                  0); // Setting texture to buffer(0)
+
+      encoder->drawIndexedPrimitives(
+          submesh->primitiveType, // Type of object to draw
+          submesh->indexCount,    // Number of elements in the index buffer
+          submesh->indexType,     // The data type of the data in buffer
+          submesh->indexBuffer,   // The index buffer holding the indice data
+          submesh->offset,        // The index buffer offset
+          NS::UInteger(1)         // For instanced rendering. We render 1 object
+      );
+    }
+  }
+}

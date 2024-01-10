@@ -65,7 +65,7 @@ void Explorer::ViewDelegate::drawInMTKView(MTK::View* view) {
   encoder->endEncoding();
   buffer->presentDrawable(view->currentDrawable());
   buffer->commit();
-  buffer->waitUntilScheduled();
+ // buffer->waitUntilScheduled();
   pool->release();
 }
 

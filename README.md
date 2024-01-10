@@ -1,9 +1,12 @@
-Explorer - A 3D Renderer built with the Metal API
+[Title] Explorer - A 3D Renderer built with the Metal API [/Title]
 
-Description:
-- Explorer allows you to render 3D .obj files inc. textures.
-- It is written in MSL (Metal Shader Language), c++, objcpp, and a little objective-c.
-- And of course with NVIM.
+![alt text][src/Assets/ReadMe/explorer_1.png]
+
+Explorer allows you to render 3D .obj files inc. textures.
+It is written in MSL (Metal Shader Language), c++, objcpp, and a little objective-c.
+And of course with NVIM.
+
+![alt text][src/Assets/ReadMe/explorer_2.png]
 
 System requirements:
 - clangd, c++17 or newer
@@ -16,8 +19,5 @@ To compile a binary:
 
 Controls:
 - Use the W, A, S, D keys to rotate the .obj file.
-
-<img width="1004" alt="explorer_1" src="https://github.com/r-smits/explorer/assets/35615011/2169e39b-bdf7-44ab-aad5-627e703f0dad">
-<img width="1004" alt="explorer_2" src="https://github.com/r-smits/explorer/assets/35615011/6f8cea80-c7c2-4393-aac1-bd86dbd1d840">
 
 
