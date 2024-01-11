@@ -14,13 +14,13 @@ struct Projection {
 namespace Renderer {
 
 struct Material {
-	simd::float4 color;
-	simd::float3 ambient;
-	simd::float3 diffuse;
-	simd::float3 specular;
+	simd::float4 color;			// {x, y, z, w}
+	simd::float3 ambient;		// {x, y, z}
+	simd::float3 diffuse;		// {x, y, z}
+	simd::float4 specular;	// {x, y, z, shininess}
 	bool useColor;
+	bool useLight;
 	//simd::float2 texture;
-	//simd::float1 shininess;
 };
 
 struct Vertex {
@@ -34,14 +34,12 @@ struct Light {
   simd::float3 position;		// {x, y, z}
 	simd::float3 color;				// {r, g, b}
 	simd::float4 factors;			// {brightness, ambientIntensity, diffuseIntensity, specularIntensity}
-	//float ambientIntensity;
-	//float diffuseIntensity;
-	//float specularIntensity;
 };
 
 struct Projection {
 	simd::float4x4 camera;
 	simd::float4x4 model;
+	simd::float3 cameraPosition;
 };
 
 }; // namespace Renderer

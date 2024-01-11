@@ -18,17 +18,12 @@ void Renderer::Draw::model(
   // All calculations of the world are set only once and applied per vertex in
   // shader
 
-  Renderer::Projection projection = {{camera.get()}, {model->get()}};
+  Renderer::Projection projection = {{camera.get()}, {model->get()}, {camera.position}};
   encoder->setVertexBytes(
       &projection,                  // The data set in GP
       sizeof(Renderer::Projection), // The size of data set in GPU
       1                             // The location of data: [[buffer(1)]]
   );
-
-  // Renderer::Projection proj = {
-  //     {camera.position.x, camera.position.y, camera.position.z}
-  // };
-  // encoder->setVertexBytes(&proj, sizeof(Renderer::Projection), 2);
 
   // For all meshes set vertex buffer, for all submeshes, index buffer and
   // materials
