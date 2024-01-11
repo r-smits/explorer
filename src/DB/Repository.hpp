@@ -34,6 +34,6 @@ class Meshes {
 public:
   Meshes(){};
   ~Meshes(){};
-  static Explorer::Model* read(MTL::Device* device, std::string path, bool useTexture = true);
+  static Explorer::Model* read(MTL::Device* device, std::string path, bool useTexture = true, bool useLight = true);
 };
 }; // namespace Repository

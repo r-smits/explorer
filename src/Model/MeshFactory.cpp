@@ -123,7 +123,8 @@ Explorer::Model* Explorer::MeshFactory::quad(MTL::Device* device, std::string te
 
 Explorer::Light* Explorer::Light::translate(simd::float3 pos) {
 	position += pos;
-	data.position = convert();
+	data.position = position;
+	//data.position = convert();
 	return this;
 }
 

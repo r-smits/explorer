@@ -5,8 +5,9 @@
 #include <ModelIO/ModelIO.h>
 #include <Renderer/Descriptor.h>
 
-Explorer::Model*
-Repository::Meshes::read(MTL::Device* device, std::string path = "", bool useTexture) {
+Explorer::Model* Repository::Meshes::read(
+    MTL::Device* device, std::string path = "", bool useTexture, bool useLight
+) {
 
   DEBUG("Loading mesh: " + path);
 
@@ -42,11 +43,12 @@ Repository::Meshes::read(MTL::Device* device, std::string path = "", bool useTex
   if (error) Explorer::printError((__bridge NS::Error*)error);
 
   Renderer::Material placeholderMaterial = {
-      {1.0f, 1.0f, 1.0f, 1.0f}, // color; white
+      {1.0f, 0.0f, 1.0f, 1.0f}, // color; white
       {0.1f, 0.1f, 0.1f}, // ambient intensity -> low
-      {1.0f, 1.0f, 1.0f}, // diffuse intensity -> high
-      {0.0f, 0.0f, 0.0f}, // specular intensity -> off
+      {0.5f, 0.5f, 0.5f}, // diffuse intensity -> high
+      {1.0f, 1.0f, 1.0f, 100.0f}, // specular intensity & shininess
       (!useTexture), // useTexture: false -> useColor: true
+			useLight
   };
 
   std::vector<Explorer::Mesh*> expMeshes;
