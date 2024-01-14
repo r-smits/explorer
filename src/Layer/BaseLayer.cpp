@@ -3,22 +3,16 @@
 #include <Events/KeyCodes.h>
 #include <Layer/BaseLayer.h>
 #include <Math/Transformation.h>
-#include <Renderer/Buffer.h>
-#include <Renderer/Descriptor.h>
-#include <Renderer/Draw.h>
-#include <Renderer/Layout.h>
-#include <Renderer/State.h>
+#include <Renderer/Renderer.h>
 
 Explorer::BaseLayer::BaseLayer(MTL::Device* device, AppProperties* config)
     : Layer(device->retain(), config) {
-  this->device = device;
   this->buildPipeline();
   this->buildMeshes();
-	DEBUG("BaseLayer :: Initialization done.");
+  DEBUG("BaseLayer :: Initialization done.");
 }
 
 Explorer::BaseLayer::~BaseLayer() {
-  this->commandQueue->release();
   this->device->release();
   this->generalPipelineState->release();
   this->depthStencilState->release();
@@ -50,17 +44,23 @@ bool Explorer::BaseLayer::onMouseButtonPressed(MouseButtonPressedEvent& event) {
 bool Explorer::BaseLayer::onMouseButtonReleased(MouseButtonReleasedEvent& event) { return true; }
 
 bool Explorer::BaseLayer::onMouseMove(MouseMoveEvent& event) {
-	mouseX = event.getX();
-	mouseY = event.getY();
-	return true; 
+  mouseX = event.getX();
+  mouseY = event.getY();
+  return true;
 }
 
 void Explorer::BaseLayer::buildPipeline() {
-  this->generalPipelineState = this->getRenderPipelineState("General", false);
+  auto descriptor = Renderer::Descriptor::render(device, config->shaderPath + "General");
+  if (false) Repository::Shaders::write(device, descriptor, config->shaderPath + "General");
+  generalPipelineState = Renderer::State::render(device, descriptor);
+  depthStencilState = Renderer::State::depthStencil(device); // Z coordinate interpretation
 
-  this->depthStencilState = Renderer::State::depthStencil(device); // Z coordinate interpretation
-  this->samplerState = Renderer::State::sampler(device);           // For textures
-  this->camera = Camera(); // Transformations specific to the view
+  camera = OrthographicCamera(); // Transformations specific to the view
+  camera.rotate(
+      Transformation::translation({0.0f, 0.0f, -2.5f}) * Transformation::xRotation(-30.0f) *
+      Transformation::yRotation(-45.0f) * Transformation::translation({0.0f, 0.0f, 2.5f})
+  );
+  camera.project();
 }
 
 void Explorer::BaseLayer::buildMeshes() {
@@ -69,84 +69,38 @@ void Explorer::BaseLayer::buildMeshes() {
   // "island.jpg"); pyramid->scale = 0.25f; pyramid->position = {-0.5f, 0.0f,
   // -2.0f};
 
-  //quad = MeshFactory::quad(device, config->texturePath + "island.jpg");
-  //quad->scale(0.25f);
-  //quad->translate({0.0f, 0.75f, -2.5f});
-	//quad->f4x4();
-	
-	// cube = MeshFactory::cube(this->device, config->texturePath + "island.jpg");
+  // quad = MeshFactory::quad(device, config->texturePath + "island.jpg");
+  // quad->scale(0.25f);
+  // quad->translate({0.0f, 0.75f, -2.5f});
+  // quad->f4x4();
+
+  // cube = MeshFactory::cube(this->device, config->texturePath + "island.jpg");
   // cube->scale = 0.25f;
   // cube->position = {0.25, 0.25, -2};
 
-	// cruiser = Repository::Meshes::read(device, config->meshPath +
+  // cruiser = Repository::Meshes::read(device, config->meshPath +
   // "cruiser/cruiser");
 
   // bugatti = Repository::Meshes::read(device, config->meshPath +
   // "bugatti/bugatti"); bugatti->position.z -= 80;
 
-  sphere = Repository::Meshes::read(device, config->meshPath + "sphere/sphere", false, false); 
-	sphere->translate({0.0f, 0.30f, -2.5f})->scale(0.1)->f4x4();
-	
+  sphere = Repository::Meshes::read(device, config->meshPath + "sphere/sphere", false, false);
+  sphere->translate({0.0f, 0.30f, -2.5f})->scale(0.1)->f4x4();
+
   f16 = Repository::Meshes::read(device, config->meshPath + "f16/f16");
   f16->translate({0.0f, 0.0f, -2.5f});
 
-	cruiser = Repository::Meshes::read(device, config->meshPath + "cruiser/cruiser");
-	cruiser->translate({0.0f, 0.0f, -2.5f})->scale(0.5f)->f4x4();
+  cruiser = Repository::Meshes::read(device, config->meshPath + "cruiser/cruiser");
+  cruiser->translate({0.0f, 0.0f, -2.5f})->scale(0.5f)->f4x4();
 
-	light = MeshFactory::light(this->device);
-	light->translate({0.0f, 0.5f, -2.5f});
-
-	}
-
-MTL::RenderPipelineDescriptor*
-Explorer::BaseLayer::getRenderPipelineDescriptor(std::string shaderName) {
-  MTL::Library* library = Repository::Shaders::readLibrary(device, config->shaderPath + shaderName);
-  MTL::RenderPipelineDescriptor* descriptor = MTL::RenderPipelineDescriptor::alloc()->init();
-
-  // Add flags to state adding binary functions is supported
-  descriptor->setSupportAddingVertexBinaryFunctions(true);
-  descriptor->setSupportAddingFragmentBinaryFunctions(true);
-
-  // Add functions to the pipeline descriptor
-  descriptor->setVertexFunction(library->newFunction(nsString("vertexMain" + shaderName)));
-  descriptor->setFragmentFunction(library->newFunction(nsString("fragmentMain" + shaderName)));
-
-  descriptor->colorAttachments()->object(0)->setPixelFormat(
-      MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB
-  );
-
-  descriptor->setVertexDescriptor(Renderer::Descriptor::vertex(device, &Renderer::Layouts::vertex));
-  library->release();
-  return descriptor;
-}
-
-MTL::RenderPipelineState*
-Explorer::BaseLayer::getRenderPipelineState(std::string shaderName, bool serialize) {
-  // Compiling the shader into an archive (wrapped by pipeline descriptor)
-  MTL::RenderPipelineDescriptor* descriptor = this->getRenderPipelineDescriptor(shaderName);
-
-  // Setting & getting descriptor directly from binary
-  if (serialize) Repository::Shaders::write(device, descriptor, config->shaderPath + shaderName);
-
-  WARN("Shader deserialization not working. Compiling shaders ...");
-  // MTL::RenderPipelineDescriptor* archive = this->readBinaryArchive(mlibPath);
-
-  // Generating pipeline state from pipeline descriptor
-  DEBUG("Attempting to generate state from descriptor ...");
-  NS::Error* newPipelineStateError = nullptr;
-  MTL::RenderPipelineState* state =
-      device->newRenderPipelineState(descriptor, &newPipelineStateError);
-  if (!state) printError(newPipelineStateError);
-  newPipelineStateError->release();
-  descriptor->release();
-  DEBUG("Returning state ...");
-  return state;
+  light = MeshFactory::light(this->device);
+  light->translate({0.0f, 0.5f, -2.5f});
 }
 
 void Explorer::BaseLayer::checkIO() {
-	
-	//light->translate({mouseX, mouseY, 0.0f});
-	//light->f4x4();
+
+  // light->translate({mouseX, mouseY, 0.0f});
+  // light->f4x4();
 
   if (Explorer::IO::isPressed(KEY_D)) {
     camera.rotation = Transformation::translation({0.0f, 0.0f, -2.5f}) *
@@ -171,7 +125,7 @@ void Explorer::BaseLayer::checkIO() {
                       Transformation::xRotation(-camera.rotateSpeed) *
                       Transformation::translation({0.0f, 0.0f, 2.5f}) * camera.rotation;
   }
-	camera.f4x4();
+  camera.f4x4();
 
   if (IO::isPressed(ARROW_UP)) {
     f16->rotate(Transformation::xRotation(camera.rotateSpeed) * f16->rotation);
@@ -185,7 +139,7 @@ void Explorer::BaseLayer::checkIO() {
   if (IO::isPressed(ARROW_RIGHT)) {
     f16->rotate(Transformation::yRotation(-camera.rotateSpeed) * f16->rotation);
   }
-	f16->f4x4();
+  f16->f4x4();
 }
 
 void Explorer::BaseLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* encoder) {
@@ -193,15 +147,13 @@ void Explorer::BaseLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* e
   if (t > 360) t -= 360.0f;
 
   checkIO();
-  encoder->setRenderPipelineState(this->generalPipelineState);
-  encoder->setDepthStencilState(this->depthStencilState);
-  encoder->setFragmentSamplerState(this->samplerState, 0);
-	
-	(t < 90 || t > 270) ? sphere->translate({1.0/180, 0.0f, 0.0f})->f4x4() : 
-		sphere->translate({-1.0/180, 0.0f, -0.0f})->f4x4();
+  encoder->setRenderPipelineState(generalPipelineState);
+  encoder->setDepthStencilState(depthStencilState);
 
-	light->data.position = sphere->position;
-	//(t < 90 || t > 170) ? light->translate({1.0/180, 0.0f, 0.0f}) : light->translate({-1.0/180, 0.0f, 0.0f});
+  (t < 90 || t > 270) ? sphere->translate({1.0 / 180, 0.0f, 0.0f})->f4x4()
+                      : sphere->translate({-1.0 / 180, 0.0f, -0.0f})->f4x4();
+
+  light->data.position = sphere->position;
 
   Renderer::Draw::light(encoder, camera, light);
   Renderer::Draw::model(encoder, camera, sphere);

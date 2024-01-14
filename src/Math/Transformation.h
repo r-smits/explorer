@@ -4,7 +4,7 @@
 /**
  * SIMD stands for single instruction multiple data
  * It is required for mathmatics to be fast
- * You want to use 120 bit-wide registers for 4x4 matrices, for example 
+ * You want to use 120 bit-wide registers for 4x4 matrices, for example
  * That way the calculation can be done in a single GPU instruction
  * Instead of multiplying the floats one at the time
  *
@@ -26,6 +26,6 @@ simd::float4x4 yRotation(float theta);
 simd::float4x4 rotate(simd::float3 axis);
 simd::float4x4 scale(float factor);
 simd::float4x4 perspective(float fov, float aspectRatio, float nearZ, float farZ);
-// simd::float4x4 xRotation();
-// simd::float4x4 yRotation();
+simd::float4x4
+orthographic(float left, float right, float bottom, float top, float nearZ, float farZ);
 } // namespace Transformation

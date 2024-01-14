@@ -1,11 +1,15 @@
+#include <DB/Repository.hpp>
 #include <Layer/ImGuiLayer.h>
 #include <Metal/Metal.h>
 #include <MetalKit/MetalKit.h>
+#include <Renderer/Renderer.h>
+#include <View/ViewAdapter.hpp>
 #include <View/ViewExtender.h>
 #include <imgui.h>
 #include <imgui_impl_metal.h>
 
-Explorer::ImGuiLayer::ImGuiLayer(MTK::View* view, AppProperties* config) : Layer(view->device(), config, "ImGuiLayer") {
+Explorer::ImGuiLayer::ImGuiLayer(MTK::View* view, AppProperties* config)
+    : Layer(view->device(), config, "ImGuiLayer"), queue(device->newCommandQueue()) {
   this->onAttach(view);
 }
 Explorer::ImGuiLayer::~ImGuiLayer() {}
@@ -27,18 +31,15 @@ void Explorer::ImGuiLayer::onDetach() {
 
 void Explorer::ImGuiLayer::onUpdate(MTK::View* pView, MTL::RenderCommandEncoder* encoder) {
 
-  MTL::CommandBuffer* buffer = this->queue->commandBuffer();
-  MTL::RenderPassDescriptor* descriptor = pView->currentRenderPassDescriptor();
-
-  MTKView* view = (__bridge MTKView*)pView;
   ImGuiIO& io = ImGui::GetIO();
+  CGRect frame = ViewAdapter::bounds();
 
-  io.DisplaySize.x = view.bounds.size.width;
-  io.DisplaySize.y = view.bounds.size.height;
-  CGFloat scale = view.window.screen.backingScaleFactor ?: NSScreen.mainScreen.backingScaleFactor;
-  io.DisplayFramebufferScale = ImVec2(scale, scale);
+  io.DisplaySize.x = frame.size.width;
+  io.DisplaySize.y = frame.size.height;
+  io.DisplayFramebufferScale =
+      ImVec2(NSScreen.mainScreen.backingScaleFactor, NSScreen.mainScreen.backingScaleFactor);
 
-  ImGui_ImplMetal_NewFrame((__bridge MTLRenderPassDescriptor*)descriptor);
+  ImGui_ImplMetal_NewFrame((__bridge MTLRenderPassDescriptor*)pView->currentRenderPassDescriptor());
   ImGui::NewFrame();
 
   static bool showDemo = true;
@@ -47,8 +48,9 @@ void Explorer::ImGuiLayer::onUpdate(MTK::View* pView, MTL::RenderCommandEncoder*
 
   ImDrawData* drawData = ImGui::GetDrawData();
   ImGui_ImplMetal_RenderDrawData(
-      drawData, (__bridge id<MTLCommandBuffer>)buffer, (__bridge id<MTLRenderCommandEncoder>)encoder
+      drawData, (__bridge id<MTLCommandBuffer>)queue->commandBuffer(), (__bridge id<MTLRenderCommandEncoder>)encoder
   );
+
 }
 
 void Explorer::ImGuiLayer::showDebugWindow(bool* open) {
