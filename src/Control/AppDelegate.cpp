@@ -1,9 +1,9 @@
 #include <Control/AppDelegate.h>
 #include <sstream>
 
-Explorer::AppDelegate::AppDelegate(Explorer::AppProperties *properties) {
+Explorer::AppDelegate::AppDelegate(Explorer::AppProperties* properties) {
   this->properties = properties;
-  ViewAdapter *viewAdapter = ViewAdapter::sharedInstance();
+  ViewAdapter* viewAdapter = ViewAdapter::sharedInstance();
   this->mtkView = ViewAdapter::initView(properties->cgRect);
 }
 
@@ -22,33 +22,41 @@ void Explorer::AppDelegate::printDebug() {
   std::stringstream ss;
   ss << "Initialized view (" << this->getWidth() << "x" << this->getHeight() << ")";
   DEBUG(ss.str());
-	ss.clear();
+  ss.clear();
   ss << "FPS (" << this->mtkView->preferredFramesPerSecond() << ")";
   DEBUG(ss.str());
-	ss.clear();
+  ss.clear();
 }
 
-void Explorer::AppDelegate::applicationWillFinishLaunching(NS::Notification *msg) {
-  NS::Application *app = reinterpret_cast<NS::Application *>(msg->object());
+void Explorer::AppDelegate::applicationWillFinishLaunching(NS::Notification* msg) {
+  NS::Application* app = reinterpret_cast<NS::Application*>(msg->object());
   app->setActivationPolicy(NS::ActivationPolicy::ActivationPolicyRegular);
 }
 
-void Explorer::AppDelegate::applicationDidFinishLaunching(NS::Notification *msg) {
+void Explorer::AppDelegate::applicationDidFinishLaunching(NS::Notification* msg) {
   this->window = NS::Window::alloc()->init(
-      properties->cgRect, NS::WindowStyleMaskClosable | NS::WindowStyleMaskTitled,
-      NS::BackingStoreBuffered, false);
-	
+      properties->cgRect,
+      NS::WindowStyleMaskClosable | NS::WindowStyleMaskTitled,
+      NS::BackingStoreBuffered,
+      false
+  );
+
   // Set gpu for view to render with
   this->device = MTL::CreateSystemDefaultDevice();
-  this->mtkView->setDevice(this->device);
+  if (!device->supportsFamily(MTL::GPUFamily::GPUFamilyMetal3)) WARN("Metal 3 support required!");
+  
+	// Set MTK::View defaults
+	mtkView->setPreferredFramesPerSecond((NS::Integer)120);
+	mtkView->setEnableSetNeedsDisplay(true);
+	mtkView->setFramebufferOnly(false); // Needed for compute kernel shaders
+	mtkView->setPaused(false);
+  
+	mtkView->setColorPixelFormat(MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB);
+  mtkView->setClearColor(MTL::ClearColor::Make(0.0, 0.0, 0.0, 1.0));
+  mtkView->setDepthStencilPixelFormat(MTL::PixelFormat::PixelFormatDepth32Float);
+	mtkView->setDevice(this->device);
 
-  // Set MTK::View defaults
-  this->mtkView->setPreferredFramesPerSecond((NS::Integer)120);
-  this->mtkView->setColorPixelFormat(MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB);
-  this->mtkView->setClearColor(MTL::ClearColor::Make(0.0, 0.0, 0.0, 1.0));
-	this->mtkView->setDepthStencilPixelFormat(MTL::PixelFormat::PixelFormatDepth32Float);
-
-  // Set object to be the MTK::View event handler
+	// Set object to be the MTK::View event handler
   this->viewDelegate = new ViewDelegate(this->mtkView, this->properties);
   this->mtkView->setDelegate(this->viewDelegate);
 
@@ -57,11 +65,11 @@ void Explorer::AppDelegate::applicationDidFinishLaunching(NS::Notification *msg)
   this->window->setTitle(NS::String::string("Window", NS::StringEncoding::UTF8StringEncoding));
   this->window->makeKeyAndOrderFront(nullptr);
 
-  NS::Application *app = reinterpret_cast<NS::Application *>(msg->object());
+  NS::Application* app = reinterpret_cast<NS::Application*>(msg->object());
   app->activateIgnoringOtherApps(true);
 }
 
-bool Explorer::AppDelegate::applicationShouldTerminateAfterLastWindowClosed(
-    NS::Application *sender) {
+bool Explorer::AppDelegate::applicationShouldTerminateAfterLastWindowClosed(NS::Application* sender
+) {
   return true;
 }

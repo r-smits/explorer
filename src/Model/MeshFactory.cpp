@@ -13,23 +13,34 @@ Explorer::Object::Object()
 // Meaning you first need to translate, then rotate, then scale
 Explorer::Object* Explorer::Object::f4x4() {
   orientation = Transformation::translation(position) * rotation * Transformation::scale(factor);
-	return this;
+  return this;
 }
-Explorer::Object* Explorer::Object::translate(simd::float3 position) { 
-	this->position += position; 
-	return this;
-}
-
-Explorer::Object* Explorer::Object::scale(float factor) { 
-	this->factor = factor; 
-	return this;
-}
-Explorer::Object* Explorer::Object::rotate(simd::float4x4 rotation) { 
-	this->rotation = rotation; 
-	return this;
+Explorer::Object* Explorer::Object::translate(simd::float3 position) {
+  this->position += position;
+  return this;
 }
 
-Explorer::Mesh::Mesh(MTL::Buffer* vertexBuffer) : vertexBuffer(vertexBuffer) {}
+Explorer::Object* Explorer::Object::scale(float factor) {
+  this->factor = factor;
+  return this;
+}
+Explorer::Object* Explorer::Object::rotate(simd::float4x4 rotation) {
+  this->rotation = rotation;
+  return this;
+}
+
+Explorer::Mesh::Mesh(Submesh* submesh, std::string name, int vertexCount)
+    : vertexBufferOffset(0), name(name), vertexCount(vertexCount) {
+  vSubmeshes.emplace_back(submesh);
+  if (!count) count = 0;
+  count += 1;
+}
+
+Explorer::Mesh::Mesh(
+    MTL::Buffer* vertexBuffer, const int vertexBufferOffset, std::string name, int vertexCount
+)
+    : vertexBuffer(vertexBuffer), vertexBufferOffset(vertexBufferOffset), name(name),
+      vertexCount(vertexCount), count(0) {}
 
 Explorer::Model* Explorer::MeshFactory::pyramid(MTL::Device* device, std::string texture) {
   Renderer::Vertex vertices[4] = {
@@ -54,7 +65,7 @@ Explorer::Model* Explorer::MeshFactory::pyramid(MTL::Device* device, std::string
       0
   );
 
-  Mesh* pyramid = new Mesh(Renderer::Buffer::create(device, vertices, 4));
+  Mesh* pyramid = new Mesh(Renderer::Buffer::create(device, vertices, 4), 0, "Pyramid", 4);
   pyramid->add(submesh);
   return new Model(pyramid);
 };
@@ -87,7 +98,7 @@ Explorer::Model* Explorer::MeshFactory::cube(MTL::Device* device, std::string te
       0
   );
 
-  Mesh* cube = new Mesh(Renderer::Buffer::create(device, vertices, 8));
+  Mesh* cube = new Mesh(Renderer::Buffer::create(device, vertices, 8), 0, "Cube", 8);
   cube->add(submesh);
   return new Model(cube);
 }
@@ -115,32 +126,30 @@ Explorer::Model* Explorer::MeshFactory::quad(MTL::Device* device, std::string te
       0
   );
 
-  Mesh* quad = new Mesh(Renderer::Buffer::create(device, vertices, 4));
+  Mesh* quad = new Mesh(Renderer::Buffer::create(device, vertices, 4), 0, "Quad", 4);
 
   quad->add(submesh);
   return new Model(quad);
 }
 
 Explorer::Light* Explorer::Light::translate(simd::float3 pos) {
-	position += pos;
-	data.position = position;
-	//data.position = convert();
-	return this;
+  position += pos;
+  data.position = position;
+  // data.position = convert();
+  return this;
 }
 
 // Convert from vertex plane to fragment plane
 simd::float3 Explorer::Light::convert() {
-return {origin.x + (origin.x * position.x), origin.y - (origin.y * position.y), position.z};
+  return {origin.x + (origin.x * position.x), origin.y - (origin.y * position.y), position.z};
 }
-
-
 
 Explorer::Light* Explorer::MeshFactory::light(MTL::Device* device) {
   CGRect frame = ViewAdapter::bounds();
   Renderer::Light data = {
-      {(float)frame.size.width, (float)frame.size.height, 0.0f},	// position (x, y, z)
-      {1.0f, 1.0f, 1.0f},																					// color (r, g, b)
-      {1.0f, 1.0f, 1.0f, 1.0f}						// brightness, fAmbient, fDiffuse, fSpecular
+      {(float)frame.size.width, (float)frame.size.height, 0.0f}, // position (x, y, z)
+      {1.0f, 1.0f, 1.0f}, // color (r, g, b)
+      {1.0f, 1.0f, 1.0f, 1.0f}  // brightness, fAmbient, fDiffuse, fSpecular
   };
   return new Explorer::Light(data);
 }

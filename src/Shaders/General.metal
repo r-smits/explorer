@@ -43,6 +43,8 @@ struct Material {
 	//simd::float2 texture;
 };
 
+constexpr sampler sampler2d(address::clamp_to_edge, filter::linear); 
+
 VertexOutput vertex vertexMainGeneral(
     VertexInput input [[stage_in]],
 		constant Projection& projection [[buffer(1)]]
@@ -64,11 +66,10 @@ half4 fragment fragmentMainGeneral(
 		VertexOutput frag [[stage_in]],
 		constant Light& light [[buffer(1)]],
 		constant Material& material [[buffer(2)]],
-		sampler sampler2D [[sampler(0)]],
 		texture2d<float> texture [[texture(0)]]
 ) {
 		// Color or Texture
-		float4 color = material.useColor ? material.color : texture.sample(sampler2D, frag.texture);
+		float4 color = material.useColor ? material.color : texture.sample(sampler2d, frag.texture);
 		if (!material.useLight) return half4(color);
 
 		// float lBrightness = 100 / length(frag.position.xyz - light.position.xyz);
@@ -98,7 +99,7 @@ half4 fragment fragmentMainGeneral(
 		float specularRefract = pow(max(dot(unitReflectVec, unitToCameraVec), 0.0), shininess);
 		float3 specular = clamp(mSpecular * fSpecular * specularRefract * pixelBright, 0.0, 1.0);
 		
-		float3 phong = ambient + diffuse + specular; // diffuse; //ambient; //+ diffuse; // specular;	
+		float3 phong = ambient + diffuse + specular;	
 		color.rgb *= phong;
 		return half4(color);
 }

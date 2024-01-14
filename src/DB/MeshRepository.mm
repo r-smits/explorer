@@ -8,9 +8,6 @@
 Explorer::Model* Repository::Meshes::read(
     MTL::Device* device, std::string path = "", bool useTexture, bool useLight
 ) {
-
-  DEBUG("Loading mesh: " + path);
-
   NSURL* url = (__bridge NSURL*)Explorer::nsUrl(path + ".obj");
   MTL::VertexDescriptor* mtlVertexDescriptor =
       Renderer::Descriptor::vertex(device, &Renderer::Layouts::vertex);
@@ -42,41 +39,43 @@ Explorer::Model* Repository::Meshes::read(
                                                     error:&error];
   if (error) Explorer::printError((__bridge NS::Error*)error);
 
-  Renderer::Material placeholderMaterial = {
-      {1.0f, 0.0f, 1.0f, 1.0f}, // color; white
-      {0.1f, 0.1f, 0.1f}, // ambient intensity -> low
-      {0.5f, 0.5f, 0.5f}, // diffuse intensity -> high
-      {1.0f, 1.0f, 1.0f, 100.0f}, // specular intensity & shininess
-      (!useTexture), // useTexture: false -> useColor: true
-			useLight
-  };
-
   std::vector<Explorer::Mesh*> expMeshes;
-
   MTL::Texture* texture = Repository::Textures::read(device, path);
+
+  int tvCount = 0;
 
   int i = 0;
   for (MTKMesh* mesh : meshes) {
 
     MDLMesh* mdlMesh = mdlMeshes[i];
-
     MTKMeshBuffer* meshBuffer = [mesh.vertexBuffers objectAtIndex:0];
-
-    MTL::Buffer* vertexBuffer = (__bridge MTL::Buffer*)[mesh.vertexBuffers objectAtIndex:0].buffer;
+    //MTL::Buffer* vertexBuffer = (__bridge MTL::Buffer*)[mesh.vertexBuffers objectAtIndex:0].buffer;
 
     int vertexCount = mdlMesh.vertexCount;
+    tvCount += vertexCount;
 
-    Explorer::Mesh* expMesh = new Explorer::Mesh(vertexBuffer);
+    MTL::Buffer* mtkMeshVertexBuffer = (__bridge MTL::Buffer*)mesh.vertexBuffers.firstObject.buffer;
+    int mtkMeshVertexBufferOffset = mesh.vertexBuffers.firstObject.offset;
 
+    Explorer::Mesh* expMesh = new Explorer::Mesh(
+			mtkMeshVertexBuffer, 
+			mtkMeshVertexBufferOffset,
+			[mdlMesh.name UTF8String], 
+			mdlMesh.vertexCount);
     NSArray<MTKSubmesh*>* submeshes = mesh.submeshes;
 
     int j = 0;
     for (MTKSubmesh* mtkSubmesh : submeshes) {
       MDLSubmesh* mdlSubmesh = mdlMesh.submeshes[j];
+      MDLMaterial* mdlMaterial = [mdlSubmesh material];
+
+      Renderer::Material material = [TextureRepository readMaterial:device material:mdlMaterial];
+      material.useColor = (!useTexture);
+      material.useLight = useLight;
 
       if (useTexture) texture = [TextureRepository read:device material:mdlSubmesh.material];
       expMesh->add(new Explorer::Submesh(
-          placeholderMaterial,
+          material,
           texture,
           (__bridge MTL::PrimitiveType)mtkSubmesh.primitiveType,
           mtkSubmesh.indexCount,
@@ -86,9 +85,11 @@ Explorer::Model* Repository::Meshes::read(
       ));
       j += 1;
     }
-
     expMeshes.push_back(expMesh);
     i += 1;
   }
-  return new Explorer::Model(expMeshes);
+  Explorer::Model* model =
+      new Explorer::Model(expMeshes, path.erase(0, path.find_last_of("/") + 1), tvCount);
+  DEBUG("MeshRepository -> " + model->toString());
+  return model;
 }

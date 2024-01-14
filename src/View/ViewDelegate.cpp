@@ -1,3 +1,4 @@
+#include <Layer/RayTraceLayer.h>
 #include <Events/IOState.h>
 #include <Layer/BaseLayer.h>
 #include <Layer/ImGuiLayer.h>
@@ -14,8 +15,10 @@ Explorer::ViewDelegate::ViewDelegate(MTK::View* view, AppProperties* config) : M
   viewAdapter->setHandler(callback);
 
   // Initialize layers & renderer (will be a layer in the future)
-  this->layerStack.pushLayer(new BaseLayer(view->device(), config));
-  this->layerStack.pushOverlay(new ImGuiLayer(view, config));
+  // this->layerStack.pushLayer(new BaseLayer(view->device(), config));
+  // this->layerStack.pushOverlay(new ImGuiLayer(view, config));
+
+	this->layerStack.pushLayer(new RayTraceLayer(view->device(), config));
 }
 
 Explorer::ViewDelegate::~ViewDelegate() {}
@@ -28,45 +31,22 @@ void Explorer::ViewDelegate::onEvent(Event& event) {
   }
 }
 
-bool Explorer::ViewDelegate::onMouseButtonPressed(MouseButtonPressedEvent& event) {
-  // DEBUG(event.toString());
-  return true;
-}
-
-bool Explorer::ViewDelegate::onMouseButtonReleased(MouseButtonReleasedEvent& event) {
-  // DEBUG(event.toString());
-  return true;
-}
-
-bool Explorer::ViewDelegate::onMouseMove(MouseMoveEvent& event) {
-  // DEBUG(event.toString());
-  return true;
-}
-bool Explorer::ViewDelegate::onKeyPressed(KeyPressedEvent& event) {
-  // DEBUG(event.toString());
-  return true;
-}
-
-bool Explorer::ViewDelegate::onKeyReleased(KeyReleasedEvent& event) {
-  // DEBUG(event.toString());
-  return true;
-}
-
 void Explorer::ViewDelegate::drawInMTKView(MTK::View* view) {
   NS::AutoreleasePool* pool = NS::AutoreleasePool::alloc()->init();
 	
-  MTL::CommandBuffer* buffer = queue->commandBuffer();
-  MTL::RenderPassDescriptor* descriptor = view->currentRenderPassDescriptor();
-  MTL::RenderCommandEncoder* encoder = buffer->renderCommandEncoder(descriptor);
+
+  //MTL::CommandBuffer* buffer = queue->commandBuffer();
+  //MTL::RenderPassDescriptor* descriptor = view->currentRenderPassDescriptor();
+  //MTL::RenderCommandEncoder* encoder = buffer->renderCommandEncoder(descriptor);
 
   for (Layer* layer : this->layerStack)
-    layer->onUpdate(view, encoder);
+    layer->onUpdate(view, nullptr);
 
-  encoder->endEncoding();
-  buffer->presentDrawable(view->currentDrawable());
-  buffer->commit();
- // buffer->waitUntilScheduled();
-  pool->release();
+  //encoder->endEncoding();
+  //buffer->presentDrawable(view->currentDrawable());
+  //buffer->commit();
+  //buffer->waitUntilScheduled();
+  //pool->release();
 }
 
 void Explorer::ViewDelegate::drawableSizeWillChange(MTK::View* view, CGSize size) {}

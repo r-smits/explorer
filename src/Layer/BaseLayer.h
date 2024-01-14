@@ -16,7 +16,7 @@ public: // Setting up layer
   ~BaseLayer();
 
 public: // Event
-  virtual void onUpdate(MTK::View* view, MTL::RenderCommandEncoder* encoder) override;
+  virtual void onUpdate(MTK::View* view, MTL::RenderCommandEncoder* buffer) override;
   virtual void onEvent(Event& event) override;
   virtual bool onKeyPressed(KeyPressedEvent& event);
   virtual bool onKeyReleased(KeyReleasedEvent& event);
@@ -28,12 +28,9 @@ public: // Event
 private: // Initialization
   virtual void buildPipeline();
   virtual void buildMeshes();
-  virtual MTL::RenderPipelineDescriptor* getRenderPipelineDescriptor(std::string shaderName);
-  virtual MTL::RenderPipelineState* getRenderPipelineState(std::string shaderName, bool serialize);
 
 private:
-  MTL::Device* device;
-  MTL::CommandQueue* commandQueue;
+  //MTL::CommandQueue* commandQueue;
 
 	float mouseX = 0;
 	float mouseY = 0;
@@ -45,7 +42,7 @@ private: // States
   MTL::SamplerState* samplerState;
 
 private:
-  Camera camera;
+	OrthographicCamera camera;
   Light* light;
   Model* quad;
   Model* pyramid;

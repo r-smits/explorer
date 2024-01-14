@@ -23,6 +23,9 @@ public: // Event
   virtual bool onMouseButtonPressed(MouseButtonPressedEvent &event);
   virtual bool onMouseButtonReleased(MouseButtonReleasedEvent &event);
   virtual bool onMouseMove(MouseMoveEvent &event);
+
+private:
+	MTL::CommandQueue* queue;
 };
 
 }; // namespace Explorer

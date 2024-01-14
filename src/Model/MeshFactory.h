@@ -57,32 +57,65 @@ struct Submesh {
 
 struct Mesh : public Object {
 public:
-  Mesh(MTL::Buffer* vertexBuffer);
-  Mesh(Submesh* submesh) { submeshes.push_back(submesh); };
+  Mesh(
+      MTL::Buffer* vertexBuffer,
+      const int vertexBufferOffset,
+      std::string name = "Mesh",
+      int vertexCount = -1
+  );
+  Mesh(Submesh* submesh, std::string name = "Mesh", int vertexCount = -1);
   ~Mesh() {
-    for (Submesh* subMesh : submeshes) {
+    for (Submesh* subMesh : vSubmeshes) {
       delete subMesh;
     }
     vertexBuffer->release();
   };
 
 public:
-  void add(Submesh* submesh) { submeshes.push_back(submesh); }
+  void add_all(std::vector<Submesh*> submeshes) {
+    for (Submesh* submesh : submeshes)
+      add(submesh);
+  }
+  void add(Submesh* submesh) {
+    vSubmeshes.emplace_back(submesh);
+    count += 1;
+  }
+  std::vector<Submesh*> submeshes() { return vSubmeshes; }
 
 public:
   MTL::Buffer* vertexBuffer;
-  std::vector<Submesh*> submeshes;
+	const int vertexBufferOffset;
+  int count;
+
+private:
+  std::vector<Submesh*> vSubmeshes;
+
+private:
+  std::string name;
+  int vertexCount;
 };
 
 struct Model : public Object {
 public:
-  Model(std::vector<Mesh*> meshes) : meshes(meshes) {}
+  Model(std::vector<Mesh*> meshes, std::string name = "Model", int vertexCount = -1)
+      : name(name), vertexCount(vertexCount), meshes(meshes) {}
   Model(Mesh* mesh) { meshes.push_back(mesh); }
   ~Model() {
     for (Mesh* mesh : meshes) {
       delete mesh;
-    };
+    }
   }
+
+public:
+  std::string toString() {
+    std::stringstream ss;
+    ss << "(Model: " << name << ", vertices: " << vertexCount << ")";
+    return ss.str();
+  }
+
+private:
+  std::string name;
+  int vertexCount;
 
 public:
   std::vector<Mesh*> meshes;
@@ -91,10 +124,10 @@ public:
 struct Light : public Object {
 
   Light(Renderer::Light data) : data(data) {
-		DEBUG("Light :: Getting bounds inside of initializer ...");
+    DEBUG("Light :: Getting bounds inside of initializer ...");
     CGRect frame = ViewAdapter::bounds();
     origin = {(float)frame.size.width, (float)frame.size.height, 0};
-		DEBUG("Light :: Initializer done");
+    DEBUG("Light :: Initializer done");
   };
   ~Light(){};
 

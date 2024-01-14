@@ -7,10 +7,15 @@
 @implementation TextureRepository
 
 + (Renderer::Material)readMaterial:(MTL::Device*)device material:(MDLMaterial*)material {
-	
-	//[material property]
-	return {{1.0f, 1.0f, 1.0f, 1.0f}, true};
-	//return {{0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, 0.0f};
+  Renderer::Material result = {
+      {1.0f, 1.0f, 1.0f, 1.0f},
+      {[material propertyWithSemantic:MDLMaterialSemanticEmission].float3Value},
+      {[material propertyWithSemantic:MDLMaterialSemanticBaseColor].float3Value},
+      {[material propertyWithSemantic:MDLMaterialSemanticSpecular].float4Value},
+  };
+  result.specular.w =
+      [material propertyWithSemantic:MDLMaterialSemanticSpecularExponent].floatValue;
+  return result;
 }
 
 + (MTL::Texture*)read:(MTL::Device*)device material:(MDLMaterial*)material {
@@ -26,14 +31,10 @@
 
   MDLMaterialProperty* property = [material propertyWithSemantic:semantic];
   MDLTextureSampler* sampler = [property textureSamplerValue];
-
   if (!sampler) WARN("No sampler found");
-  if (sampler) DEBUG([[sampler description] UTF8String]);
 
   MDLTexture* texture = [property textureSamplerValue].texture;
-
   if (!texture) WARN("No texture found");
-  if (texture) DEBUG([texture.name UTF8String]);
 
   NSDictionary* options = @{
     MTKTextureLoaderOptionOrigin : MTKTextureLoaderOriginBottomLeft,

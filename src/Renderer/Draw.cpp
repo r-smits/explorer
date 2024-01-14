@@ -34,7 +34,7 @@ void Renderer::Draw::model(
         0                   // The index in the buffer to start drawing from
     );
 
-    for (Explorer::Submesh* submesh : mesh->submeshes) {
+    for (Explorer::Submesh* submesh : mesh->submeshes()) {
       encoder->setFragmentBytes(&submesh->material, sizeof(Renderer::Material), 2);
       encoder->setFragmentTexture(submesh->texture,
                                   0); // Setting texture to buffer(0)

@@ -1,4 +1,6 @@
 #pragma once
+#include "Metal/MTLStageInputOutputDescriptor.hpp"
+#include <cstdint>
 #include <pch.h>
 
 namespace Renderer {
@@ -8,6 +10,8 @@ enum class ShaderDataType {
   Float2 = MTL::VertexFormat::VertexFormatFloat2,
   Float3 = MTL::VertexFormat::VertexFormatFloat3,
   Float4 = MTL::VertexFormat::VertexFormatFloat4,
+	UInt16Index = MTL::IndexType::IndexTypeUInt16,
+	UInt32Index = MTL::IndexType::IndexTypeUInt32,
   Float3x3,
   Float4x4,
   Int,
@@ -38,6 +42,10 @@ static uint32_t ShaderDataTypeSize(ShaderDataType type) {
     return 12;
   case ShaderDataType::Int4:
     return 16;
+	case ShaderDataType::UInt16Index:
+		return sizeof(uint16_t);
+	case ShaderDataType::UInt32Index:
+		return sizeof(uint32_t);
   default:
     ERROR("Unknown shader data type!");
     return 0;

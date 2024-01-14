@@ -71,3 +71,18 @@ simd::float4x4 Transformation::perspective(float fov, float aspectRatio, float n
   simd::float4 column4 = {0.0f, 0.0f, wPerspective, 0.0f};
   return simd::float4x4(column1, column2, column3, column4);
 }
+
+simd::float4x4 Transformation::orthographic(
+    float left, float right, float bottom, float top, float nearZ, float farZ
+) {
+  simd::float4 col1 = {2.0f / (right - left), 0.0f, 0.0f, 0.0f};
+  simd::float4 col2 = {0.0f, 2.0f / (top - bottom), 0.0f, 0.0f};
+  simd::float4 col3 = {0.0f, 0.0f, 1.0f / (farZ - nearZ), 0.0f};
+  simd::float4 col4 = {
+      -(right + left) / (right - left),
+      -(top + bottom) / (top - bottom),
+      -nearZ / (farZ - nearZ),
+      1.0f
+  };
+  return simd::float4x4(col1, col2, col3, col4);
+};
