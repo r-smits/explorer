@@ -52,4 +52,6 @@
 #define ARROW_UP				126
 #define MOUSE						555
 #define MOUSE_DRAG			777
+#define MOUSE_X					888
+#define MOUSE_Y					999
 

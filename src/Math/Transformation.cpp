@@ -86,3 +86,71 @@ simd::float4x4 Transformation::orthographic(
   };
   return simd::float4x4(col1, col2, col3, col4);
 };
+
+// This is for right handed vertices!
+simd::float4x4 Transformation::lookat(simd::float3 eye, simd::float3 center, simd::float3 up) {
+
+  // const simd::float3 sF = simd::normalize(sCenter - sEye);
+  // const simd::float3 sS = simd::normalize(simd::cross(sF, vUp));
+  // const simd::float3 sU = simd::cross(sS, sF);
+
+  const simd::float3 f = simd::normalize(center - eye);
+  const simd::float3 s = simd::normalize(simd::cross(f, up));
+  const simd::float3 u = simd::cross(s, f);
+
+  // The GLM variant
+  // const simd::float4 col1 = {s.x, u.x, -f.x, -simd::dot(s, eye)};
+  // const simd::float4 col2 = {s.y, u.y, -f.y, -simd::dot(u, eye)};
+  // const simd::float4 col3 = {s.z, u.z, -f.z, simd::dot(f, eye)};
+  // const simd::float4 col4 = {0.0f, 0.0f, 0.0f, 1.0f};
+
+  const simd::float4 col1 = {s.x, s.y, s.z, -simd::dot(s, eye)};
+  const simd::float4 col2 = {u.x, u.y, u.z, -simd::dot(u, eye)};
+  const simd::float4 col3 = {-f.x, -f.y, -f.z, simd::dot(f, eye)};
+  const simd::float4 col4 = {0.0f, 0.0f, 0.0f, 1.0f};
+  // const simd::float4 col4 = {-simd::dot(s, eye), -simd::dot(u, eye),
+  // simd::dot(f, eye), 1.0f};
+  return simd_matrix(col1, col2, col3, col4);
+}
+
+// Alternative
+simd::float4x4 Transformation::lookat2(simd::float3 right, simd::float3 center, simd::float3 up) {
+  return simd::float4x4(1.0f);
+}
+
+simd::float4x4 Transformation::rotate(float angle, simd::float3 vec) {
+
+  simd::float3 axis = simd::normalize(vec);
+
+  float a = angle;
+
+  float c = cos(a);
+  float s = sin(a);
+
+  float x = axis.x;
+  float y = axis.y;
+  float z = axis.z;
+
+  float mc = (1 - c);
+
+  simd::float4 col1 = {x * x * mc + c, x * y * mc + z * s, x * z * mc - y * s, 0.0f};
+  simd::float4 col2 = {y * x * mc - z * s, y * y * mc + c, y * z * mc + x * s, 0.0f};
+  simd::float4 col3 = {z * x * mc + y * s, z * y * mc - x * s, z * z * mc + c, 0.0f};
+  simd::float4 col4 = {0.0f, 0.0f, 0.0f, 1.0f};
+
+  return simd_matrix(col1, col2, col3, col4);
+}
+
+simd::quatf Transformation::cross(simd::quatf a, simd::quatf b) {
+
+  simd::float4 q1 = a.vector;
+  simd::float4 q2 = b.vector;
+
+  simd::quatf q = simd::quatf(0.0f);
+  q.vector.w = q1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z;
+  q.vector.x = q1.w * q2.x + q1.x * q2.w + q1.y * q2.z - q1.z * q2.y;
+  q.vector.y = q1.w * q2.y + q1.y * q2.w + q1.z * q2.x - q1.x * q2.z;
+  q.vector.z = q1.w * q2.z + q1.z * q2.w + q1.x * q2.y - q1.y * q2.x;
+
+  return q;
+}
