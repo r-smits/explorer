@@ -9,11 +9,6 @@
  * Instead of multiplying the floats one at the time
  *
  * You need to use compiler intrinsics
- :wa
-:qa
-
-:qa
-dfdsf
  *
 **/
 namespace Transformation {
@@ -28,4 +23,8 @@ simd::float4x4 scale(float factor);
 simd::float4x4 perspective(float fov, float aspectRatio, float nearZ, float farZ);
 simd::float4x4
 orthographic(float left, float right, float bottom, float top, float nearZ, float farZ);
+simd::float4x4 lookat(simd::float3 eye, simd::float3 ref, simd::float3 up);
+simd::float4x4 lookat2(simd::float3 eye, simd::float3 center, simd::float3 up);
+simd::float4x4 rotate(float angle, simd::float3 axis);
+simd::quatf cross(simd::quatf a, simd::quatf b);
 } // namespace Transformation

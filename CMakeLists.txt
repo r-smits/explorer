@@ -75,6 +75,9 @@ target_include_directories(EXPLORER PUBLIC
 	"${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui/misc/cpp/"
 )
 
+find_package(glm CONFIG REQUIRED)
+# target_link_libraries(main PRIVATE glm::glm)
+
 file(GLOB IMGUI_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui/*)
 add_library(IMGUI STATIC 
 	${IMGUI_SOURCES}
@@ -88,6 +91,7 @@ set_target_properties(IMGUI PROPERTIES
 
 # Metal cpp library (linker)
 target_link_libraries(EXPLORER PUBLIC
+	glm::glm
 	IMGUI
 	"-framework Metal"
 	"-framework MetalKit"

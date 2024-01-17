@@ -26,7 +26,7 @@ private:
 	MTL::RenderPipelineState* _render;
 
 private:
-  OrthographicCamera camera;
+  VCamera _camera;
   MTL::CommandQueue* queue;
 
 	MTL::Size _threadGroupSize;

@@ -4,6 +4,7 @@
 #include <View/ViewAdapter.hpp>
 #include <pch.h>
 #include <simd/simd.h>
+#include <glm/glm.hpp>
 
 namespace Explorer {
 
@@ -23,20 +24,26 @@ public:
   float rotateSpeed;
 };
 
-class VCamera : public Camera {
+class VCamera {
 
 	public:
 		VCamera();
 		~VCamera() {};
-	
-		const simd::float3 rayDirections() const;
+
+	public:
+		simd::float3 vRight();
+		const void setSpeed(float speed);
+		void updateView();
+		Renderer::RTTransform update();
 
 	private:
-		simd::float3 position;
-		simd::float3 direction;
-
-
-
+		Renderer::RTTransform rTransform;
+		glm::vec3 gForward;
+		simd::float3 vForward;
+		simd::float3 vUp;
+		float speed;
+		simd::float2 lastMousePos;
+		simd::float2 resolution;
 };
 
 class DefaultCamera : public Camera {

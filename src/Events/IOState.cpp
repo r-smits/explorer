@@ -1,8 +1,14 @@
+#include "Events/MouseEvent.h"
 #include <Events/IOState.h>
-#include <map>
 #include <pch.h>
 
 namespace Explorer {
+
+std::unordered_map<int, float> mouseState = {
+    {MOUSE_X, 0},
+    {MOUSE_Y, 0}
+};
+
 std::unordered_map<int, bool> keyState = {
     {          KEY_A, false},
     {          KEY_A, false},
@@ -64,17 +70,21 @@ std::unordered_map<int, bool> keyState = {
     {     ARROW_LEFT, false},
     {    ARROW_RIGHT, false}
 };
-}
+} // namespace Explorer
 
 void Explorer::IO::set(int keyCode) { keyState[keyCode] = true; }
 void Explorer::IO::unset(int keyCode) { keyState[keyCode] = false; }
 
 bool Explorer::IO::isPressed(int keyCode) { return keyState.at(keyCode); }
+simd::float2 Explorer::IO::getMouse() { return {mouseState[MOUSE_X], mouseState[MOUSE_Y]};}
 
 void Explorer::IO::onEvent(Event& event) {
   EventDispatcher dispatcher = EventDispatcher(event);
   dispatcher.dispatch<KeyPressedEvent>(IO::onKeyPressed);
   dispatcher.dispatch<KeyReleasedEvent>(IO::onKeyReleased);
+  dispatcher.dispatch<MouseMoveEvent>(IO::onMouseMoved);
+  dispatcher.dispatch<MouseButtonPressedEvent>(IO::onMousePressed);
+  dispatcher.dispatch<MouseButtonReleasedEvent>(IO::onMouseReleased);
 }
 
 bool Explorer::IO::onKeyPressed(KeyPressedEvent& event) {
@@ -84,5 +94,21 @@ bool Explorer::IO::onKeyPressed(KeyPressedEvent& event) {
 
 bool Explorer::IO::onKeyReleased(KeyReleasedEvent& event) {
   IO::unset(event.getKey());
+  return true;
+}
+
+bool Explorer::IO::onMouseMoved(MouseMoveEvent& event) {
+  mouseState[MOUSE_X] = event.getX();
+  mouseState[MOUSE_Y] = event.getY();
+  return true;
+}
+
+bool Explorer::IO::onMousePressed(MouseButtonPressedEvent& event) {
+  keyState[MOUSE] = true;
+  return true;
+}
+
+bool Explorer::IO::onMouseReleased(MouseButtonReleasedEvent& event) {
+  keyState[MOUSE] = false;
   return true;
 }

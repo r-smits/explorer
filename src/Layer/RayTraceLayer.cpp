@@ -5,7 +5,7 @@
 Explorer::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* config)
     : Layer(device->retain(), config), queue(device->newCommandQueue()) {
   _raytrace = Renderer::State::compute(device, config->shaderPath + "Raytracing");
-	_lightDir = {-1, -1, 1};
+	_lightDir = {-1, -1, -1};
 
   auto threadGroupWidth = _raytrace->threadExecutionWidth();
   auto threadGroupHeight = _raytrace->maxTotalThreadsPerThreadgroup() / threadGroupWidth;
@@ -13,7 +13,14 @@ Explorer::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* confi
 
   CGRect frame = ViewAdapter::bounds();
   _gridSize = MTL::Size::Make(frame.size.width * 2, frame.size.height * 2, 1);
+	std::stringstream ss;
+
+	ss << frame.size.width;
+	DEBUG(ss.str());
   _resolution = {(float)_gridSize.width, (float)_gridSize.height, (float)_gridSize.depth};
+
+	_camera = VCamera();
+	Renderer::RTTransform transform = _camera.update();
 }
 
 void Explorer::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* notUsed) {
@@ -23,14 +30,18 @@ void Explorer::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncode
   CA::MetalDrawable* drawable = view->currentDrawable();
   MTL::Texture* texture = drawable->texture();
   
+	//if (IO::isPressed(ARROW_LEFT)) _lightDir.z += .01;
+	//if (IO::isPressed(ARROW_RIGHT)) _lightDir.z += -.01;
+
 	encoder->setComputePipelineState(_raytrace);
+
   encoder->setTexture(texture, 0);
   encoder->setBytes(&_resolution, sizeof(_resolution), 0);
-	
-	if (IO::isPressed(ARROW_LEFT)) _lightDir.z += -.01;
-	if (IO::isPressed(ARROW_RIGHT)) _lightDir.z += .01;
-
 	encoder->setBytes(&_lightDir, sizeof(_lightDir), 1);
+
+	Renderer::RTTransform transform = _camera.update();
+	encoder->setBytes(&transform, sizeof(transform), 2);
+
   encoder->dispatchThreads(_gridSize, _threadGroupSize);
 	
   encoder->endEncoding();
