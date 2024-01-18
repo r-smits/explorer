@@ -41,9 +41,11 @@ class VCamera {
 		glm::vec3 gForward;
 		simd::float3 vForward;
 		simd::float3 vUp;
-		float speed;
+		simd::float2 speed;
 		simd::float2 lastMousePos;
 		simd::float2 resolution;
+		simd::quatf rotationY;
+		simd::quatf nRotationY;
 };
 
 class DefaultCamera : public Camera {

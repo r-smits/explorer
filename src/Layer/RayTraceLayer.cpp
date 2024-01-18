@@ -6,6 +6,22 @@ Explorer::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* confi
     : Layer(device->retain(), config), queue(device->newCommandQueue()) {
   _raytrace = Renderer::State::compute(device, config->shaderPath + "Raytracing");
 	_lightDir = {-1, -1, -1};
+	
+	Renderer::Sphere sphere1 = {{.5f, 0.2f,	-2.0f}, 1.5f};
+	Renderer::Sphere sphere2 = {{-1.0f, -0.6f, 0.5f}, .5f};
+	Renderer::Sphere sphere3 = {{0.0f, -6.0f, 0.0f}, 5.0f};
+	
+	Renderer::RTMaterial sphere1Mat = {{1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
+	Renderer::RTMaterial sphere2Mat = {{0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
+	Renderer::RTMaterial sphere3Mat = {{0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
+
+	spheres[0] = sphere1;
+	spheres[1] = sphere2;
+	spheres[2] = sphere3;
+
+	materials[0] = sphere1Mat;
+	materials[1] = sphere2Mat;
+	materials[2] = sphere3Mat;
 
   auto threadGroupWidth = _raytrace->threadExecutionWidth();
   auto threadGroupHeight = _raytrace->maxTotalThreadsPerThreadgroup() / threadGroupWidth;
@@ -13,14 +29,9 @@ Explorer::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* confi
 
   CGRect frame = ViewAdapter::bounds();
   _gridSize = MTL::Size::Make(frame.size.width * 2, frame.size.height * 2, 1);
-	std::stringstream ss;
-
-	ss << frame.size.width;
-	DEBUG(ss.str());
   _resolution = {(float)_gridSize.width, (float)_gridSize.height, (float)_gridSize.depth};
 
 	_camera = VCamera();
-	Renderer::RTTransform transform = _camera.update();
 }
 
 void Explorer::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* notUsed) {
@@ -30,9 +41,6 @@ void Explorer::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncode
   CA::MetalDrawable* drawable = view->currentDrawable();
   MTL::Texture* texture = drawable->texture();
   
-	//if (IO::isPressed(ARROW_LEFT)) _lightDir.z += .01;
-	//if (IO::isPressed(ARROW_RIGHT)) _lightDir.z += -.01;
-
 	encoder->setComputePipelineState(_raytrace);
 
   encoder->setTexture(texture, 0);
@@ -41,6 +49,12 @@ void Explorer::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncode
 
 	Renderer::RTTransform transform = _camera.update();
 	encoder->setBytes(&transform, sizeof(transform), 2);
+	encoder->setBytes(&spheres, sizeof(Renderer::Sphere) * 3, 3);
+	float spherecount = (float) sizeof(spheres) / sizeof(Renderer::Sphere);
+	
+	encoder->setBytes(&spherecount, 4, 5);
+
+	encoder->setBytes(&materials, sizeof(Renderer::RTMaterial) * 3, 4);
 
   encoder->dispatchThreads(_gridSize, _threadGroupSize);
 	

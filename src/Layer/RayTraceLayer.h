@@ -1,4 +1,5 @@
 #pragma once
+#include "Renderer/Types.h"
 #include <Layer/Layer.h>
 #include <Model/Camera.h>
 #include <Model/MeshFactory.h>
@@ -32,6 +33,11 @@ private:
 	MTL::Size _threadGroupSize;
 	MTL::Size _gridSize;
 	simd::float3 _resolution;
+
+private:
 	simd::float3 _lightDir;
+
+	Renderer::Sphere spheres[3];
+	Renderer::RTMaterial materials[3];
 };
 }; // namespace Explorer
