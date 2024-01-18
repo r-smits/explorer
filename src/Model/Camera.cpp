@@ -7,20 +7,19 @@
 
 namespace Explorer {
 
-VCamera::VCamera() : speed(.05f) {
+VCamera::VCamera() {
+	speed = {.05, .05 * .25};
   vUp = {0.0f, 1.0f, 0.0f};
   vForward = {0.0f, 0.0f, -1.0f};
-  gForward = glm::vec3(0.0f, 0.0f, -1.0f);
-
-  DEBUG("vRight: ");
-  print(vRight());
+	rotationY = simd::quatf(speed.y, vUp);
+	nRotationY = simd::quatf(-speed.y, vUp);
 
   CGRect frame = ViewAdapter::bounds();
   resolution = {(float)frame.size.width * 2, (float)frame.size.height * 2};
   float fov = frame.size.width / frame.size.height;
   lastMousePos = IO::getMouse() / resolution * 2 - 1;
 
-  simd::float3 vOrigin = {0.0f, 0.0f, 2.0f};
+  simd::float3 vOrigin = {0.0f, 0.0f, 5.0f};
   simd::float4x4 mProjection = Transformation::perspective(45.0f, fov, 0.1f, 100.0f);
   simd::float4x4 mInverseProjection = simd::inverse(mProjection);
   simd::float4x4 mView = Transformation::lookat(vOrigin, vOrigin + vForward, vUp);
@@ -34,35 +33,29 @@ const void VCamera::setSpeed(float speed) { this->speed = speed; }
 
 Renderer::RTTransform VCamera::update() {
 
-  if (IO::isPressed(KEY_W)) rTransform.rayOrigin += vForward * speed;
-  if (IO::isPressed(KEY_S)) rTransform.rayOrigin -= vForward * speed;
-  if (IO::isPressed(KEY_A)) rTransform.rayOrigin -= vRight() * speed;
-  if (IO::isPressed(KEY_D)) rTransform.rayOrigin += vRight() * speed;
-  if (IO::isPressed(KEY_Q)) rTransform.rayOrigin -= vUp * speed;
-  if (IO::isPressed(KEY_E)) rTransform.rayOrigin += vUp * speed;
+  if (IO::isPressed(KEY_W)) rTransform.rayOrigin += vForward * speed.x;
+  if (IO::isPressed(KEY_S)) rTransform.rayOrigin -= vForward * speed.x;
+  if (IO::isPressed(KEY_A)) rTransform.rayOrigin -= vRight() * speed.x;
+  if (IO::isPressed(KEY_D)) rTransform.rayOrigin += vRight() * speed.x;
+  if (IO::isPressed(KEY_Q)) rTransform.rayOrigin -= vUp * speed.x;
+  if (IO::isPressed(KEY_E)) rTransform.rayOrigin += vUp * speed.x;
+	
+	if (IO::isPressed(KEY_J)) {
+		vForward = simd_act(rotationY, vForward);
+		rTransform.rayOrigin = simd_act(rotationY, rTransform.rayOrigin);
+	}
 
-  if (IO::isPressed(ARROW_LEFT)) {
-    simd::quatf rotationY = simd::quatf(speed * 0.25, vUp);
-    vForward = simd_act(rotationY, vForward);
+	if (IO::isPressed(KEY_K)) {
+		vForward = simd_act(nRotationY, vForward);
+		rTransform.rayOrigin = simd_act(nRotationY, rTransform.rayOrigin);
+	}
 
-    // to be used to rotate object around origin
-    // simd::quatf nRotationY = simd::quatf(-speed * 25, vUp);
-    // rTransform.rayOrigin = simd_act(rotationY, rTransform.rayOrigin);
-  }
-
-  if (IO::isPressed(ARROW_RIGHT)) {
-    simd::quatf rotationY = simd::quatf(-speed * 0.25, vUp);
-    vForward = simd_act(rotationY, vForward);
-
-    // to be used to rotate object around origin
-    // simd::quatf pRotationY = simd::quatf(speed, vUp);
-    // rTransform.rayOrigin = simd_act(rotationY, rTransform.rayOrigin);
-  }
+  if (IO::isPressed(ARROW_LEFT)) vForward = simd_act(rotationY, vForward);
+  if (IO::isPressed(ARROW_RIGHT)) vForward = simd_act(nRotationY, vForward);
 
   simd::float3 center = rTransform.rayOrigin + vForward;
   rTransform.mView = Transformation::lookat(rTransform.rayOrigin, center, vUp);
   rTransform.mInverseView = simd::inverse(rTransform.mView);
-
   return rTransform;
 }
 
@@ -116,4 +109,3 @@ void OrthographicCamera::setTop(float top) { this->top = top; }
 void OrthographicCamera::setBottom(float bottom) { this->bottom = bottom; }
 } // namespace Explorer
 
-//= Transformation::perspective(45.0f, 1.0f, 0.1f, 100.0f);

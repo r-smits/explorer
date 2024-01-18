@@ -39,8 +39,6 @@ struct Material {
 	simd::float4 specular;		// {x, y, z, shininess}
 	bool useColor;
 	bool useLight;
-  //float shininess;
-	//simd::float2 texture;
 };
 
 constexpr sampler sampler2d(address::clamp_to_edge, filter::linear); 

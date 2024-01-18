@@ -11,12 +11,18 @@ struct Projection {
 
 namespace Renderer {
 
-	struct RTTransform {
+struct RTTransform {
 	simd::float4x4 mProjection;
 	simd::float4x4 mView;
   simd::float4x4 mInverseProjection;
   simd::float4x4 mInverseView;
 	simd::float3 rayOrigin;
+};
+
+struct RTMaterial {
+	simd::float3 color;
+	simd::float3 roughness;
+	simd::float3 metallic;
 };
 
 struct Material {
@@ -27,6 +33,11 @@ struct Material {
   bool useColor;
   bool useLight;
   // simd::float2 texture;
+};
+
+struct Sphere {
+	simd::float3 origin;
+	float radius;
 };
 
 struct Vertex {
