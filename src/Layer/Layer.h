@@ -12,7 +12,7 @@ public:
 
   virtual void onAttach();
   virtual void onDetach();
-  virtual void onUpdate(MTK::View* view, MTL::RenderCommandEncoder* encoder);
+  virtual void onUpdate(MTK::View* view, MTL::CommandBuffer* buffer);
   virtual void onEvent(Event& event);
 
   inline const std::string& getName() { return name; }

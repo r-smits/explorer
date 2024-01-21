@@ -16,11 +16,10 @@ MTL::ComputePipelineState*
 Renderer::State::compute(MTL::Device* device, std::string path) {
   MTL::Library* library = Repository::Shaders::readLibrary(device, path);
   MTL::Function* kernel = library->newFunction(Explorer::nsString("computeKernel"));
-
-	DEBUG(kernel->description()->utf8String());
   NS::Error* error = nullptr;
 	MTL::ComputePipelineState* state = device->newComputePipelineState(kernel, &error);
   if (!state) Explorer::printError(error);
+	DEBUG("Loaded compute pipeline state.");
 	return state;
 }
 

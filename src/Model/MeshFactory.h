@@ -32,22 +32,23 @@ struct Submesh {
 
   Submesh(
       Renderer::Material material,
-      MTL::Texture* texture,
+      std::vector<MTL::Texture*> textures,
       MTL::PrimitiveType primitiveType,
       int indexCount,
       MTL::IndexType indexType,
       MTL::Buffer* indexBuffer,
       int offset
   )
-      : material(material), texture(texture), primitiveType(primitiveType), indexCount(indexCount),
+      : material(material), textures(textures), primitiveType(primitiveType), indexCount(indexCount),
         indexType(indexType), indexBuffer(indexBuffer), offset(offset) {}
   ~Submesh() {
     indexBuffer->release();
-    texture->release();
+    for (MTL::Texture* texture : textures)
+      texture->release();
   }
 
   Renderer::Material material;
-  MTL::Texture* texture;
+  std::vector<MTL::Texture*> textures;
   MTL::PrimitiveType primitiveType;
   NS::UInteger indexCount;
   MTL::IndexType indexType;
@@ -60,52 +61,45 @@ public:
   Mesh(
       MTL::Buffer* vertexBuffer,
       const int vertexBufferOffset,
-      std::string name = "Mesh",
-      int vertexCount = -1
+      const std::string& name = "Mesh",
+      const int& vertexCount = -1
   );
-  Mesh(Submesh* submesh, std::string name = "Mesh", int vertexCount = -1);
+  Mesh(const Submesh& submesh, const std::string& name = "Mesh", const int& vertexCount = -1);
   ~Mesh() {
-    for (Submesh* subMesh : vSubmeshes) {
-      delete subMesh;
-    }
     vertexBuffer->release();
   };
 
 public:
-  void add_all(std::vector<Submesh*> submeshes) {
-    for (Submesh* submesh : submeshes)
+  void add_all(std::vector<Submesh> submeshes) {
+    for (Submesh submesh : submeshes)
       add(submesh);
   }
-  void add(Submesh* submesh) {
+  void add(const Submesh& submesh) {
     vSubmeshes.emplace_back(submesh);
     count += 1;
   }
-  std::vector<Submesh*> submeshes() { return vSubmeshes; }
+  std::vector<Submesh> submeshes() const { return vSubmeshes; }
 
 public:
   MTL::Buffer* vertexBuffer;
-	const int vertexBufferOffset;
+  const int vertexBufferOffset;
   int count;
 
 private:
-  std::vector<Submesh*> vSubmeshes;
+  std::vector<Submesh> vSubmeshes;
 
 private:
-  std::string name;
-  int vertexCount;
+  const std::string& name;
+  const int& vertexCount;
 };
 
 struct Model : public Object {
 public:
-  Model(std::vector<Mesh*> meshes, std::string name = "Model", int vertexCount = -1)
+  Model(std::vector<Mesh> meshes, const std::string& name = "Model", const int& vertexCount = -1)
       : name(name), vertexCount(vertexCount), meshes(meshes) {}
-  Model(Mesh* mesh) { meshes.push_back(mesh); }
-  ~Model() {
-    for (Mesh* mesh : meshes) {
-      delete mesh;
-    }
-  }
-
+  Model(const Mesh& mesh, const std::string& name = "Model") : name(name) { meshes.push_back(mesh); }
+  ~Model() {}
+  
 public:
   std::string toString() {
     std::stringstream ss;
@@ -114,11 +108,11 @@ public:
   }
 
 private:
-  std::string name;
+  const std::string& name;
   int vertexCount;
 
 public:
-  std::vector<Mesh*> meshes;
+  std::vector<Mesh> meshes;
 };
 
 struct Light : public Object {

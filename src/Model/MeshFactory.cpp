@@ -29,7 +29,7 @@ Explorer::Object* Explorer::Object::rotate(simd::float4x4 rotation) {
   return this;
 }
 
-Explorer::Mesh::Mesh(Submesh* submesh, std::string name, int vertexCount)
+Explorer::Mesh::Mesh(const Submesh& submesh, const std::string& name, const int& vertexCount)
     : vertexBufferOffset(0), name(name), vertexCount(vertexCount) {
   vSubmeshes.emplace_back(submesh);
   if (!count) count = 0;
@@ -37,99 +37,114 @@ Explorer::Mesh::Mesh(Submesh* submesh, std::string name, int vertexCount)
 }
 
 Explorer::Mesh::Mesh(
-    MTL::Buffer* vertexBuffer, const int vertexBufferOffset, std::string name, int vertexCount
+    MTL::Buffer* vertexBuffer,
+    const int vertexBufferOffset,
+    const std::string& name,
+    const int& vertexCount
 )
     : vertexBuffer(vertexBuffer), vertexBufferOffset(vertexBufferOffset), name(name),
       vertexCount(vertexCount), count(0) {}
 
 Explorer::Model* Explorer::MeshFactory::pyramid(MTL::Device* device, std::string texture) {
-  Renderer::Vertex vertices[4] = {
-      {  {0.0f, 1.0f, -1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
-      {{-1.0f, -1.0f, -1.0f, 1.0f},  {0.0f, 1.0f, 0.0}},
-      { {1.0f, -1.0f, -1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}},
-      {   {0.0f, 0.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}},
-  };
 
-  ushort indices[12] = {0, 1, 2, 0, 1, 3, 0, 2, 3, 1, 2, 3};
+  return nullptr;
 
-  Submesh* submesh = new Submesh(
-      {
-          {1.0f, 1.0f, 1.0f, 1.0f},
-          true
-  },
-      Repository::Textures::read(device, texture),
-      MTL::PrimitiveType::PrimitiveTypeTriangle,
-      12,
-      MTL::IndexType::IndexTypeUInt16,
-      Renderer::Buffer::create(device, indices, 12),
-      0
-  );
+  /**
+Renderer::Vertex vertices[4] = {
+{  {0.0f, 1.0f, -1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
+{{-1.0f, -1.0f, -1.0f, 1.0f},  {0.0f, 1.0f, 0.0}},
+{ {1.0f, -1.0f, -1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}},
+{   {0.0f, 0.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}},
+};
 
-  Mesh* pyramid = new Mesh(Renderer::Buffer::create(device, vertices, 4), 0, "Pyramid", 4);
-  pyramid->add(submesh);
-  return new Model(pyramid);
+ushort indices[12] = {0, 1, 2, 0, 1, 3, 0, 2, 3, 1, 2, 3};
+
+Submesh* submesh = new Submesh(
+{
+    {1.0f, 1.0f, 1.0f, 1.0f},
+    true
+},
+Repository::Textures::read(device, texture),
+MTL::PrimitiveType::PrimitiveTypeTriangle,
+12,
+MTL::IndexType::IndexTypeUInt16,
+Renderer::Buffer::create(device, indices, 12),
+0
+);
+
+Mesh* pyramid = new Mesh(Renderer::Buffer::create(device, vertices, 4), 0,
+"Pyramid", 4); pyramid->add(submesh); return new Model(pyramid);
+  **/
 };
 
 Explorer::Model* Explorer::MeshFactory::cube(MTL::Device* device, std::string texture) {
-  Renderer::Vertex vertices[8] = {
-      {  {-1.0f, 1.0f, 1.0f, 1.0f},  {1.0f, 0.0f, 0.0f}, {0, 0}},
-      { {-1.0f, -1.0f, 1.0f, 1.0f},  {1.0f, 1.0f, 0.0f}, {0, 0}},
-      {   {1.0f, 1.0f, 1.0f, 1.0f},  {1.0f, 0.0f, 1.0f}, {0, 0}},
-      {  {1.0f, -1.0f, 1.0f, 1.0f},  {0.5f, 0.5f, 1.0f}, {0, 0}},
-      { {-1.0f, 1.0f, -1.0f, 1.0f}, {1.0f, 0.0f, 0.25f}, {0, 0}},
-      {  {1.0f, 1.0f, -1.0f, 1.0f},  {0.0f, 0.0f, 1.0f}, {0, 0}},
-      {{-1.0f, -1.0f, -1.0f, 1.0f},  {0.0f, 1.0f, 0.0f}, {0, 0}},
-      { {1.0f, -1.0f, -1.0f, 1.0f},  {0.0f, 1.0f, 0.0f}, {0, 0}}
-  };
 
-  ushort indices[36] = {0, 1, 2, 2, 1, 3, 5, 2, 3, 5, 3, 7, 0, 2, 4, 2, 5, 4,
-                        0, 1, 4, 4, 1, 6, 5, 4, 6, 5, 6, 7, 3, 1, 6, 3, 6, 7};
+  return nullptr;
+  /**
+Renderer::Vertex vertices[8] = {
+{  {-1.0f, 1.0f, 1.0f, 1.0f},  {1.0f, 0.0f, 0.0f}, {0, 0}},
+{ {-1.0f, -1.0f, 1.0f, 1.0f},  {1.0f, 1.0f, 0.0f}, {0, 0}},
+{   {1.0f, 1.0f, 1.0f, 1.0f},  {1.0f, 0.0f, 1.0f}, {0, 0}},
+{  {1.0f, -1.0f, 1.0f, 1.0f},  {0.5f, 0.5f, 1.0f}, {0, 0}},
+{ {-1.0f, 1.0f, -1.0f, 1.0f}, {1.0f, 0.0f, 0.25f}, {0, 0}},
+{  {1.0f, 1.0f, -1.0f, 1.0f},  {0.0f, 0.0f, 1.0f}, {0, 0}},
+{{-1.0f, -1.0f, -1.0f, 1.0f},  {0.0f, 1.0f, 0.0f}, {0, 0}},
+{ {1.0f, -1.0f, -1.0f, 1.0f},  {0.0f, 1.0f, 0.0f}, {0, 0}}
+};
 
-  Submesh* submesh = new Submesh(
-      {
-          {1.0f, 1.0f, 1.0f, 1.0f},
-          true
-  },
-      Repository::Textures::read(device, texture),
-      MTL::PrimitiveType::PrimitiveTypeTriangle,
-      36,
-      MTL::IndexType::IndexTypeUInt16,
-      Renderer::Buffer::create(device, indices, 36),
-      0
-  );
+ushort indices[36] = {0, 1, 2, 2, 1, 3, 5, 2, 3, 5, 3, 7, 0, 2, 4, 2, 5, 4,
+                  0, 1, 4, 4, 1, 6, 5, 4, 6, 5, 6, 7, 3, 1, 6, 3, 6, 7};
 
-  Mesh* cube = new Mesh(Renderer::Buffer::create(device, vertices, 8), 0, "Cube", 8);
-  cube->add(submesh);
-  return new Model(cube);
+Submesh* submesh = new Submesh(
+{
+    {1.0f, 1.0f, 1.0f, 1.0f},
+    true
+},
+Repository::Textures::read(device, texture),
+MTL::PrimitiveType::PrimitiveTypeTriangle,
+36,
+MTL::IndexType::IndexTypeUInt16,
+Renderer::Buffer::create(device, indices, 36),
+0
+);
+
+Mesh* cube = new Mesh(Renderer::Buffer::create(device, vertices, 8), 0, "Cube",
+8); cube->add(submesh); return new Model(cube);
+  **/
 }
 
 Explorer::Model* Explorer::MeshFactory::quad(MTL::Device* device, std::string texture) {
 
-  Renderer::Vertex vertices[4] = {
-      {{-1.0f, -1.0f, 0.0f, 1.0f}, {1.0, 0.0, 0.0}, {0, 0}},
-      { {1.0f, -1.0f, 0.0f, 1.0f}, {0.0, 1.0, 0.0}, {1, 0}},
-      {  {1.0f, 1.0f, 0.0f, 1.0f}, {0.0, 0.0, 1.0}, {1, 1}},
-      { {-1.0f, 1.0f, 0.0f, 1.0f}, {0.0, 1.0, 0.0}, {0, 1}}
-  };
-  ushort indices[6] = {0, 1, 2, 2, 3, 0};
+  return nullptr;
 
-  Submesh* submesh = new Submesh(
-      {
-          {1.0f, 1.0f, 1.0f, 1.0f},
-          true
-  },
-      Repository::Textures::read(device, texture),
-      MTL::PrimitiveType::PrimitiveTypeTriangle,
-      6,
-      MTL::IndexType::IndexTypeUInt16,
-      Renderer::Buffer::create(device, indices, 6),
-      0
-  );
+  /**
+Renderer::Vertex vertices[4] = {
+{{-1.0f, -1.0f, 0.0f, 1.0f}, {1.0, 0.0, 0.0}, {0, 0}},
+{ {1.0f, -1.0f, 0.0f, 1.0f}, {0.0, 1.0, 0.0}, {1, 0}},
+{  {1.0f, 1.0f, 0.0f, 1.0f}, {0.0, 0.0, 1.0}, {1, 1}},
+{ {-1.0f, 1.0f, 0.0f, 1.0f}, {0.0, 1.0, 0.0}, {0, 1}}
+};
+ushort indices[6] = {0, 1, 2, 2, 3, 0};
 
-  Mesh* quad = new Mesh(Renderer::Buffer::create(device, vertices, 4), 0, "Quad", 4);
+Submesh* submesh = new Submesh(
+{
+    {1.0f, 1.0f, 1.0f, 1.0f},
+    true
+},
+Repository::Textures::read(device, texture),
+MTL::PrimitiveType::PrimitiveTypeTriangle,
+6,
+MTL::IndexType::IndexTypeUInt16,
+Renderer::Buffer::create(device, indices, 6),
+0
+);
 
-  quad->add(submesh);
-  return new Model(quad);
+Mesh* quad = new Mesh(Renderer::Buffer::create(device, vertices, 4), 0, "Quad",
+4);
+
+quad->add(submesh);
+return new Model(quad);
+  **/
 }
 
 Explorer::Light* Explorer::Light::translate(simd::float3 pos) {

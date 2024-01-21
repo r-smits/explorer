@@ -4,7 +4,7 @@ NS::String* Explorer::nsString(std::string str) {
   return NS::String::string(str.c_str(), NS::StringEncoding::UTF8StringEncoding);
 }
 
-NS::URL* Explorer::nsUrl(std::string path) {
+NS::URL* Explorer::nsUrl(const std::string& path) {
   return NS::URL::alloc()->initFileURLWithPath(nsString(path));
 }
 

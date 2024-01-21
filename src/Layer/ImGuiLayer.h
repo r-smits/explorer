@@ -11,10 +11,10 @@ public:
   ~ImGuiLayer();
   void onAttach(MTK::View *view);
   void onDetach() override;
-  void onUpdate(MTK::View *view, MTL::RenderCommandEncoder *encoder) override;
+  void onUpdate(MTK::View *view, MTL::CommandBuffer* buffer) override;
 
 public:
-	void showDebugWindow(bool* open);
+	void showDebugWindow(const bool& open);
 
 public: // Event
   void onEvent(Event &event) override;

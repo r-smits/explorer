@@ -1,6 +1,28 @@
+#include <Renderer/Accelerator.h>
 
+NS::Array* Renderer::Accelerator::build(
+    MTL::Device* device,
+    MTL::CommandQueue queue,
+    PDV descriptors,
+    MTL::Heap* heap,
+    size_t maxScratchBufferSize
+) {
+  std::vector<MTL::AccelerationStructure*> structures;
+  MTL::Buffer* scratchBuffer =
+      device->newBuffer(maxScratchBufferSize, MTL::ResourceStorageModeShared);
+  MTL::CommandBuffer* cmd = queue.commandBuffer();
+  MTL::AccelerationStructureCommandEncoder* encoder = cmd->accelerationStructureCommandEncoder();
 
+  for (auto descriptor : descriptors) {
+    MTL::SizeAndAlign sizeAlign = device->heapAccelerationStructureSizeAndAlign(descriptor);
+    MTL::AccelerationStructure* structure = heap->newAccelerationStructure(sizeAlign.size);
+    encoder->buildAccelerationStructure(structure, descriptor, scratchBuffer, 0);
+    structures.emplace_back(structure);
+  }
 
+	NS::Array* result = NS::Array::array((NS::Object* const*)&structures[0], structures.size());
+  return result;
+}
 
 /**
 - (NSArray<id<MTLAccelerationStructure>> *)
@@ -41,4 +63,3 @@
   return accelStructures;
 }
 **/
-

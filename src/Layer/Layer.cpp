@@ -8,6 +8,6 @@ Explorer::Layer::~Layer() {
 	delete config;
 }
 void Explorer::Layer::onEvent(Event &event) {}
-void Explorer::Layer::onUpdate(MTK::View *view, MTL::RenderCommandEncoder* buffer) {}
+void Explorer::Layer::onUpdate(MTK::View *view, MTL::CommandBuffer* buffer) {}
 void Explorer::Layer::onAttach() {}
 void Explorer::Layer::onDetach() {}

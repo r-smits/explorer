@@ -27,24 +27,24 @@ void Renderer::Draw::model(
 
   // For all meshes set vertex buffer, for all submeshes, index buffer and
   // materials
-  for (Explorer::Mesh* mesh : model->meshes) {
+  for (Explorer::Mesh mesh : model->meshes) {
     encoder->setVertexBuffer(
-        mesh->vertexBuffer, // The data to use for vertex buffer
+        mesh.vertexBuffer, // The data to use for vertex buffer
         0,                  // The offset of the vertex buffer
         0                   // The index in the buffer to start drawing from
     );
 
-    for (Explorer::Submesh* submesh : mesh->submeshes()) {
-      encoder->setFragmentBytes(&submesh->material, sizeof(Renderer::Material), 2);
-      encoder->setFragmentTexture(submesh->texture,
+    for (Explorer::Submesh submesh : mesh.submeshes()) {
+      encoder->setFragmentBytes(&submesh.material, sizeof(Renderer::Material), 2);
+      encoder->setFragmentTexture(submesh.textures[0],
                                   0); // Setting texture to buffer(0)
 
       encoder->drawIndexedPrimitives(
-          submesh->primitiveType, // Type of object to draw
-          submesh->indexCount,    // Number of elements in the index buffer
-          submesh->indexType,     // The data type of the data in buffer
-          submesh->indexBuffer,   // The index buffer holding the indice data
-          submesh->offset,        // The index buffer offset
+          submesh.primitiveType, // Type of object to draw
+          submesh.indexCount,    // Number of elements in the index buffer
+          submesh.indexType,     // The data type of the data in buffer
+          submesh.indexBuffer,   // The index buffer holding the indice data
+          submesh.offset,        // The index buffer offset
           NS::UInteger(1)         // For instanced rendering. We render 1 object
       );
     }

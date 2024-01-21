@@ -29,7 +29,9 @@ void Explorer::ImGuiLayer::onDetach() {
   ImGui::DestroyContext();
 }
 
-void Explorer::ImGuiLayer::onUpdate(MTK::View* pView, MTL::RenderCommandEncoder* encoder) {
+void Explorer::ImGuiLayer::onUpdate(MTK::View* pView, MTL::CommandBuffer* buffer) {
+
+	auto encoder = buffer->renderCommandEncoder(pView->currentRenderPassDescriptor());
 
   ImGuiIO& io = ImGui::GetIO();
   CGRect frame = ViewAdapter::bounds();
@@ -42,8 +44,7 @@ void Explorer::ImGuiLayer::onUpdate(MTK::View* pView, MTL::RenderCommandEncoder*
   ImGui_ImplMetal_NewFrame((__bridge MTLRenderPassDescriptor*)pView->currentRenderPassDescriptor());
   ImGui::NewFrame();
 
-  static bool showDemo = true;
-  this->showDebugWindow(&showDemo);
+  this->showDebugWindow(true);
   ImGui::Render();
 
   ImDrawData* drawData = ImGui::GetDrawData();
@@ -51,9 +52,10 @@ void Explorer::ImGuiLayer::onUpdate(MTK::View* pView, MTL::RenderCommandEncoder*
       drawData, (__bridge id<MTLCommandBuffer>)queue->commandBuffer(), (__bridge id<MTLRenderCommandEncoder>)encoder
   );
 
+	encoder->endEncoding();
 }
 
-void Explorer::ImGuiLayer::showDebugWindow(bool* open) {
+void Explorer::ImGuiLayer::showDebugWindow(const bool& open) {
 
   static int location = 0;
   ImGuiIO& io = ImGui::GetIO();
@@ -74,7 +76,7 @@ void Explorer::ImGuiLayer::showDebugWindow(bool* open) {
   window_flags |= ImGuiWindowFlags_NoMove;
   ImGui::SetNextWindowBgAlpha(0.80f);
 
-  if (ImGui::Begin("DBWindow", open, window_flags)) {
+  if (ImGui::Begin("DBWindow", (bool*)&open, window_flags)) {
     ImGui::Text("//// Debug information ////");
     ImGui::Separator();
     if (ImGui::IsMousePosValid()) ImGui::Text("Mouse: (%.1f,%.1f)", io.MousePos.x, io.MousePos.y);

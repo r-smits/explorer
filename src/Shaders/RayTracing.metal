@@ -52,6 +52,9 @@ raytracing::ray buildRay(
 	raytracing::ray r;
 	r.origin = transform.rayOrigin;
 	r.direction = rayDirection;
+	r.min_distance = 0.1;
+  r.max_distance = FLT_MAX;
+
 	return r;
 }
 
@@ -61,7 +64,7 @@ Payload hit(
 	constant float& count
 ) {
 	int index = -1;
-	float distance = 9999;
+	float distance = FLT_MAX;
 	for (int i = 0; i < count; ++i) {
 
 		float3 rayOrigin = r.origin - spheres[i].origin;

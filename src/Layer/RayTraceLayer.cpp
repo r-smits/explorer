@@ -1,6 +1,7 @@
 #include <Layer/RayTraceLayer.h>
 #include <Renderer/Renderer.h>
 #include <Events/IOState.h>
+#include <DB/Repository.hpp>
 
 Explorer::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* config)
     : Layer(device->retain(), config), queue(device->newCommandQueue()) {
@@ -23,6 +24,14 @@ Explorer::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* confi
 	materials[1] = sphere2Mat;
 	materials[2] = sphere3Mat;
 
+	f16 = Repository::Meshes::read(device, config->meshPath + "f16/f16");
+  //f16->translate({0.0f, 0.0f, -2.5f});
+
+	//Renderer::Accelerator::Accelerator::
+
+
+
+
   auto threadGroupWidth = _raytrace->threadExecutionWidth();
   auto threadGroupHeight = _raytrace->maxTotalThreadsPerThreadgroup() / threadGroupWidth;
   _threadGroupSize = MTL::Size::Make(threadGroupWidth, threadGroupHeight, 1);
@@ -34,8 +43,8 @@ Explorer::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* confi
 	_camera = VCamera();
 }
 
-void Explorer::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* notUsed) {
-  MTL::CommandBuffer* buffer = queue->commandBuffer();
+void Explorer::RayTraceLayer::onUpdate(MTK::View* view, MTL::CommandBuffer* buffer) {
+  //MTL::CommandBuffer* buffer = queue->commandBuffer();
   MTL::ComputeCommandEncoder* encoder = buffer->computeCommandEncoder();
 
   CA::MetalDrawable* drawable = view->currentDrawable();
@@ -59,6 +68,6 @@ void Explorer::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncode
   encoder->dispatchThreads(_gridSize, _threadGroupSize);
 	
   encoder->endEncoding();
-  buffer->presentDrawable(drawable);
-  buffer->commit();
+  //buffer->presentDrawable(drawable);
+  //buffer->commit();
 }

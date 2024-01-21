@@ -44,7 +44,7 @@ void Explorer::ViewAdapter::setHandler(const std::function<void(Explorer::Event 
   this->handler = func;
 }
 
-void Explorer::ViewAdapter::onEvent(Explorer::Event &event) {
+void Explorer::ViewAdapter::onEvent(Explorer::Event& event) {
   if (!handler) {
     WARN("No handler was set to handle events.");
     return;
@@ -57,9 +57,10 @@ void Explorer::ViewAdapter::onEvent(Explorer::Event &event) {
 + (void)load:(CGRect)frame {
   DEBUG("Initializing Objective-c ViewExtender ...");
   NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-  extender = [[self alloc] initWithFrame:frame];
+	extender = [[self alloc] initWithFrame:frame];
   [extender init];
   [pool release];
+
 }
 
 + (ViewExtender *)get {

@@ -142,11 +142,13 @@ void Explorer::BaseLayer::checkIO() {
   f16->f4x4();
 }
 
-void Explorer::BaseLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* encoder) {
+void Explorer::BaseLayer::onUpdate(MTK::View* view, MTL::CommandBuffer* buffer) {
   t += 1.0f;
   if (t > 360) t -= 360.0f;
 
   checkIO();
+
+	auto encoder = buffer->renderCommandEncoder(view->currentRenderPassDescriptor());
   encoder->setRenderPipelineState(generalPipelineState);
   encoder->setDepthStencilState(depthStencilState);
 
@@ -158,4 +160,6 @@ void Explorer::BaseLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* e
   Renderer::Draw::light(encoder, camera, light);
   Renderer::Draw::model(encoder, camera, sphere);
   Renderer::Draw::model(encoder, camera, f16);
+
+	encoder->endEncoding();
 }

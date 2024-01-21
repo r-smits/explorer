@@ -18,7 +18,7 @@ public: // Setting up layer
 
 public:  // Event
 private: // Initialization
-  virtual void onUpdate(MTK::View* view, MTL::RenderCommandEncoder* encoder) override;
+  virtual void onUpdate(MTK::View* view, MTL::CommandBuffer* buffer) override;
 
 private:
   MTL::Device* device;
@@ -39,5 +39,6 @@ private:
 
 	Renderer::Sphere spheres[3];
 	Renderer::RTMaterial materials[3];
+	Explorer::Model* f16;
 };
 }; // namespace Explorer

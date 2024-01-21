@@ -4,7 +4,7 @@
 
 namespace Explorer {
 NS::String* nsString(std::string str);
-NS::URL* nsUrl(std::string path);
+NS::URL* nsUrl(const std::string& path);
 void printError(NS::Error* error);
 void print(simd::float2 n);
 void print(simd::float3 n);

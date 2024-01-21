@@ -16,7 +16,7 @@ public: // Setting up layer
   ~BaseLayer();
 
 public: // Event
-  virtual void onUpdate(MTK::View* view, MTL::RenderCommandEncoder* buffer) override;
+  virtual void onUpdate(MTK::View* view, MTL::CommandBuffer* buffer) override;
   virtual void onEvent(Event& event) override;
   virtual bool onKeyPressed(KeyPressedEvent& event);
   virtual bool onKeyReleased(KeyReleasedEvent& event);

@@ -10,8 +10,8 @@ enum class ShaderDataType {
   Float2 = MTL::VertexFormat::VertexFormatFloat2,
   Float3 = MTL::VertexFormat::VertexFormatFloat3,
   Float4 = MTL::VertexFormat::VertexFormatFloat4,
-	UInt16Index = MTL::IndexType::IndexTypeUInt16,
-	UInt32Index = MTL::IndexType::IndexTypeUInt32,
+  UInt16Index = MTL::IndexType::IndexTypeUInt16,
+  UInt32Index = MTL::IndexType::IndexTypeUInt32,
   Float3x3,
   Float4x4,
   Int,
@@ -42,10 +42,10 @@ static uint32_t ShaderDataTypeSize(ShaderDataType type) {
     return 12;
   case ShaderDataType::Int4:
     return 16;
-	case ShaderDataType::UInt16Index:
-		return sizeof(uint16_t);
-	case ShaderDataType::UInt32Index:
-		return sizeof(uint32_t);
+  case ShaderDataType::UInt16Index:
+    return sizeof(uint16_t);
+  case ShaderDataType::UInt32Index:
+    return sizeof(uint32_t);
   default:
     ERROR("Unknown shader data type!");
     return 0;
@@ -72,13 +72,36 @@ private:
   std::vector<BufferElement> elements;
 };
 
+class BufferLayouts {
+public:
+  BufferLayouts(const std::initializer_list<BufferLayout>& layouts) : layouts(layouts){};
+  inline const std::vector<BufferLayout>& getLayouts() const { return layouts; }
+
+private:
+  std::vector<BufferLayout> layouts;
+};
+
 struct Layouts {
-  inline static BufferLayout vertex = {
-      {Renderer::ShaderDataType::Float4, "position"},
-      {          ShaderDataType::Float3,    "color"},
-      {          ShaderDataType::Float2,  "texture"},
-      {          ShaderDataType::Float3,   "normal"},
+
+  inline static BufferLayouts vertex = {
+		{
+			{Renderer::ShaderDataType::Float4,	"position"},
+		},
+		{
+			{ShaderDataType::Float3, "color"},
+			{ShaderDataType::Float2, "texture"},
+			{ShaderDataType::Float3, "normal"},
+		}
   };
 };
+
+/**
+inline static BufferLayout vertex = {
+{Renderer::ShaderDataType::Float4, "position"},
+{          ShaderDataType::Float3,    "color"},
+{          ShaderDataType::Float2,  "texture"},
+{          ShaderDataType::Float3,   "normal"},
+};
+**/
 
 }; // namespace Renderer
