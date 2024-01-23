@@ -7,6 +7,8 @@
 
 Explorer::BaseLayer::BaseLayer(MTL::Device* device, AppProperties* config)
     : Layer(device->retain(), config) {
+
+  _vertexDescriptor = Renderer::Descriptor::vertex(device, Renderer::Layouts::vertexUnwoven);
   this->buildPipeline();
   this->buildMeshes();
   DEBUG("BaseLayer :: Initialization done.");
@@ -50,7 +52,8 @@ bool Explorer::BaseLayer::onMouseMove(MouseMoveEvent& event) {
 }
 
 void Explorer::BaseLayer::buildPipeline() {
-  auto descriptor = Renderer::Descriptor::render(device, config->shaderPath + "General");
+  auto descriptor =
+      Renderer::Descriptor::render(device, _vertexDescriptor, config->shaderPath + "General");
   if (false) Repository::Shaders::write(device, descriptor, config->shaderPath + "General");
   generalPipelineState = Renderer::State::render(device, descriptor);
   depthStencilState = Renderer::State::depthStencil(device); // Z coordinate interpretation
@@ -84,13 +87,13 @@ void Explorer::BaseLayer::buildMeshes() {
   // bugatti = Repository::Meshes::read(device, config->meshPath +
   // "bugatti/bugatti"); bugatti->position.z -= 80;
 
-  sphere = Repository::Meshes::read(device, config->meshPath + "sphere/sphere", false, false);
+  sphere = Repository::Meshes::read(device, _vertexDescriptor, config->meshPath + "sphere/sphere", false, false);
   sphere->translate({0.0f, 0.30f, -2.5f})->scale(0.1)->f4x4();
 
-  f16 = Repository::Meshes::read(device, config->meshPath + "f16/f16");
+  f16 = Repository::Meshes::read2(device, _vertexDescriptor, config->meshPath + "f16/f16");
   f16->translate({0.0f, 0.0f, -2.5f});
 
-  cruiser = Repository::Meshes::read(device, config->meshPath + "cruiser/cruiser");
+  cruiser = Repository::Meshes::read(device, _vertexDescriptor, config->meshPath + "cruiser/cruiser");
   cruiser->translate({0.0f, 0.0f, -2.5f})->scale(0.5f)->f4x4();
 
   light = MeshFactory::light(this->device);

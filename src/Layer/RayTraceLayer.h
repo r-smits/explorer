@@ -39,5 +39,6 @@ private:
 
 	Renderer::Sphere spheres[3];
 	Renderer::RTMaterial materials[3];
+	Explorer::Model* f16;
 };
 }; // namespace Explorer

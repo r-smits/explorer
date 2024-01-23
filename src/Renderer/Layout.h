@@ -1,6 +1,6 @@
 #pragma once
-#include "Metal/MTLStageInputOutputDescriptor.hpp"
 #include <cstdint>
+#include <initializer_list>
 #include <pch.h>
 
 namespace Renderer {
@@ -10,8 +10,8 @@ enum class ShaderDataType {
   Float2 = MTL::VertexFormat::VertexFormatFloat2,
   Float3 = MTL::VertexFormat::VertexFormatFloat3,
   Float4 = MTL::VertexFormat::VertexFormatFloat4,
-	UInt16Index = MTL::IndexType::IndexTypeUInt16,
-	UInt32Index = MTL::IndexType::IndexTypeUInt32,
+  UInt16Index = MTL::IndexType::IndexTypeUInt16,
+  UInt32Index = MTL::IndexType::IndexTypeUInt32,
   Float3x3,
   Float4x4,
   Int,
@@ -42,10 +42,10 @@ static uint32_t ShaderDataTypeSize(ShaderDataType type) {
     return 12;
   case ShaderDataType::Int4:
     return 16;
-	case ShaderDataType::UInt16Index:
-		return sizeof(uint16_t);
-	case ShaderDataType::UInt32Index:
-		return sizeof(uint32_t);
+  case ShaderDataType::UInt16Index:
+    return sizeof(uint16_t);
+  case ShaderDataType::UInt32Index:
+    return sizeof(uint32_t);
   default:
     ERROR("Unknown shader data type!");
     return 0;
@@ -64,21 +64,56 @@ struct BufferElement {
 
 class BufferLayout {
 public:
-  BufferLayout(const std::initializer_list<BufferElement>& elements) : elements(elements) {}
+  BufferLayout(const std::initializer_list<BufferElement>& elements)
+      : elements(elements) {}
   inline const std::vector<BufferElement>& getElements() const { return elements; }
-  BufferLayout();
+  BufferLayout(){};
 
 private:
   std::vector<BufferElement> elements;
 };
 
+class BufferLayouts {
+public:
+  BufferLayouts(const std::initializer_list<BufferLayout>& layouts, const int& count)
+      : layouts(layouts), count(count) {}
+  inline const std::vector<BufferLayout>& getLayouts() const { return layouts; }
+
+public:
+  int count;
+
+private:
+  std::vector<BufferLayout> layouts;
+};
+
 struct Layouts {
-  inline static BufferLayout vertex = {
+
+	inline static BufferLayouts split = BufferLayouts(
+			{
+			{{ShaderDataType::Float4, "position"}},
+			{{ShaderDataType::Float4, "color"}}
+			},
+			2
+	);
+
+  inline static BufferLayouts vertex = BufferLayouts({
+		{
       {Renderer::ShaderDataType::Float4, "position"},
       {          ShaderDataType::Float3,    "color"},
       {          ShaderDataType::Float2,  "texture"},
       {          ShaderDataType::Float3,   "normal"},
-  };
+		}
+  }, 1);
+
+  inline static BufferLayouts vertexUnwoven = BufferLayouts(
+      {
+          {{ShaderDataType::Float4, "position"}},
+          {{ShaderDataType::Float3, "color"},
+           {ShaderDataType::Float2, "texture"},
+           {ShaderDataType::Float3, "normal"}},
+  },
+      2
+  );
 };
 
 }; // namespace Renderer

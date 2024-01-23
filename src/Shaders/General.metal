@@ -18,7 +18,7 @@ struct Projection {
 
 struct VertexInput {
 	float4 position		[[attribute(0)]];		// {x, y, z, w}
-  float3 color			[[attribute(1)]];		// {r, g, b}
+  float4 color			[[attribute(1)]];		// {r, g, b}
 	float2 texture		[[attribute(2)]];		// {x, y}
 	float3 normal			[[attribute(3)]];		// v{x, y, z}
 };
@@ -26,7 +26,7 @@ struct VertexInput {
 struct VertexOutput {
   float4 position		[[position]];				// {x, y, z, w}
   float2 texture;
-	float3 color;
+	float4 color;
 	float3 worldPosition;
 	float3 surfaceNormal;
 	float3 toCameraVec;
@@ -45,7 +45,7 @@ constexpr sampler sampler2d(address::clamp_to_edge, filter::linear);
 
 VertexOutput vertex vertexMainGeneral(
     VertexInput input [[stage_in]],
-		constant Projection& projection [[buffer(1)]]
+		constant Projection& projection [[buffer(20)]]
 ) {
 	VertexOutput output;
   float4 worldPosition = projection.model * input.position;
@@ -67,6 +67,7 @@ half4 fragment fragmentMainGeneral(
 		texture2d<float> texture [[texture(0)]]
 ) {
 		// Color or Texture
+		//return half4(material.color);
 		float4 color = material.useColor ? material.color : texture.sample(sampler2d, frag.texture);
 		if (!material.useLight) return half4(color);
 
