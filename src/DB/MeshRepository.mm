@@ -107,25 +107,14 @@ Explorer::Submesh*
 buildSubmesh(MTL::Device* device, MTKSubmesh* mtkSubmesh, MDLSubmesh* mdlSubmesh) {
   Renderer::Material material = [TextureRepository readMaterial:device
                                                        material:mdlSubmesh.material];
+	material.useLight = true;
+	material.useColor = false;
   std::vector<MTL::Texture*> textures;
 
   textures.emplace_back([TextureRepository read2:device
                                         material:mdlSubmesh.material
                                         semantic:MDLMaterialSemanticBaseColor]);
   
-  textures.emplace_back([TextureRepository read2:device
-                                   material:mdlSubmesh.material
-                                   semantic:MDLMaterialSemanticMetallic]);
-  textures.emplace_back([TextureRepository read2:device
-                                   material:mdlSubmesh.material
-                                   semantic:MDLMaterialSemanticRoughness]);
-  textures.emplace_back([TextureRepository read2:device
-                                   material:mdlSubmesh.material
-                                   semantic:MDLMaterialSemanticTangentSpaceNormal]);
-  textures.emplace_back([TextureRepository read2:device
-                                   material:mdlSubmesh.material
-                                   semantic:MDLMaterialSemanticAmbientOcclusion]);
-    
   Explorer::Submesh* submesh = new Explorer::Submesh(
       material,
       textures,
@@ -153,27 +142,19 @@ Explorer::Mesh*
 buildMesh(MTL::Device* device, MDLMesh* mdlMesh, MTL::VertexDescriptor* vertexDescriptor) {
   id<MTLDevice> objcppDevice = (__bridge id<MTLDevice>)device;
 
-  DEBUG("Adding normals to mesh...");
-  [mdlMesh addNormalsWithAttributeNamed:MDLVertexAttributeNormal creaseThreshold:0.98];
-
-  DEBUG("Building mdl vertex descriptor...");
   mdlMesh.vertexDescriptor = buildMDLVertexDescriptor(device, vertexDescriptor);
 
-  DEBUG("Initializing mtk mesh...");
   NSError* err = nil;
   MTKMesh* mtkMesh = [[MTKMesh alloc] initWithMesh:mdlMesh device:objcppDevice error:&err];
   if (err) Explorer::printError((__bridge NS::Error*)err);
   assert(mtkMesh.submeshes.count == mtkMesh.submeshes.count);
 
   DEBUG("Number of vertex buffers detected: " + std::to_string(mtkMesh.vertexBuffers.count));
-  DEBUG("Initializing explorer mesh...");
-
   std::vector<MTL::Buffer*> buffers;
   std::vector<int> offsets;
   for (int i = 0; i < mtkMesh.vertexBuffers.count; i++) {
     MTL::Buffer* buffer = (__bridge MTL::Buffer*)[mtkMesh.vertexBuffers objectAtIndex:i].buffer;
     int offset = [mtkMesh.vertexBuffers objectAtIndex:i].offset;
-
     buffers.emplace_back(buffer);
     offsets.emplace_back(offset);
   }
@@ -186,17 +167,10 @@ buildMesh(MTL::Device* device, MDLMesh* mdlMesh, MTL::VertexDescriptor* vertexDe
       mdlMesh.vertexCount
   );
 
-  std::stringstream ss;
-  ss << "Found " << mtkMesh.submeshes.count << " submeshes.";
-  DEBUG(ss.str());
-
+	DEBUG("Submeshes: " + std::to_string(mtkMesh.submeshes.count));
   for (int i = 0; i < mtkMesh.submeshes.count; i++) {
-    Explorer::Submesh* submesh = buildSubmesh(device, mtkMesh.submeshes[i], mdlMesh.submeshes[i]);
-    DEBUG("Adding mesh to array...");
-
-    mesh->add(submesh);
+    mesh->add(buildSubmesh(device, mtkMesh.submeshes[i], mdlMesh.submeshes[i]));
   }
-  DEBUG("Returning mesh...");
   return mesh;
 }
 
