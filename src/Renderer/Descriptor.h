@@ -11,7 +11,6 @@ typedef std::vector<MTL::PrimitiveAccelerationStructureDescriptor*> PDV;
 
 struct Descriptor {
 public:
-  static MTL::VertexDescriptor* vertex(MTL::Device* device, BufferLayout* layout);
   static MTL::VertexDescriptor* vertex(MTL::Device* device, const BufferLayouts& layouts);
   static MTL::RenderPipelineDescriptor*
   render(MTL::Device* device, MTL::VertexDescriptor* vertexDescriptor, std::string path);

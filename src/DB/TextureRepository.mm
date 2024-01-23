@@ -11,7 +11,7 @@
   Renderer::Material result = {
       {1.0f, 1.0f, 1.0f, 1.0f},
       {[material propertyWithSemantic:MDLMaterialSemanticEmission].float3Value},
-      {[material propertyWithSemantic:MDLMaterialSemanticBaseColor].float3Value},
+      {[material propertyWithSemantic:MDLMaterialSemanticRoughness].float3Value},
       {[material propertyWithSemantic:MDLMaterialSemanticSpecular].float4Value},
   };
   result.specular.w =
@@ -54,7 +54,9 @@
               material:(MDLMaterial*)material
               semantic:(MDLMaterialSemantic)semantic {
 	
-	MTL::Texture* texture;
+	MTL::Texture* texture = nullptr;
+	std::string name = "";
+
   NSArray<MDLMaterialProperty*>* properties = [material propertiesWithSemantic:semantic];
   MTKTextureLoader* loader =
       [[MTKTextureLoader alloc] initWithDevice:(__bridge id<MTLDevice>)device];
@@ -68,32 +70,47 @@
 	
 	NSError* err = nil;
   for (MDLMaterialProperty* property : properties) {
-    assert(property.semantic == semantic);
+    
+		assert(property.semantic == semantic);
     std::string propertyURL = "/Users/ramonsmits/Code/Explorer/src/Assets/Meshes/f16/";
-    if (property.type != MDLMaterialPropertyTypeString) continue;
+		name = [property.name UTF8String];
+		
+		if (property.type == MDLMaterialPropertyTypeFloat3) {
+			DEBUG("Found float3");
+		}
+
+		if (property.type != MDLMaterialPropertyTypeString) {
+			continue;
+		}
+
     if (property.type == MDLMaterialPropertyTypeURL) {
       propertyURL = [[property.URLValue absoluteString] UTF8String];
     } else {
       std::string stringValue = [property.stringValue UTF8String];
       propertyURL.append(stringValue);
-      DEBUG("Loading texture from: " + stringValue);
+      DEBUG(name + ": Loading texture from: " + stringValue);
     }
+
     NSURL* textureURL = (__bridge NSURL*)Explorer::nsUrl(propertyURL);
     texture = (__bridge MTL::Texture*)[loader newTextureWithContentsOfURL:textureURL options:options error:&err];
     if (err) Explorer::printError((__bridge NS::Error*)err);
 		if (texture) break;
 
-    // Interpret URL as file catalogue
     NSString* lastComponent = [[property.stringValue componentsSeparatedByString:@"/"] lastObject];
+		std::string lastComponentStr = [lastComponent UTF8String];
     texture = (__bridge MTL::Texture*)[loader newTextureWithName:lastComponent
                              scaleFactor:1.0
                                   bundle:nil
                                  options:options
                                    error:&err];
-		//if (err) Explorer::printError((__bridge NS::Error*)err);
-    if (texture) break;
-}
-  if (!texture) WARN("No texture found for semantic: " + std::to_string(semantic));
+		if (err) Explorer::printError((__bridge NS::Error*)err);
+    
+		if (texture) {
+			DEBUG(name + ": Found file catalogue texture from: " + lastComponentStr);
+			break;
+		}
+	}
+  if (!texture) WARN(name + ": No texture found.");
   return texture;
 }
 
