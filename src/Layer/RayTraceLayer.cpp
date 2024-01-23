@@ -1,6 +1,7 @@
 #include <Layer/RayTraceLayer.h>
 #include <Renderer/Renderer.h>
 #include <Events/IOState.h>
+#include <DB/Repository.hpp>
 
 Explorer::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* config)
     : Layer(device->retain(), config), queue(device->newCommandQueue()) {
@@ -22,6 +23,9 @@ Explorer::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* confi
 	materials[0] = sphere1Mat;
 	materials[1] = sphere2Mat;
 	materials[2] = sphere3Mat;
+
+	//f16 = Repository::Meshes::read2(device, config->meshPath + "f16/f16");
+
 
   auto threadGroupWidth = _raytrace->threadExecutionWidth();
   auto threadGroupHeight = _raytrace->maxTotalThreadsPerThreadgroup() / threadGroupWidth;

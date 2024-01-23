@@ -32,22 +32,23 @@ struct Submesh {
 
   Submesh(
       Renderer::Material material,
-      MTL::Texture* texture,
+      std::vector<MTL::Texture*> textures,
       MTL::PrimitiveType primitiveType,
       int indexCount,
       MTL::IndexType indexType,
       MTL::Buffer* indexBuffer,
       int offset
   )
-      : material(material), texture(texture), primitiveType(primitiveType), indexCount(indexCount),
+      : material(material), textures(textures), primitiveType(primitiveType), indexCount(indexCount),
         indexType(indexType), indexBuffer(indexBuffer), offset(offset) {}
   ~Submesh() {
     indexBuffer->release();
+		for (auto texture : textures)	
     texture->release();
   }
 
   Renderer::Material material;
-  MTL::Texture* texture;
+	std::vector<MTL::Texture*> textures;
   MTL::PrimitiveType primitiveType;
   NS::UInteger indexCount;
   MTL::IndexType indexType;
@@ -58,8 +59,9 @@ struct Submesh {
 struct Mesh : public Object {
 public:
   Mesh(
-      MTL::Buffer* vertexBuffer,
-      const int vertexBufferOffset,
+      std::vector<MTL::Buffer*> buffers,
+			std::vector<int> offsets,
+			const int& bufferCount,
       std::string name = "Mesh",
       int vertexCount = -1
   );
@@ -68,7 +70,9 @@ public:
     for (Submesh* subMesh : vSubmeshes) {
       delete subMesh;
     }
-    vertexBuffer->release();
+		for (MTL::Buffer* buffer : buffers) {
+			buffer->release();
+		}
   };
 
 public:
@@ -83,8 +87,9 @@ public:
   std::vector<Submesh*> submeshes() { return vSubmeshes; }
 
 public:
-  MTL::Buffer* vertexBuffer;
-	const int vertexBufferOffset;
+	std::vector<MTL::Buffer*> buffers;
+	std::vector<int> offsets;
+	int bufferCount;
   int count;
 
 private:

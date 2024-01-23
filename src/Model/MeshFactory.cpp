@@ -30,16 +30,20 @@ Explorer::Object* Explorer::Object::rotate(simd::float4x4 rotation) {
 }
 
 Explorer::Mesh::Mesh(Submesh* submesh, std::string name, int vertexCount)
-    : vertexBufferOffset(0), name(name), vertexCount(vertexCount) {
+    : name(name), vertexCount(vertexCount) {
   vSubmeshes.emplace_back(submesh);
   if (!count) count = 0;
   count += 1;
 }
 
 Explorer::Mesh::Mesh(
-    MTL::Buffer* vertexBuffer, const int vertexBufferOffset, std::string name, int vertexCount
+    std::vector<MTL::Buffer*> buffers,
+    std::vector<int> offsets,
+    const int& bufferCount,
+    std::string name,
+    int vertexCount
 )
-    : vertexBuffer(vertexBuffer), vertexBufferOffset(vertexBufferOffset), name(name),
+    : buffers(buffers), bufferCount(bufferCount), offsets(offsets), name(name),
       vertexCount(vertexCount), count(0) {}
 
 Explorer::Model* Explorer::MeshFactory::pyramid(MTL::Device* device, std::string texture) {
@@ -51,13 +55,17 @@ Explorer::Model* Explorer::MeshFactory::pyramid(MTL::Device* device, std::string
   };
 
   ushort indices[12] = {0, 1, 2, 0, 1, 3, 0, 2, 3, 1, 2, 3};
+	
+	std::vector<MTL::Texture*> textures;
+	MTL::Texture* tex = Repository::Textures::read(device, texture);
+	textures.emplace_back(tex);
 
   Submesh* submesh = new Submesh(
       {
           {1.0f, 1.0f, 1.0f, 1.0f},
           true
   },
-      Repository::Textures::read(device, texture),
+      textures,
       MTL::PrimitiveType::PrimitiveTypeTriangle,
       12,
       MTL::IndexType::IndexTypeUInt16,
@@ -65,7 +73,14 @@ Explorer::Model* Explorer::MeshFactory::pyramid(MTL::Device* device, std::string
       0
   );
 
-  Mesh* pyramid = new Mesh(Renderer::Buffer::create(device, vertices, 4), 0, "Pyramid", 4);
+  std::vector<MTL::Buffer*> buffers;
+  std::vector<int> offsets;
+  MTL::Buffer* vertexBuffer = Renderer::Buffer::create(device, vertices, 4);
+
+  buffers.emplace_back(vertexBuffer);
+  offsets.emplace_back(0);
+
+  Mesh* pyramid = new Mesh(buffers, offsets, 1, "Pyramid", 4);
   pyramid->add(submesh);
   return new Model(pyramid);
 };
@@ -84,13 +99,17 @@ Explorer::Model* Explorer::MeshFactory::cube(MTL::Device* device, std::string te
 
   ushort indices[36] = {0, 1, 2, 2, 1, 3, 5, 2, 3, 5, 3, 7, 0, 2, 4, 2, 5, 4,
                         0, 1, 4, 4, 1, 6, 5, 4, 6, 5, 6, 7, 3, 1, 6, 3, 6, 7};
+	
+	std::vector<MTL::Texture*> textures;
+	MTL::Texture* tex = Repository::Textures::read(device, texture);
+	textures.emplace_back(tex);
 
   Submesh* submesh = new Submesh(
       {
           {1.0f, 1.0f, 1.0f, 1.0f},
           true
   },
-      Repository::Textures::read(device, texture),
+      textures,
       MTL::PrimitiveType::PrimitiveTypeTriangle,
       36,
       MTL::IndexType::IndexTypeUInt16,
@@ -98,7 +117,14 @@ Explorer::Model* Explorer::MeshFactory::cube(MTL::Device* device, std::string te
       0
   );
 
-  Mesh* cube = new Mesh(Renderer::Buffer::create(device, vertices, 8), 0, "Cube", 8);
+  std::vector<MTL::Buffer*> buffers;
+  std::vector<int> offsets;
+
+  MTL::Buffer* vertexBuffer = Renderer::Buffer::create(device, vertices, 8);
+  buffers.emplace_back(vertexBuffer);
+  offsets.emplace_back(0);
+
+  Mesh* cube = new Mesh(buffers, offsets, 1, "Cube", 8);
   cube->add(submesh);
   return new Model(cube);
 }
@@ -113,12 +139,16 @@ Explorer::Model* Explorer::MeshFactory::quad(MTL::Device* device, std::string te
   };
   ushort indices[6] = {0, 1, 2, 2, 3, 0};
 
+	std::vector<MTL::Texture*> textures;
+	MTL::Texture* tex = Repository::Textures::read(device, texture);
+	textures.emplace_back(tex);
+
   Submesh* submesh = new Submesh(
       {
           {1.0f, 1.0f, 1.0f, 1.0f},
           true
   },
-      Repository::Textures::read(device, texture),
+      textures,
       MTL::PrimitiveType::PrimitiveTypeTriangle,
       6,
       MTL::IndexType::IndexTypeUInt16,
@@ -126,8 +156,15 @@ Explorer::Model* Explorer::MeshFactory::quad(MTL::Device* device, std::string te
       0
   );
 
-  Mesh* quad = new Mesh(Renderer::Buffer::create(device, vertices, 4), 0, "Quad", 4);
+  std::vector<MTL::Buffer*> buffers;
+  std::vector<int> offsets;
 
+  MTL::Buffer* vertexBuffer = Renderer::Buffer::create(device, vertices, 4);
+
+  buffers.emplace_back(vertexBuffer);
+  offsets.emplace_back(0);
+
+  Mesh* quad = new Mesh(buffers, offsets, 1, "Quad", 4);
   quad->add(submesh);
   return new Model(quad);
 }

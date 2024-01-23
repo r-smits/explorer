@@ -40,8 +40,7 @@ private: // States
   MTL::RenderPipelineState* lightPipelineState;
   MTL::DepthStencilState* depthStencilState;
   MTL::SamplerState* samplerState;
-
-private:
+	MTL::VertexDescriptor* _vertexDescriptor;
 	OrthographicCamera camera;
   Light* light;
   Model* quad;

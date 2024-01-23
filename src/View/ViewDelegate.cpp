@@ -15,10 +15,10 @@ Explorer::ViewDelegate::ViewDelegate(MTK::View* view, AppProperties* config) : M
   viewAdapter->setHandler(callback);
 
   // Initialize layers & renderer (will be a layer in the future)
-  // this->layerStack.pushLayer(new BaseLayer(view->device(), config));
+  this->layerStack.pushLayer(new BaseLayer(view->device(), config));
   // this->layerStack.pushOverlay(new ImGuiLayer(view, config));
 
-	this->layerStack.pushLayer(new RayTraceLayer(view->device(), config));
+	//this->layerStack.pushLayer(new RayTraceLayer(view->device(), config));
 }
 
 Explorer::ViewDelegate::~ViewDelegate() {}
@@ -35,18 +35,18 @@ void Explorer::ViewDelegate::drawInMTKView(MTK::View* view) {
   NS::AutoreleasePool* pool = NS::AutoreleasePool::alloc()->init();
 	
 
-  //MTL::CommandBuffer* buffer = queue->commandBuffer();
-  //MTL::RenderPassDescriptor* descriptor = view->currentRenderPassDescriptor();
-  //MTL::RenderCommandEncoder* encoder = buffer->renderCommandEncoder(descriptor);
+  MTL::CommandBuffer* buffer = queue->commandBuffer();
+  MTL::RenderPassDescriptor* descriptor = view->currentRenderPassDescriptor();
+  MTL::RenderCommandEncoder* encoder = buffer->renderCommandEncoder(descriptor);
 
   for (Layer* layer : this->layerStack)
-    layer->onUpdate(view, nullptr);
+    layer->onUpdate(view, encoder);
 
-  //encoder->endEncoding();
-  //buffer->presentDrawable(view->currentDrawable());
-  //buffer->commit();
-  //buffer->waitUntilScheduled();
-  //pool->release();
+  encoder->endEncoding();
+  buffer->presentDrawable(view->currentDrawable());
+  buffer->commit();
+  buffer->waitUntilScheduled();
+  pool->release();
 }
 
 void Explorer::ViewDelegate::drawableSizeWillChange(MTK::View* view, CGSize size) {}

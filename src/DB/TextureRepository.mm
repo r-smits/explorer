@@ -1,6 +1,7 @@
 #include <DB/Repository.h>
 #include <DB/Repository.hpp>
 #include <Foundation/Foundation.h>
+#include <Metal/Metal.h>
 #include <MetalKit/MTKTextureLoader.h>
 #include <ModelIO/ModelIO.h>
 
@@ -47,6 +48,53 @@
                                                          error:&error];
   if (error) Explorer::printError((__bridge NS::Error*)error);
   return (__bridge MTL::Texture*)mtlTexture;
+}
+
++ (MTL::Texture*)read2:(MTL::Device*)device
+              material:(MDLMaterial*)material
+              semantic:(MDLMaterialSemantic)semantic {
+	
+	MTL::Texture* texture;
+  NSArray<MDLMaterialProperty*>* properties = [material propertiesWithSemantic:semantic];
+  MTKTextureLoader* loader =
+      [[MTKTextureLoader alloc] initWithDevice:(__bridge id<MTLDevice>)device];
+	
+  NSDictionary* options = @{
+    MTKTextureLoaderOptionTextureUsage : @(MTLTextureUsageShaderRead),
+    MTKTextureLoaderOptionTextureStorageMode : @(MTLStorageModePrivate),
+    MTKTextureLoaderOptionOrigin : MTKTextureLoaderOriginBottomLeft,
+    MTKTextureLoaderOptionGenerateMipmaps : @true
+  };
+	
+	NSError* err = nil;
+  for (MDLMaterialProperty* property : properties) {
+    assert(property.semantic == semantic);
+    std::string propertyURL = "/Users/ramonsmits/Code/Explorer/src/Assets/Meshes/f16/";
+    if (property.type != MDLMaterialPropertyTypeString) continue;
+    if (property.type == MDLMaterialPropertyTypeURL) {
+      propertyURL = [[property.URLValue absoluteString] UTF8String];
+    } else {
+      std::string stringValue = [property.stringValue UTF8String];
+      propertyURL.append(stringValue);
+      DEBUG("Loading texture from: " + stringValue);
+    }
+    NSURL* textureURL = (__bridge NSURL*)Explorer::nsUrl(propertyURL);
+    texture = (__bridge MTL::Texture*)[loader newTextureWithContentsOfURL:textureURL options:options error:&err];
+    if (err) Explorer::printError((__bridge NS::Error*)err);
+		if (texture) break;
+
+    // Interpret URL as file catalogue
+    NSString* lastComponent = [[property.stringValue componentsSeparatedByString:@"/"] lastObject];
+    texture = (__bridge MTL::Texture*)[loader newTextureWithName:lastComponent
+                             scaleFactor:1.0
+                                  bundle:nil
+                                 options:options
+                                   error:&err];
+		//if (err) Explorer::printError((__bridge NS::Error*)err);
+    if (texture) break;
+}
+  if (!texture) WARN("No texture found for semantic: " + std::to_string(semantic));
+  return texture;
 }
 
 @end

@@ -4,7 +4,7 @@
 void Renderer::Draw::light(
     MTL::RenderCommandEncoder* encoder, Explorer::Camera camera, Explorer::Light* light
 ) {
-	light->data.position = light->data.position;
+  light->data.position = light->data.position;
   encoder->setFragmentBytes(
       &light->data,            // Setting a buffer
       sizeof(Renderer::Light), // Size of the data
@@ -22,21 +22,31 @@ void Renderer::Draw::model(
   encoder->setVertexBytes(
       &projection,                  // The data set in GP
       sizeof(Renderer::Projection), // The size of data set in GPU
-      1                             // The location of data: [[buffer(1)]]
+      20                             // The location of data: [[buffer(1)]]
   );
 
   // For all meshes set vertex buffer, for all submeshes, index buffer and
   // materials
   for (Explorer::Mesh* mesh : model->meshes) {
-    encoder->setVertexBuffer(
-        mesh->vertexBuffer, // The data to use for vertex buffer
-        0,                  // The offset of the vertex buffer
-        0                   // The index in the buffer to start drawing from
-    );
+		
+    for (int i = 0; i < mesh->bufferCount; i++) {
+      encoder->setVertexBuffer(
+          mesh->buffers[i], // The data to use for vertex buffer
+          0,                // The offset of the vertex buffer
+          i                 // The index in the buffer to start drawing from
+      );
+    }
+    /**
+encoder->setVertexBuffer(
+mesh->vertexBuffer, // The data to use for vertex buffer
+0,                  // The offset of the vertex buffer
+0                   // The index in the buffer to start drawing from
+);
+    **/
 
     for (Explorer::Submesh* submesh : mesh->submeshes()) {
       encoder->setFragmentBytes(&submesh->material, sizeof(Renderer::Material), 2);
-      encoder->setFragmentTexture(submesh->texture,
+      encoder->setFragmentTexture(submesh->textures[0],
                                   0); // Setting texture to buffer(0)
 
       encoder->drawIndexedPrimitives(

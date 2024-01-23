@@ -10,9 +10,6 @@ NS::URL* Explorer::nsUrl(std::string path) {
 
 void Explorer::printError(NS::Error* error) {
   ERROR(error->debugDescription()->utf8String());
-  ERROR(error->localizedDescription()->utf8String());
-  ERROR(error->localizedRecoveryOptions()->debugDescription()->utf8String());
-  ERROR(error->localizedFailureReason()->utf8String());
 }
 
 void Explorer::print(simd::float2 n) {
