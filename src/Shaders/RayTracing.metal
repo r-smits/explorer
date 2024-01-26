@@ -114,15 +114,111 @@ void computeKernel(
 	constant Sphere* spheres [[buffer(3)]],
 	constant RTMaterial* materials [[buffer(4)]],
 	constant float& spherecount [[buffer(5)]],
+	raytracing::instance_acceleration_structure structure [[buffer(6)]],
 	uint2 gid [[thread_position_in_grid]] 
 ) {
-	raytracing::ray r = buildRay(resolution, transform, gid); 
+		// Initialize default color
+		float4 color = float4(0.0f, 0.0f, 0.0f, 1.0f);
 		
+		// Check if instance acceleration structure was built succesfully
+		if (is_null_instance_acceleration_structure(structure)) {
+			buffer.write(color, gid);	
+		}
+
+		// Build initial ray shoots out from the location of the pixel.
+		// It is transformed to account for the cameraView matrix.
+		raytracing::ray r = buildRay(resolution, transform, gid);
+
+		// Build intersector. This object is responsible to check if the loaded instances were intersected.
+		// We are working with triangles.
+		raytracing::intersector<raytracing::instancing, raytracing::triangle_data> intersector;
+		intersector.assume_geometry_type(raytracing::geometry_type::triangle);
+	
+		// The amount of times we allow for the ray to bounce from object to object.
+		int bounces = 1;
+		float factor = 1.0f;
+		for (int i = 0; i < bounces; i++) {
+			
+			// Verify if ray has intersected the geometry
+			raytracing::intersection_result<raytracing::instancing, raytracing::triangle_data> intersection = 
+				intersector.intersect(r, structure, 0xFF);
+			
+			// If our ray does not hit, then we make the color of the sky light up a little
+			// The factor would be weaker the more often the ray has bounced before reaching this point
+			if (intersection.type == raytracing::intersection_type::none) {
+				float3 skyColor = float3(0.0f, 0.0f, 0.0f);
+				color.xyz += skyColor * factor;
+				break;
+			}
+			
+			// We now know our ray hits. We can continue to calculate the reflection.
+			float3 objectColor = float3(0.0f, 0.0f, 1.0f);
+			float3 lightDirN = normalize(lightDir);
+			
+			color.xyz = objectColor;
+
+			// WIP
+			// Angle between the outgoing light vector and normal, 90 degrees to the point
+			// We assume for now that the surface is perfectly reflective.
+			// float cosTheta = max(dot(h.normal, -lightDirN), 0.0f);
+			// objectColor *= cosTheta;
+			// color.xyz += objectColor * factor;
+			// factor *= 0.7f;
+			
+			// WIP
+			// r.origin = h.position + h.normal * 0.001;
+			// r.direction = reflect(r.direction, h.normal);
+
+		}
+
+		buffer.write(color, gid);
+	}
+	
+	/**
+	raytracing::ray r = buildRay(resolution, transform, gid);
+	raytracing::intersector<raytracing::instancing, raytracing::triangle_data> intersector;
+  intersector.assume_geometry_type(raytracing::geometry_type::triangle); 
+	raytracing::intersection_result<raytracing::instancing, raytracing::triangle_data> intersection = intersector.intersect(r, structure, 0xFF);
+	**/
+
+	// intersection_result contains the following information:
+	// type -> type of intersection. ::none if not intersected, ::triangle if hit.
+	// instance_id -> the id of the instance which was hit.
+	// triangle_front_facing -> if the front of the triangle was intersected, then it will be true.
+	// barymetric_coordinate -> ...
+	
+	/**
+	if (intersection.type == raytracing::intersection_type::triangle) {
+		color = float4(1.0f, 0.0f, 0.0f, 1.0f);
+
+		if (intersection.instance_id == 0) {
+			color = float4(0.0f, 0.0f, 1.0f, 1.0f);
+		}
+
+		if (intersection.triangle_front_facing == true) {
+			color = float4(1.0f, 0.0f, 1.0f, 1.0f);
+		}
+	}
+
+	if (intersection.type == raytracing::intersection_type::none) {
+		color = float4(0.0f, 0.0f, 0.0f, 1.0f);
+	}
+	**/
+		
+	// buffer.write(color, gid);
+
+
+
+
+
+	/**
 	int bounces = 2;
 
-	float4 color = float4(0.0f, 0.0f, 0.0f, 1.0f);
 	float factor = 1.0f;
 	for (int i = 0; i < bounces; i++) {
+
+		//auto intersection = intersector.intersect(r, structure, 0xFF);
+
 		Payload h = hit(r, spheres, spherecount);
 
 		if (h.index == -1) {
@@ -145,7 +241,8 @@ void computeKernel(
 	}
 
 	buffer.write(color, gid);
-}
+	**/
+//}
 
 
 [[kernel]]

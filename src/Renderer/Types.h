@@ -41,7 +41,7 @@ struct Sphere {
 };
 
 struct Vertex {
-  simd::float4 position;
+  simd::float3 position;
   simd::float3 color;
   simd::float2 texture;
   simd::float3 normal;
@@ -59,5 +59,6 @@ struct Projection {
   simd::float4x4 model;
   simd::float3 cameraPosition;
 };
+
 
 }; // namespace Renderer

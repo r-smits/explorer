@@ -1,4 +1,5 @@
 #pragma once
+#include "Metal/MTLAccelerationStructureTypes.hpp"
 #include <simd/simd.h>
 
 /**
@@ -27,4 +28,6 @@ simd::float4x4 lookat(simd::float3 eye, simd::float3 ref, simd::float3 up);
 simd::float4x4 lookat2(simd::float3 eye, simd::float3 center, simd::float3 up);
 simd::float4x4 rotate(float angle, simd::float3 axis);
 simd::quatf cross(simd::quatf a, simd::quatf b);
+
+MTL::PackedFloat4x3 pack(const simd::float4x4& m4x4);
 } // namespace Transformation

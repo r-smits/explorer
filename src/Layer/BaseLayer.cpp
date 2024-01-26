@@ -8,7 +8,7 @@
 Explorer::BaseLayer::BaseLayer(MTL::Device* device, AppProperties* config)
     : Layer(device->retain(), config) {
 
-  _vertexDescriptor = Renderer::Descriptor::vertex(device, Renderer::Layouts::vertexUnwoven);
+  _vertexDescriptor = Renderer::Descriptor::vertex(device, Renderer::Layouts::vertexNIP);
   this->buildPipeline();
   this->buildMeshes();
   DEBUG("BaseLayer :: Initialization done.");

@@ -1,3 +1,4 @@
+#include "Renderer/Acceleration.h"
 #include <DB/Repository.hpp>
 #include <Events/IOState.h>
 #include <Layer/RayTraceLayer.h>
@@ -5,7 +6,10 @@
 
 Explorer::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* config)
     : Layer(device->retain(), config), queue(device->newCommandQueue()) {
+  buildEvent = device->newEvent();
   _raytrace = Renderer::State::compute(device, config->shaderPath + "Raytracing");
+
+  // Setting up objects
   _lightDir = {-1, -1, -1};
 
   Renderer::Sphere sphere1 = {
@@ -46,8 +50,22 @@ Explorer::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* confi
   materials[2] = sphere3Mat;
 
   MTL::VertexDescriptor* vertexDescriptor =
-      Renderer::Descriptor::vertex(device, Renderer::Layouts::vertexUnwoven);
+      Renderer::Descriptor::vertex(device, Renderer::Layouts::vertexNIP);
   f16 = Repository::Meshes::read2(device, vertexDescriptor, config->meshPath + "f16/f16");
+  models.emplace_back(f16);
+
+  // Building acceleration structures
+  NS::Array* primitiveDescriptors = Renderer::Descriptor::primitives(f16);
+  MTL::AccelerationStructureSizes sizes =
+      Renderer::Acceleration::sizes(device, primitiveDescriptors);
+  _heap = Renderer::Heap::primitives(device, sizes);
+  _primitiveAccStructures = Renderer::Acceleration::primitives(
+      device, _heap, queue, primitiveDescriptors, sizes, buildEvent
+  );
+  MTL::InstanceAccelerationStructureDescriptor* instanceDescriptor =
+      Renderer::Descriptor::instance(device, _primitiveAccStructures, 1, models);
+  _instanceAccStructure =
+      Renderer::Acceleration::instance(device, queue, instanceDescriptor, buildEvent);
 
   auto threadGroupWidth = _raytrace->threadExecutionWidth();
   auto threadGroupHeight = _raytrace->maxTotalThreadsPerThreadgroup() / threadGroupWidth;
@@ -81,6 +99,9 @@ void Explorer::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncode
   encoder->setBytes(&spherecount, 4, 5);
 
   encoder->setBytes(&materials, sizeof(Renderer::RTMaterial) * 3, 4);
+
+  encoder->useHeap(_heap);
+  encoder->setAccelerationStructure(_instanceAccStructure, 6);
 
   encoder->dispatchThreads(_gridSize, _threadGroupSize);
 
