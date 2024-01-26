@@ -49,6 +49,10 @@ add_executable(EXPLORER
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/State.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/Draw.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/Draw.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/Heap.h
+	${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/Heap.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/Acceleration.h
+	${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/Acceleration.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/DB/Repository.hpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/DB/Repository.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/DB/ShaderRepository.cpp

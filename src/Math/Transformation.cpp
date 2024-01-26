@@ -1,3 +1,4 @@
+#include "Metal/MTLAccelerationStructureTypes.hpp"
 #include <Math/Transformation.h>
 
 float toRadians(float degrees) { return degrees * (M_PI / 180); }
@@ -154,3 +155,22 @@ simd::quatf Transformation::cross(simd::quatf a, simd::quatf b) {
 
   return q;
 }
+
+MTL::PackedFloat4x3 Transformation::pack(const simd::float4x4& m4x4) {
+	MTL::PackedFloat3 col1 = {m4x4.columns[0].x, m4x4.columns[0].y, m4x4.columns[0].z};
+	MTL::PackedFloat3 col2 = {m4x4.columns[1].x, m4x4.columns[1].y, m4x4.columns[1].z};
+	MTL::PackedFloat3 col3 = {m4x4.columns[2].x, m4x4.columns[2].y, m4x4.columns[2].z};
+	MTL::PackedFloat3 col4 = {m4x4.columns[3].x, m4x4.columns[3].y, m4x4.columns[3].z};
+	MTL::PackedFloat4x3 result = {col1, col2, col3, col4};
+	return result;
+}
+
+/**
+MTLPackedFloat3 packedFloat3;
+    packedFloat3.x = x;
+    packedFloat3.y = y;
+    packedFloat3.z = z;
+    return packedFloat3;
+}
+**/
+

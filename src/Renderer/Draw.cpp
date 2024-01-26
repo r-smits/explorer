@@ -22,7 +22,7 @@ void Renderer::Draw::model(
   encoder->setVertexBytes(
       &projection,                  // The data set in GP
       sizeof(Renderer::Projection), // The size of data set in GPU
-      20                             // The location of data: [[buffer(1)]]
+      20                             // The location of data: [[buffer(20)]]
   );
 
   // For all meshes set vertex buffer, for all submeshes, index buffer and
@@ -36,13 +36,6 @@ void Renderer::Draw::model(
           i                 // The index in the buffer to start drawing from
       );
     }
-    /**
-encoder->setVertexBuffer(
-mesh->vertexBuffer, // The data to use for vertex buffer
-0,                  // The offset of the vertex buffer
-0                   // The index in the buffer to start drawing from
-);
-    **/
 
     for (Explorer::Submesh* submesh : mesh->submeshes()) {
       encoder->setFragmentBytes(&submesh->material, sizeof(Renderer::Material), 2);

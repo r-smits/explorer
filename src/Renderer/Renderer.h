@@ -1,5 +1,5 @@
 #pragma once
-#include <Renderer/Accelerator.h>
+#include <Renderer/Acceleration.h>
 #include <Renderer/Buffer.h>
 #include <Renderer/Descriptor.h>
 #include <Renderer/Draw.h>

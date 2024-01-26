@@ -17,10 +17,10 @@ struct Projection {
 };
 
 struct VertexInput {
-	float4 position		[[attribute(0)]];		// {x, y, z, w}
-  float4 color			[[attribute(1)]];		// {r, g, b}
-	float2 texture		[[attribute(2)]];		// {x, y}
-	float3 normal			[[attribute(3)]];		// v{x, y, z}
+	float3 position						[[attribute(0)]];		// {x, y, z}
+  float4 color							[[attribute(1)]];		// {r, g, b}
+	float2 texture						[[attribute(2)]];		// {x, y}
+	float3 normal							[[attribute(3)]];		// v{x, y, z}
 };
 
 struct VertexOutput {
@@ -48,7 +48,11 @@ VertexOutput vertex vertexMainGeneral(
 		constant Projection& projection [[buffer(20)]]
 ) {
 	VertexOutput output;
-  float4 worldPosition = projection.model * input.position;
+
+
+	float4 position = float4(input.position.xyz, 1.0f);
+
+  float4 worldPosition = projection.model * position;
 	output.position = projection.camera * worldPosition;
 	output.worldPosition = worldPosition.xyz;
 		

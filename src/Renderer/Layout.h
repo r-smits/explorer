@@ -12,6 +12,7 @@ enum class ShaderDataType {
   Float4 = MTL::VertexFormat::VertexFormatFloat4,
   UInt16Index = MTL::IndexType::IndexTypeUInt16,
   UInt32Index = MTL::IndexType::IndexTypeUInt32,
+	Packed3 = 999,
   Float3x3,
   Float4x4,
   Int,
@@ -28,7 +29,9 @@ static uint32_t ShaderDataTypeSize(ShaderDataType type) {
     return 16; // Due to padding
   case ShaderDataType::Float3:
     return 16; // Due to padding
-  case ShaderDataType::Float4:
+	case ShaderDataType::Packed3:
+		return 12; //We will pack it with MTL::PackedFloat3 type, hence 12
+	case ShaderDataType::Float4:
     return 16;
   case ShaderDataType::Float3x3:
     return 36;
@@ -55,7 +58,9 @@ static uint32_t ShaderDataTypeSize(ShaderDataType type) {
 struct BufferElement {
 
   BufferElement(ShaderDataType type, const std::string& name)
-      : name(name), type(type), size(ShaderDataTypeSize(type)), offset(0) {}
+      : name(name), size(ShaderDataTypeSize(type)), offset(0) {
+		this->type = (type == ShaderDataType::Packed3) ? ShaderDataType::Float3 : type;
+	}
   std::string name;
   ShaderDataType type;
   uint32_t size;
@@ -96,7 +101,8 @@ struct Layouts {
 			2
 	);
 
-  inline static BufferLayouts vertex = BufferLayouts({
+	// Interleaved vertex buffer
+  inline static BufferLayouts vertexI = BufferLayouts({
 		{
       {Renderer::ShaderDataType::Float4, "position"},
       {          ShaderDataType::Float3,    "color"},
@@ -105,7 +111,8 @@ struct Layouts {
 		}
   }, 1);
 
-  inline static BufferLayouts vertexUnwoven = BufferLayouts(
+	// Non-Interleaved vertex buffers
+  inline static BufferLayouts vertexNI = BufferLayouts(
       {
           {{ShaderDataType::Float4, "position"}},
           {{ShaderDataType::Float3, "color"},
@@ -114,6 +121,18 @@ struct Layouts {
   },
       2
   );
-};
+
+	// Non-Interleaved vertex buffers
+  inline static BufferLayouts vertexNIP = BufferLayouts(
+      {
+          {{ShaderDataType::Packed3, "position"}},
+          {{ShaderDataType::Float3, "color"},
+           {ShaderDataType::Float2, "texture"},
+           {ShaderDataType::Float3, "normal"}},
+  },
+      2
+  );
+
+	};
 
 }; // namespace Renderer
