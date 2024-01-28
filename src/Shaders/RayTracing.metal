@@ -4,6 +4,34 @@ using namespace metal;
 
 constexpr sampler kernelsampler2d(address::clamp_to_edge, filter::linear);
 
+struct VertexAttributes {
+	float3 color;																	// {r, g, b}
+	float2 texture;																// {x, y}
+	float3 normal;																// v{x, y, z}
+};
+
+struct Submesh
+{
+    constant uint32_t* indices;									// Indices pointing at the packed vertices
+};
+
+struct Mesh
+{
+		constant packed_float3* vertices;						// Vertices packed: XYZXYZ...
+    constant VertexAttributes* attributes;			// Attributes of the vertices
+		constant Submesh* submeshes;								// Submeshes related to the mesh
+};
+
+struct Model
+{
+		constant Mesh* meshes;											// Meshes related to model
+};
+
+struct Scene
+{
+    constant Model* models;											// All models in the scene
+};
+
 struct RTTransform {
 	float4x4 mProjection;
 	float4x4 mView;
@@ -52,6 +80,8 @@ raytracing::ray buildRay(
 	raytracing::ray r;
 	r.origin = transform.rayOrigin;
 	r.direction = rayDirection;
+	r.min_distance = 0.1f;
+	r.max_distance = FLT_MAX;
 	return r;
 }
 
@@ -103,22 +133,28 @@ Payload hit(
 	return p;
 }
 
-
-
 [[kernel]]
 void computeKernel(
-	texture2d<float, access::write> buffer [[texture(0)]],
-	constant float3& resolution [[buffer(0)]],
-	constant float3& lightDir [[buffer(1)]],
-	constant RTTransform& transform [[buffer(2)]],
-	constant Sphere* spheres [[buffer(3)]],
-	constant RTMaterial* materials [[buffer(4)]],
-	constant float& spherecount [[buffer(5)]],
+	texture2d<float, access::write> buffer								[[texture(0)]],
+	constant float3& resolution														[[buffer(0)]],
+	constant float3& lightDir															[[buffer(1)]],
+	constant RTTransform& transform												[[buffer(2)]],
+	constant Sphere* spheres															[[buffer(3)]],
+	constant RTMaterial* materials												[[buffer(4)]],
+	constant float& spherecount														[[buffer(5)]],
 	raytracing::instance_acceleration_structure structure [[buffer(6)]],
-	uint2 gid [[thread_position_in_grid]] 
+	constant Scene* scene																	[[buffer(9)]],
+	uint2 gid																							[[thread_position_in_grid]] 
 ) {
 		// Initialize default color
 		float4 color = float4(0.0f, 0.0f, 0.0f, 1.0f);
+		
+		// Verifying bindless scene works
+		if (scene->models[0].meshes[0].submeshes[0].indices[1083] == 333) {
+			if (scene->models[0].meshes[0].submeshes[1].indices[5] == 3274) {
+			color = float4(0.0f, 1.0f, 0.2f, 1.0f);
+			}
+		}
 		
 		// Check if instance acceleration structure was built succesfully
 		if (is_null_instance_acceleration_structure(structure)) {
@@ -137,13 +173,14 @@ void computeKernel(
 		// The amount of times we allow for the ray to bounce from object to object.
 		int bounces = 1;
 		float factor = 1.0f;
+		raytracing::intersection_result<raytracing::instancing, raytracing::triangle_data> intersection;
 		for (int i = 0; i < bounces; i++) {
 			
 			// Verify if ray has intersected the geometry
-			raytracing::intersection_result<raytracing::instancing, raytracing::triangle_data> intersection = 
-				intersector.intersect(r, structure, 0xFF);
+			intersection = intersector.intersect(r, structure, 0xFF);
 			
 			// If our ray does not hit, then we make the color of the sky light up a little
+			// Right now the skycolor is black, so it's not visible
 			// The factor would be weaker the more often the ray has bounced before reaching this point
 			if (intersection.type == raytracing::intersection_type::none) {
 				float3 skyColor = float3(0.0f, 0.0f, 0.0f);
@@ -156,10 +193,22 @@ void computeKernel(
 			float3 lightDirN = normalize(lightDir);
 			
 			color.xyz = objectColor;
+			factor *= 0.7f;
 
 			// WIP
 			// Angle between the outgoing light vector and normal, 90 degrees to the point
 			// We assume for now that the surface is perfectly reflective.
+
+			// How do we calculate the normal?
+			// We have the normal. It should be located in the first buffer of the mesh.
+			// So, you need your models as input to this function.
+
+			// You need to know where the triangle was intersected.
+			// After you have that point, you need to find the matching normal to that point.
+			// You would need to find the index of the vertex in the indexbuffer.
+			// Then, you would need to find that in the vertex buffer.
+
+
 			// float cosTheta = max(dot(h.normal, -lightDirN), 0.0f);
 			// objectColor *= cosTheta;
 			// color.xyz += objectColor * factor;

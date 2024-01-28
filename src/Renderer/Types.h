@@ -12,17 +12,17 @@ struct Projection {
 namespace Renderer {
 
 struct RTTransform {
-	simd::float4x4 mProjection;
-	simd::float4x4 mView;
+  simd::float4x4 mProjection;
+  simd::float4x4 mView;
   simd::float4x4 mInverseProjection;
   simd::float4x4 mInverseView;
-	simd::float3 rayOrigin;
+  simd::float3 rayOrigin;
 };
 
 struct RTMaterial {
-	simd::float3 color;
-	simd::float3 roughness;
-	simd::float3 metallic;
+  simd::float3 color;
+  simd::float3 roughness;
+  simd::float3 metallic;
 };
 
 struct Material {
@@ -36,8 +36,8 @@ struct Material {
 };
 
 struct Sphere {
-	simd::float3 origin;
-	float radius;
+  simd::float3 origin;
+  float radius;
 };
 
 struct Vertex {
@@ -60,5 +60,28 @@ struct Projection {
   simd::float3 cameraPosition;
 };
 
+struct VertexAttributes {
+  simd::float4 color;   // [[ id(0) ]]; // {r, g, b}
+  simd::float2 texture; // [[ id(1) ]]; // {x, y}
+  simd::float3 normal;  // [[ id(2) ]]; // v{x, y, z}
+};
+
+struct Submesh {
+  uint64_t indices; // Indices pointing at the packed vertices
+};
+
+struct Mesh {
+  uint64_t vertices;   // Vertices packed: XYZXYZ...
+  uint64_t attributes; // Attributes of the vertices. See shader for data types
+  uint64_t submeshes;  // Submeshes related to the mesh
+};
+
+struct Model {
+  uint64_t meshes; // Meshes related to model
+};
+
+struct Scene {
+  uint64_t models; // All models in the scene
+};
 
 }; // namespace Renderer

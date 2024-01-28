@@ -22,6 +22,13 @@ Renderer::State::compute(MTL::Device* device, std::string path) {
 	return state;
 }
 
+MTL::ComputePipelineState* Renderer::State::Compute(MTL::Device* device, MTL::Function* fn) {
+  NS::Error* error = nullptr;
+	MTL::ComputePipelineState* state = device->newComputePipelineState(fn, &error);
+  if (!state) Explorer::printError(error);
+	return state;
+}
+
 MTL::DepthStencilState* Renderer::State::depthStencil(MTL::Device* device) {
   MTL::DepthStencilDescriptor* descriptor = MTL::DepthStencilDescriptor::alloc()->init();
   descriptor->setDepthWriteEnabled(true);
