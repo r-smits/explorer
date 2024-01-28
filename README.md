@@ -6,7 +6,8 @@ Support for instance acceleration structures was added, this intergrates with th
 
 <img width="986" alt="Screenshot 2024-01-11 at 00 22 29" src="https://github.com/r-smits/explorer/assets/35615011/2813c38e-8732-4dfa-85bd-bfa26e86cf04">
 <img width="985" alt="Screenshot 2024-01-18 at 22 56 11" src="https://github.com/r-smits/explorer/assets/35615011/639ff909-517e-4bdb-acc3-fa21a2d56479">
-<img width="976" alt="Screenshot 2024-01-28 at 11 23 20" src="https://github.com/r-smits/explorer/assets/35615011/38ba6f05-b659-4916-ada4-032f831aa8f6">
+<img <img width="977" alt="Screenshot 2024-01-28 at 20 29 57" src="https://github.com/r-smits/explorer/assets/35615011/fa288350-0306-4ac9-958c-2cca06754c6f">
+
 
 
  
