@@ -24,8 +24,8 @@ Explorer::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* confi
   buildAccelerationStructures(device);
   buildBindlessScene(device);
 
-	uint32_t* indices = (uint32_t*)_modelsarr[0]->meshes[0]->submeshes()[1]->indexBuffer->contents();
-	DEBUG("index at 5: "  + std::to_string(indices[5]));
+	_camera.Iso();
+
 }
 
 void Explorer::RayTraceLayer::buildModels(MTL::Device* device) {

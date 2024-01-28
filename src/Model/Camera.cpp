@@ -31,6 +31,15 @@ simd::float3 VCamera::vRight() { return simd::cross(vForward, vUp); }
 
 const void VCamera::setSpeed(float speed) { this->speed = speed; }
 
+void VCamera::Iso() {
+	simd::quatf rotX = simd::quatf(30.0f, vRight());
+	simd::quatf rotY = simd::quatf(45.0f, vUp);
+	simd::quatf angle = simd::normalize(rotX * rotY);
+	vForward = simd_act(angle, vForward);
+	rTransform.rayOrigin = simd_act(angle, rTransform.rayOrigin);
+	// Transformation::xRotation(-30.0f) * Transformation::yRotation(-45.0f) 
+}
+
 Renderer::RTTransform VCamera::update() {
 
   if (IO::isPressed(KEY_W)) rTransform.rayOrigin += vForward * speed.x;

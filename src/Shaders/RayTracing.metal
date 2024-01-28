@@ -149,24 +149,15 @@ void computeKernel(
 		// Initialize default color
 		float4 color = float4(0.0f, 0.0f, 0.0f, 1.0f);
 		
-		// Verifying bindless scene works
-		if (scene->models[0].meshes[0].submeshes[0].indices[1083] == 333) {
-			if (scene->models[0].meshes[0].submeshes[1].indices[5] == 3274) {
-			color = float4(0.0f, 1.0f, 0.2f, 1.0f);
-			}
-		}
-		
 		// Check if instance acceleration structure was built succesfully
 		if (is_null_instance_acceleration_structure(structure)) {
 			buffer.write(color, gid);	
 		}
 
-		// Build initial ray shoots out from the location of the pixel.
-		// It is transformed to account for the cameraView matrix.
+		// Build initial ray shoots out from the location of the pixel. Accounts for cameraView matrix.
 		raytracing::ray r = buildRay(resolution, transform, gid);
 
 		// Build intersector. This object is responsible to check if the loaded instances were intersected.
-		// We are working with triangles.
 		raytracing::intersector<raytracing::instancing, raytracing::triangle_data> intersector;
 		intersector.assume_geometry_type(raytracing::geometry_type::triangle);
 	
@@ -180,44 +171,54 @@ void computeKernel(
 			intersection = intersector.intersect(r, structure, 0xFF);
 			
 			// If our ray does not hit, then we make the color of the sky light up a little
-			// Right now the skycolor is black, so it's not visible
-			// The factor would be weaker the more often the ray has bounced before reaching this point
 			if (intersection.type == raytracing::intersection_type::none) {
-				float3 skyColor = float3(0.0f, 0.0f, 0.0f);
-				color.xyz += skyColor * factor;
+				//float3 skyColor = float3(0.0f, 0.0f, 0.0f);
+				//color.xyz += skyColor * factor;
 				break;
 			}
+
+			if (intersection.type == raytracing::intersection_type::triangle) {
 			
-			// We now know our ray hits. We can continue to calculate the reflection.
-			float3 objectColor = float3(0.0f, 0.0f, 1.0f);
-			float3 lightDirN = normalize(lightDir);
-			
-			color.xyz = objectColor;
-			factor *= 0.7f;
+				// Look up the data belonging to the intersection in the scene
+				// This requires a bindless setup
+				Mesh mesh = scene->models[intersection.instance_id].meshes[0];
+				Submesh submesh = mesh.submeshes[intersection.geometry_id];
 
-			// WIP
-			// Angle between the outgoing light vector and normal, 90 degrees to the point
-			// We assume for now that the surface is perfectly reflective.
+				float2 bary2 = intersection.triangle_barycentric_coord;
+				float3 bary3 = float3( 1.0 - (bary2.x + bary2.y), bary2.x, bary2.y);
 
-			// How do we calculate the normal?
-			// We have the normal. It should be located in the first buffer of the mesh.
-			// So, you need your models as input to this function.
+				uint32_t index1 = submesh.indices[intersection.primitive_id * 3 + 0];
+				uint32_t index2 = submesh.indices[intersection.primitive_id * 3 + 1];
+				uint32_t index3 = submesh.indices[intersection.primitive_id * 3 + 2];
 
-			// You need to know where the triangle was intersected.
-			// After you have that point, you need to find the matching normal to that point.
-			// You would need to find the index of the vertex in the indexbuffer.
-			// Then, you would need to find that in the vertex buffer.
+				float3 normal1 = mesh.attributes[index1].normal;
+				float3 normal2 = mesh.attributes[index2].normal;
+				float3 normal3 = mesh.attributes[index3].normal;
+
+				float2 txCoord1 = mesh.attributes[index1].texture;
+				float2 txCoord2 = mesh.attributes[index2].texture;
+				float2 txCoord3 = mesh.attributes[index3].texture;
+
+				float3 normal = (normal1 * bary3.x) + (normal2 * bary3.y) + (normal3 * bary3.z);
+				float2 txCoord = (txCoord1 * bary3.x) + (txCoord2 * bary3.y) + (txCoord3 * bary3.z);
 
 
-			// float cosTheta = max(dot(h.normal, -lightDirN), 0.0f);
-			// objectColor *= cosTheta;
-			// color.xyz += objectColor * factor;
-			// factor *= 0.7f;
-			
-			// WIP
-			// r.origin = h.position + h.normal * 0.001;
-			// r.direction = reflect(r.direction, h.normal);
+				// We now know our ray hits. We can continue to calculate the reflection.
+				float3 objectColor = float3(0.0f, 1.0f, 1.0f);
+				float3 lightDirN = normalize(lightDir);
 
+				// Angle between the outgoing light vector and normal, 90 degrees to the point
+				// We assume for now that the surface is perfectly reflective.
+				float cosTheta = max(dot(normal, -lightDirN), 0.0f);
+				objectColor *= cosTheta;
+				color.xyz += objectColor * factor;
+				factor *= 0.7f;
+
+				//color = float4(objectColor, 1.0f);
+
+				//r.origin = h.position + h.normal * 0.001;
+				//r.direction = reflect(r.direction, h.normal);
+			}
 		}
 
 		buffer.write(color, gid);
