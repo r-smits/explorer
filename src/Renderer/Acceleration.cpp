@@ -46,7 +46,7 @@ NS::Array* Renderer::Acceleration::primitives(
   cmd->commit();
   NS::Array* result = NS::Array::array((NS::Object* const*)&structures[0], structures.size());
   DEBUG(
-      "Built " + std::to_string(descriptors->count()) + " primitive acceleration structures on heap."
+      "Built primitive acceleration structures on heap. Primitives: " + std::to_string(descriptors->count())
   );
   return result;
 }
@@ -69,7 +69,7 @@ MTL::AccelerationStructure* Renderer::Acceleration::instance(
   encoder->endEncoding();
   cmd->encodeSignalEvent(buildEvent, 2);
   cmd->commit();
-	DEBUG("Built instance acceleration structure.");
+	DEBUG("Built instance acceleration structure. Instances: 1");
   return structure;
 }
 

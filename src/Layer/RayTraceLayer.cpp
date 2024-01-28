@@ -1,4 +1,3 @@
-#include "Renderer/Acceleration.h"
 #include <DB/Repository.hpp>
 #include <Events/IOState.h>
 #include <Layer/RayTraceLayer.h>
@@ -6,9 +5,30 @@
 
 Explorer::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* config)
     : Layer(device->retain(), config), queue(device->newCommandQueue()) {
-  buildEvent = device->newEvent();
-  _raytrace = Renderer::State::compute(device, config->shaderPath + "Raytracing");
 
+  MTL::Library* library =
+      Repository::Shaders::readLibrary(device, config->shaderPath + "Raytracing");
+  _kernelFn = library->newFunction(Explorer::nsString("computeKernel"));
+  _raytrace = Renderer::State::Compute(device, _kernelFn);
+
+  _vertexDescriptor = Renderer::Descriptor::vertex(device, Renderer::Layouts::vertexNIP);
+  _camera = VCamera();
+
+  CGRect frame = ViewAdapter::bounds();
+  _gridSize = MTL::Size::Make(frame.size.width * 2, frame.size.height * 2, 1);
+  _resolution = {(float)_gridSize.width, (float)_gridSize.height, (float)_gridSize.depth};
+
+  _threadGroupSize = calcGridsize();
+
+  buildModels(device);
+  buildAccelerationStructures(device);
+  buildBindlessScene(device);
+
+	uint32_t* indices = (uint32_t*)_modelsarr[0]->meshes[0]->submeshes()[1]->indexBuffer->contents();
+	DEBUG("index at 5: "  + std::to_string(indices[5]));
+}
+
+void Explorer::RayTraceLayer::buildModels(MTL::Device* device) {
   // Setting up objects
   _lightDir = {-1, -1, -1};
 
@@ -30,32 +50,42 @@ Explorer::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* confi
       {0.0f, 0.0f, 0.0f},
       {0.0f, 0.0f, 0.0f}
   };
+
   Renderer::RTMaterial sphere2Mat = {
       {0.0f, 1.0f, 0.0f},
       {0.0f, 0.0f, 0.0f},
       {0.0f, 0.0f, 0.0f}
   };
+
   Renderer::RTMaterial sphere3Mat = {
       {0.0f, 0.0f, 1.0f},
       {0.0f, 0.0f, 0.0f},
       {0.0f, 0.0f, 0.0f}
   };
 
-  spheres[0] = sphere1;
-  spheres[1] = sphere2;
-  spheres[2] = sphere3;
+  _spheres[0] = sphere1;
+  _spheres[1] = sphere2;
+  _spheres[2] = sphere3;
 
-  materials[0] = sphere1Mat;
-  materials[1] = sphere2Mat;
-  materials[2] = sphere3Mat;
+  _materials[0] = sphere1Mat;
+  _materials[1] = sphere2Mat;
+  _materials[2] = sphere3Mat;
 
-  MTL::VertexDescriptor* vertexDescriptor =
-      Renderer::Descriptor::vertex(device, Renderer::Layouts::vertexNIP);
-  f16 = Repository::Meshes::read2(device, vertexDescriptor, config->meshPath + "f16/f16");
-  models.emplace_back(f16);
+  _modelsarr[0] =
+      Repository::Meshes::read2(device, _vertexDescriptor, config->meshPath + "f16/f16");
+}
 
-  // Building acceleration structures
-  NS::Array* primitiveDescriptors = Renderer::Descriptor::primitives(f16);
+MTL::Size Explorer::RayTraceLayer::calcGridsize() {
+  auto threadGroupWidth = _raytrace->threadExecutionWidth();
+  auto threadGroupHeight = _raytrace->maxTotalThreadsPerThreadgroup() / threadGroupWidth;
+  return MTL::Size::Make(threadGroupWidth, threadGroupHeight, 1);
+}
+
+void Explorer::RayTraceLayer::buildAccelerationStructures(MTL::Device* device) {
+  MTL::Event* buildEvent = device->newEvent();
+  NS::Array* primitiveDescriptors = Renderer::Descriptor::primitives(
+      _modelsarr[0], _vertexDescriptor->layouts()->object(0)->stride()
+  );
   MTL::AccelerationStructureSizes sizes =
       Renderer::Acceleration::sizes(device, primitiveDescriptors);
   _heap = Renderer::Heap::primitives(device, sizes);
@@ -63,19 +93,60 @@ Explorer::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* confi
       device, _heap, queue, primitiveDescriptors, sizes, buildEvent
   );
   MTL::InstanceAccelerationStructureDescriptor* instanceDescriptor =
-      Renderer::Descriptor::instance(device, _primitiveAccStructures, 1, models);
+      Renderer::Descriptor::instance(device, _primitiveAccStructures, 1, _modelsarr);
   _instanceAccStructure =
       Renderer::Acceleration::instance(device, queue, instanceDescriptor, buildEvent);
+}
 
-  auto threadGroupWidth = _raytrace->threadExecutionWidth();
-  auto threadGroupHeight = _raytrace->maxTotalThreadsPerThreadgroup() / threadGroupWidth;
-  _threadGroupSize = MTL::Size::Make(threadGroupWidth, threadGroupHeight, 1);
+void Explorer::RayTraceLayer::buildBindlessScene(MTL::Device* device) {
+  std::vector<MTL::Resource*> resources;
+	
+	int modelBufferSize = sizeof(struct Renderer::Model) * 1;
+  MTL::Buffer* modelBuffer = device->newBuffer(modelBufferSize, MTL::ResourceStorageModeShared);
+  resources.emplace_back(modelBuffer);
+	for (int i = 0; i < 1; i++) {
+		struct Renderer::Model* gpuModel = ((struct Renderer::Model*)modelBuffer->contents()) + i;
+    Explorer::Model* cpuModel = _modelsarr[i];
 
-  CGRect frame = ViewAdapter::bounds();
-  _gridSize = MTL::Size::Make(frame.size.width * 2, frame.size.height * 2, 1);
-  _resolution = {(float)_gridSize.width, (float)_gridSize.height, (float)_gridSize.depth};
+		int meshBufferSize = sizeof(struct Renderer::Mesh) * 1;
+		MTL::Buffer* meshBuffer = device->newBuffer(meshBufferSize, MTL::ResourceStorageModeShared);
+		resources.emplace_back(meshBuffer);
+		DEBUG("Bindless: built mesh buffer.");
+		for (int j = 0; j < 1; j++) {
+			struct Renderer::Mesh* gpuMesh = ((struct Renderer::Mesh*)meshBuffer->contents()) + j;
+			Explorer::Mesh* cpuMesh = cpuModel->meshes[j];
 
-  _camera = VCamera();
+			gpuMesh->vertices = cpuMesh->buffers[0]->gpuAddress() + cpuMesh->offsets[0];
+			gpuMesh->attributes = cpuMesh->buffers[1]->gpuAddress() + cpuMesh->offsets[1];
+
+			resources.emplace_back(cpuMesh->buffers[0]);
+			resources.emplace_back(cpuMesh->buffers[1]);
+
+			int submeshBufferSize = sizeof(struct Renderer::Submesh);
+			MTL::Buffer* submeshBuffer = device->newBuffer(submeshBufferSize, MTL::ResourceStorageModeShared);
+			resources.emplace_back(submeshBuffer);
+			for (int k = 0; k < cpuMesh->count; k++) {
+				struct Renderer::Submesh* gpuSubmesh = ((struct Renderer::Submesh*)submeshBuffer->contents()) + k;
+				Explorer::Submesh* cpuSubmesh = cpuMesh->submeshes()[k];
+
+				gpuSubmesh->indices = cpuSubmesh->indexBuffer->gpuAddress() + cpuSubmesh->offset;
+				resources.emplace_back(cpuSubmesh->indexBuffer);
+			}
+		
+			gpuMesh->submeshes = submeshBuffer->gpuAddress();
+		}
+		gpuModel->meshes = meshBuffer->gpuAddress();	
+	}
+
+	int sceneBufferSize = sizeof(struct Renderer::Scene);
+  MTL::Buffer* sceneBuffer = device->newBuffer(sceneBufferSize, MTL::ResourceStorageModeShared);
+  resources.emplace_back(sceneBuffer);
+
+  struct Renderer::Scene* gpuScene = ((struct Renderer::Scene*)sceneBuffer->contents());
+  gpuScene->models = modelBuffer->gpuAddress();
+
+  _resources = resources;
+  _sceneBuffer = sceneBuffer;
 }
 
 void Explorer::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* notUsed) {
@@ -93,15 +164,21 @@ void Explorer::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncode
 
   Renderer::RTTransform transform = _camera.update();
   encoder->setBytes(&transform, sizeof(transform), 2);
-  encoder->setBytes(&spheres, sizeof(Renderer::Sphere) * 3, 3);
-  float spherecount = (float)sizeof(spheres) / sizeof(Renderer::Sphere);
+  encoder->setBytes(&_spheres, sizeof(Renderer::Sphere) * 3, 3);
 
+  float spherecount = (float)sizeof(_spheres) / sizeof(Renderer::Sphere);
   encoder->setBytes(&spherecount, 4, 5);
 
-  encoder->setBytes(&materials, sizeof(Renderer::RTMaterial) * 3, 4);
+  encoder->setBytes(&_materials, sizeof(Renderer::RTMaterial) * 3, 4);
 
   encoder->useHeap(_heap);
   encoder->setAccelerationStructure(_instanceAccStructure, 6);
+
+  encoder->setBuffer(_sceneBuffer, 0, 9);
+
+  for (auto resource : _resources) {
+    encoder->useResource(resource, MTL::ResourceUsageRead);
+  }
 
   encoder->dispatchThreads(_gridSize, _threadGroupSize);
 

@@ -114,7 +114,9 @@ buildSubmesh(MTL::Device* device, MTKSubmesh* mtkSubmesh, MDLSubmesh* mdlSubmesh
   textures.emplace_back([TextureRepository read2:device
                                         material:mdlSubmesh.material
                                         semantic:MDLMaterialSemanticBaseColor]);
-  
+
+	DEBUG("Submesh index type: " + std::to_string(mtkSubmesh.indexType));
+
   Explorer::Submesh* submesh = new Explorer::Submesh(
       material,
       textures,
@@ -166,7 +168,7 @@ buildMesh(MTL::Device* device, MDLMesh* mdlMesh, MTL::VertexDescriptor* vertexDe
       [[mdlMesh name] UTF8String],
       mdlMesh.vertexCount
   );
-
+	
 	DEBUG("Submeshes: " + std::to_string(mtkMesh.submeshes.count));
   for (int i = 0; i < mtkMesh.submeshes.count; i++) {
     mesh->add(buildSubmesh(device, mtkMesh.submeshes[i], mdlMesh.submeshes[i]));

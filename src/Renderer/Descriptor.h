@@ -15,13 +15,14 @@ public:
   static MTL::RenderPipelineDescriptor*
   render(MTL::Device* device, MTL::VertexDescriptor* vertexDescriptor, std::string path);
   static MTL::ComputePipelineDescriptor* compute(MTL::Device* device, std::string path);
-  static MTL::PrimitiveAccelerationStructureDescriptor* primitive(Explorer::Mesh* mesh);
-  static NS::Array* primitives(Explorer::Model* model);
+  static MTL::PrimitiveAccelerationStructureDescriptor* primitive(Explorer::Mesh* mesh, const int& stride);
+  static NS::Array* primitives(Explorer::Model* model, const int& stride);
   static MTL::InstanceAccelerationStructureDescriptor* instance(
       MTL::Device* device,
       NS::Array* primitiveStructures,
       const int& instanceCount,
-      const std::vector<Explorer::Model*>& instances
+			Explorer::Model* instances[]
+      //const std::vector<Explorer::Model*>& instances
   );
 };
 }; // namespace Renderer
