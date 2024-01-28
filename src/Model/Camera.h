@@ -35,6 +35,7 @@ class VCamera {
 		const void setSpeed(float speed);
 		void updateView();
 		Renderer::RTTransform update();
+		void Iso();
 
 	private:
 		Renderer::RTTransform rTransform;
