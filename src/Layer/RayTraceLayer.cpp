@@ -155,13 +155,11 @@ void Explorer::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncode
 	t += 1.0f;
   if (t > 360) t -= 360.0f;
 
-	(t < 180) ? _lightDir += {0.0f, 1.0 / 90, 0.0f} : _lightDir += {0.0f, -1.0 / 90, -0.0f};
-	(t < 180) ? _lightDir += {1.0 / 90, 0.0f, 0.0f} : _lightDir += {-1.0 / 90, 0.0f, -0.0f};
+	//(t < 180) ? _lightDir += {0.0f, 1.0 / 90, 0.0f} : _lightDir += {0.0f, -1.0 / 90, -0.0f};
+	//(t < 180) ? _lightDir += {1.0 / 90, 0.0f, 0.0f} : _lightDir += {-1.0 / 90, 0.0f, -0.0f};
 	//(t < 180) ? _lightDir += {0.0f, 0.0f, 1.0 / 90} : _lightDir += {0.0f, 0.0f, -1.0 / 90};
 	//DEBUG("Light dir: " + std::to_string(_lightDir.x) + " " + std::to_string(_lightDir.y) + " " + std::to_string(_lightDir.z));
 	
-
-
   MTL::CommandBuffer* buffer = queue->commandBuffer();
   MTL::ComputeCommandEncoder* encoder = buffer->computeCommandEncoder();
 

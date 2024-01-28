@@ -169,7 +169,7 @@ void computeKernel(
 		intersector.assume_geometry_type(raytracing::geometry_type::triangle);
 	
 		// The amount of times we allow for the ray to bounce from object to object.
-		int bounces = 1;
+		int bounces = 2;
 		float factor = 1.0f;
 		raytracing::intersection_result<raytracing::instancing, raytracing::triangle_data> intersection;
 		for (int i = 0; i < bounces; i++) {
@@ -199,6 +199,10 @@ void computeKernel(
 				uint32_t index2 = submesh.indices[intersection.primitive_id * 3 + 1];
 				uint32_t index3 = submesh.indices[intersection.primitive_id * 3 + 2];
 
+				float3 pos1 = mesh.vertices[index1];
+				float3 pos2 = mesh.vertices[index2];
+				float3 pos3 = mesh.vertices[index3];
+
 				float3 normal1 = mesh.attributes[index1].normal;
 				float3 normal2 = mesh.attributes[index2].normal;
 				float3 normal3 = mesh.attributes[index3].normal;
@@ -206,15 +210,13 @@ void computeKernel(
 				float2 txCoord1 = mesh.attributes[index1].texture;
 				float2 txCoord2 = mesh.attributes[index2].texture;
 				float2 txCoord3 = mesh.attributes[index3].texture;
-
+				
+				float3 pos = (pos1 * bary3.x) + (pos2 * bary3.y) + (pos3 * bary3.z);
 				float3 normal = (normal1 * bary3.x) + (normal2 * bary3.y) + (normal3 * bary3.z);
 				float2 txCoord = (txCoord1 * bary3.x) + (txCoord2 * bary3.y) + (txCoord3 * bary3.z);
 
 				// We now know our ray hits. We can continue to calculate the reflection.
 				float3 objectColor = texture.sample(sampler2d, txCoord).xyz;
-
-				//if (!objectColor.x + objectColor.y + objectColor.z) {objectColor = float3(1.0f, 0.0f, 1.0f); }
-				//objectColor = float3(1.0f, 0.0f, 0.0f);
 				float3 lightDirN = normalize(lightDir);
 
 				// Angle between the outgoing light vector and normal, 90 degrees to the point
@@ -226,8 +228,12 @@ void computeKernel(
 
 				//color = float4(objectColor, 1.0f);
 
-				//r.origin = h.position + h.normal * 0.001;
-				//r.direction = reflect(r.direction, h.normal);
+
+				//float3 origin = r.origin - spheres[index].origin;
+				//float3 point = origin + r.direction * distance;
+
+				r.origin = pos + normal * 0.001;
+				r.direction = reflect(r.direction, normal);
 			}
 		}
 
