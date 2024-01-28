@@ -6,7 +6,8 @@ Support for instance acceleration structures was added, this intergrates with th
 
 <img width="986" alt="Screenshot 2024-01-11 at 00 22 29" src="https://github.com/r-smits/explorer/assets/35615011/2813c38e-8732-4dfa-85bd-bfa26e86cf04">
 <img width="985" alt="Screenshot 2024-01-18 at 22 56 11" src="https://github.com/r-smits/explorer/assets/35615011/639ff909-517e-4bdb-acc3-fa21a2d56479">
-<img width="976" alt="Screenshot 2024-01-26 at 18 30 31" src="https://github.com/r-smits/explorer/assets/35615011/28bc4b08-473f-410b-8766-7e9af2f7eb68">
+<img width="976" alt="Screenshot 2024-01-28 at 11 23 20" src="https://github.com/r-smits/explorer/assets/35615011/38ba6f05-b659-4916-ada4-032f831aa8f6">
+
 
  
 It is written in MSL (Metal Shader Language), c++, objcpp, and a little objective-c.
