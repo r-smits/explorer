@@ -130,7 +130,9 @@ void Explorer::RayTraceLayer::buildBindlessScene(MTL::Device* device) {
 				Explorer::Submesh* cpuSubmesh = cpuMesh->submeshes()[k];
 
 				gpuSubmesh->indices = cpuSubmesh->indexBuffer->gpuAddress() + cpuSubmesh->offset;
+				gpuSubmesh->texture = cpuSubmesh->textures[0]->gpuResourceID();
 				resources.emplace_back(cpuSubmesh->indexBuffer);
+				resources.emplace_back(cpuSubmesh->textures[0]);
 			}
 		
 			gpuMesh->submeshes = submeshBuffer->gpuAddress();
@@ -150,6 +152,16 @@ void Explorer::RayTraceLayer::buildBindlessScene(MTL::Device* device) {
 }
 
 void Explorer::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* notUsed) {
+	t += 1.0f;
+  if (t > 360) t -= 360.0f;
+
+	(t < 180) ? _lightDir += {0.0f, 1.0 / 90, 0.0f} : _lightDir += {0.0f, -1.0 / 90, -0.0f};
+	(t < 180) ? _lightDir += {1.0 / 90, 0.0f, 0.0f} : _lightDir += {-1.0 / 90, 0.0f, -0.0f};
+	//(t < 180) ? _lightDir += {0.0f, 0.0f, 1.0 / 90} : _lightDir += {0.0f, 0.0f, -1.0 / 90};
+	//DEBUG("Light dir: " + std::to_string(_lightDir.x) + " " + std::to_string(_lightDir.y) + " " + std::to_string(_lightDir.z));
+	
+
+
   MTL::CommandBuffer* buffer = queue->commandBuffer();
   MTL::ComputeCommandEncoder* encoder = buffer->computeCommandEncoder();
 
@@ -164,10 +176,11 @@ void Explorer::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncode
 
   Renderer::RTTransform transform = _camera.update();
   encoder->setBytes(&transform, sizeof(transform), 2);
-  encoder->setBytes(&_spheres, sizeof(Renderer::Sphere) * 3, 3);
+  
+	//encoder->setBytes(&_spheres, sizeof(Renderer::Sphere) * 3, 3);
 
-  float spherecount = (float)sizeof(_spheres) / sizeof(Renderer::Sphere);
-  encoder->setBytes(&spherecount, 4, 5);
+  //float spherecount = (float)sizeof(_spheres) / sizeof(Renderer::Sphere);
+  //encoder->setBytes(&spherecount, 4, 5);
 
   encoder->setBytes(&_materials, sizeof(Renderer::RTMaterial) * 3, 4);
 

@@ -1,4 +1,5 @@
 #pragma once
+#include "Metal/MTLTypes.hpp"
 #include <Renderer/Layout.h>
 #include <pch.h>
 #include <simd/simd.h>
@@ -67,7 +68,8 @@ struct VertexAttributes {
 };
 
 struct Submesh {
-  uint64_t indices; // Indices pointing at the packed vertices
+  uint64_t indices;					// Indices pointing at the packed vertices
+	MTL::ResourceID texture;	// Resource ID pointing at texture of submesh
 };
 
 struct Mesh {
