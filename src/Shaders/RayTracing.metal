@@ -2,7 +2,15 @@
 #include <metal_raytracing>
 using namespace metal;
 
-constexpr sampler kernelsampler2d(address::clamp_to_edge, filter::linear);
+constexpr sampler sampler2d(address::repeat, filter::linear);
+
+/**
+constexpr sampler linearSampler (address::repeat,
+                                 mip_filter::linear,
+                                 mag_filter::linear,
+                                 min_filter::linear);
+**/
+
 
 struct VertexAttributes {
 	float3 color;																	// {r, g, b}
@@ -13,6 +21,7 @@ struct VertexAttributes {
 struct Submesh
 {
     constant uint32_t* indices;									// Indices pointing at the packed vertices
+		texture2d<float> texture;
 };
 
 struct Mesh
@@ -139,9 +148,7 @@ void computeKernel(
 	constant float3& resolution														[[buffer(0)]],
 	constant float3& lightDir															[[buffer(1)]],
 	constant RTTransform& transform												[[buffer(2)]],
-	constant Sphere* spheres															[[buffer(3)]],
 	constant RTMaterial* materials												[[buffer(4)]],
-	constant float& spherecount														[[buffer(5)]],
 	raytracing::instance_acceleration_structure structure [[buffer(6)]],
 	constant Scene* scene																	[[buffer(9)]],
 	uint2 gid																							[[thread_position_in_grid]] 
@@ -172,8 +179,8 @@ void computeKernel(
 			
 			// If our ray does not hit, then we make the color of the sky light up a little
 			if (intersection.type == raytracing::intersection_type::none) {
-				//float3 skyColor = float3(0.0f, 0.0f, 0.0f);
-				//color.xyz += skyColor * factor;
+				float3 skyColor = float3(0.0f, 0.0f, 0.0f);
+				color.xyz += skyColor * factor;
 				break;
 			}
 
@@ -183,9 +190,10 @@ void computeKernel(
 				// This requires a bindless setup
 				Mesh mesh = scene->models[intersection.instance_id].meshes[0];
 				Submesh submesh = mesh.submeshes[intersection.geometry_id];
+				texture2d<float> texture = submesh.texture;
 
 				float2 bary2 = intersection.triangle_barycentric_coord;
-				float3 bary3 = float3( 1.0 - (bary2.x + bary2.y), bary2.x, bary2.y);
+				float3 bary3 = float3(1.0 - (bary2.x + bary2.y), bary2.x, bary2.y);
 
 				uint32_t index1 = submesh.indices[intersection.primitive_id * 3 + 0];
 				uint32_t index2 = submesh.indices[intersection.primitive_id * 3 + 1];
@@ -202,9 +210,11 @@ void computeKernel(
 				float3 normal = (normal1 * bary3.x) + (normal2 * bary3.y) + (normal3 * bary3.z);
 				float2 txCoord = (txCoord1 * bary3.x) + (txCoord2 * bary3.y) + (txCoord3 * bary3.z);
 
-
 				// We now know our ray hits. We can continue to calculate the reflection.
-				float3 objectColor = float3(0.0f, 1.0f, 1.0f);
+				float3 objectColor = texture.sample(sampler2d, txCoord).xyz;
+
+				//if (!objectColor.x + objectColor.y + objectColor.z) {objectColor = float3(1.0f, 0.0f, 1.0f); }
+				//objectColor = float3(1.0f, 0.0f, 0.0f);
 				float3 lightDirN = normalize(lightDir);
 
 				// Angle between the outgoing light vector and normal, 90 degrees to the point
@@ -224,88 +234,3 @@ void computeKernel(
 		buffer.write(color, gid);
 	}
 	
-	/**
-	raytracing::ray r = buildRay(resolution, transform, gid);
-	raytracing::intersector<raytracing::instancing, raytracing::triangle_data> intersector;
-  intersector.assume_geometry_type(raytracing::geometry_type::triangle); 
-	raytracing::intersection_result<raytracing::instancing, raytracing::triangle_data> intersection = intersector.intersect(r, structure, 0xFF);
-	**/
-
-	// intersection_result contains the following information:
-	// type -> type of intersection. ::none if not intersected, ::triangle if hit.
-	// instance_id -> the id of the instance which was hit.
-	// triangle_front_facing -> if the front of the triangle was intersected, then it will be true.
-	// barymetric_coordinate -> ...
-	
-	/**
-	if (intersection.type == raytracing::intersection_type::triangle) {
-		color = float4(1.0f, 0.0f, 0.0f, 1.0f);
-
-		if (intersection.instance_id == 0) {
-			color = float4(0.0f, 0.0f, 1.0f, 1.0f);
-		}
-
-		if (intersection.triangle_front_facing == true) {
-			color = float4(1.0f, 0.0f, 1.0f, 1.0f);
-		}
-	}
-
-	if (intersection.type == raytracing::intersection_type::none) {
-		color = float4(0.0f, 0.0f, 0.0f, 1.0f);
-	}
-	**/
-		
-	// buffer.write(color, gid);
-
-
-
-
-
-	/**
-	int bounces = 2;
-
-	float factor = 1.0f;
-	for (int i = 0; i < bounces; i++) {
-
-		//auto intersection = intersector.intersect(r, structure, 0xFF);
-
-		Payload h = hit(r, spheres, spherecount);
-
-		if (h.index == -1) {
-			float3 skyColor = float3(0.0f, 0.0f, 0.0f);
-			color.xyz += skyColor * factor;
-			break;
-		}
-	
-		float3 sphereColor = materials[h.index].color;
-		float3 lightDirN = normalize(lightDir);
-
-		// Angle between the outgoing light vector and normal, 90 degrees to the point
-		float cosTheta = max(dot(h.normal, -lightDirN), 0.0f);
-		sphereColor.xyz *= cosTheta;
-		color.xyz += sphereColor * factor;
-		factor *= 0.7f;
-
-		r.origin = h.position + h.normal * 0.001;
-		r.direction = reflect(r.direction, h.normal);
-	}
-
-	buffer.write(color, gid);
-	**/
-//}
-
-
-[[kernel]]
-void colorCheck(
-	texture2d<float, access::write> buffer [[texture(0)]],
-	const device float4& resolution [[buffer(0)]],
-	const device float3& lightDir [[buffer(1)]],
-	const device RTTransform& transform [[buffer(2)]],
-	uint2 gid [[thread_position_in_grid]] 
-) {
-
-	float2 color = float2(gid) / resolution.xy;
-	buffer.write(float4(color.x, color.y, 0.0, 1.0), gid);
-}
-
-

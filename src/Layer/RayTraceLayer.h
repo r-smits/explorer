@@ -58,6 +58,9 @@ private:
 	std::vector<MTL::Resource*> _resources;
 	//MTL::Resource* _resources[20];
 
+private:
+	int t = 0;
+
 
 };
 }; // namespace Explorer
