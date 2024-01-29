@@ -30,7 +30,7 @@ Explorer::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* confi
 
 void Explorer::RayTraceLayer::buildModels(MTL::Device* device) {
   // Setting up objects
-  _lightDir = {-1, -1, -1};
+  _lightDir = {0.0f, -1.0f, -0.7f};
 
   Renderer::Sphere sphere1 = {
       {.5f, 0.2f, -2.0f},
@@ -163,30 +163,25 @@ void Explorer::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncode
   MTL::CommandBuffer* buffer = queue->commandBuffer();
   MTL::ComputeCommandEncoder* encoder = buffer->computeCommandEncoder();
 
-  CA::MetalDrawable* drawable = view->currentDrawable();
-  MTL::Texture* texture = drawable->texture();
-
   encoder->setComputePipelineState(_raytrace);
-
+	
+	CA::MetalDrawable* drawable = view->currentDrawable();
+  MTL::Texture* texture = drawable->texture();
   encoder->setTexture(texture, 0);
+
   encoder->setBytes(&_resolution, sizeof(_resolution), 0);
   encoder->setBytes(&_lightDir, sizeof(_lightDir), 1);
 
   Renderer::RTTransform transform = _camera.update();
   encoder->setBytes(&transform, sizeof(transform), 2);
   
-	//encoder->setBytes(&_spheres, sizeof(Renderer::Sphere) * 3, 3);
-
-  //float spherecount = (float)sizeof(_spheres) / sizeof(Renderer::Sphere);
-  //encoder->setBytes(&spherecount, 4, 5);
-
-  encoder->setBytes(&_materials, sizeof(Renderer::RTMaterial) * 3, 4);
+  //encoder->setBytes(&_materials, sizeof(Renderer::RTMaterial) * 3, 4);
 
   encoder->useHeap(_heap);
-  encoder->setAccelerationStructure(_instanceAccStructure, 6);
-
-  encoder->setBuffer(_sceneBuffer, 0, 9);
-
+  encoder->setAccelerationStructure(_instanceAccStructure, 3);
+  encoder->setBuffer(_sceneBuffer, 0, 4);
+	
+	//encoder->useResources();
   for (auto resource : _resources) {
     encoder->useResource(resource, MTL::ResourceUsageRead);
   }

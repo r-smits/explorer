@@ -2,15 +2,7 @@
 #include <metal_raytracing>
 using namespace metal;
 
-constexpr sampler sampler2d(address::repeat, filter::linear);
-
-/**
-constexpr sampler linearSampler (address::repeat,
-                                 mip_filter::linear,
-                                 mag_filter::linear,
-                                 min_filter::linear);
-**/
-
+constexpr sampler sampler2d(address::clamp_to_edge, filter::linear); 
 
 struct VertexAttributes {
 	float3 color;																	// {r, g, b}
@@ -55,17 +47,39 @@ struct RTMaterial {
 	float3 metallic;
 };
 
-struct Sphere {
-	float3 origin;
-	float radius;
-};
+uint32_t hash(uint32_t a) {
+    a = (a ^ 61) ^ (a >> 16);
+    a = a + (a << 3);
+    a = a ^ (a >> 4);
+    a = a * 0x27d4eb2d;
+    a = a ^ (a >> 15);
+    return a;
+}
 
-struct Payload {
-	int index;
-	float distance;
-	float3 position;
-	float3 normal;
-};
+float rand(int x, int y, int z) {
+    int seed = x + y * 57 + z * 241;
+    seed= (seed<< 13) ^ seed;
+    return (( 1.0 - ( (seed * (seed * seed * 15731 + 789221) + 1376312589) & 2147483647) / 1073741824.0f) + 1.0f) / 2.0f - 0.5f;
+}
+
+float rand2(uint2 gid) {
+	int seed0 = 36969 * ((gid.x) & 65535) + ((gid.x) >> 16);  // hash the seeds using bitwise AND and bitshifts
+	int seed1 = 18000 * ((gid.y) & 65535) + ((gid.y) >> 16);
+
+	int ires = ((seed0) << 16) + (seed1);
+	
+	float f;
+	int ui;
+
+	// Convert to float
+	//union { 
+	//	float f;
+	//	int ui;
+	//} res;
+
+	ui = (ires & 0x007fffff) | 0x40000000;  // bitwise AND, bitwise OR
+	return (f - 2.f) / 2.f;
+}
 
 raytracing::ray buildRay(
 	constant float3& resolution,
@@ -94,64 +108,15 @@ raytracing::ray buildRay(
 	return r;
 }
 
-Payload hit(
-	raytracing::ray r,
-	constant Sphere* spheres,
-	constant float& count
-) {
-	int index = -1;
-	float distance = 9999;
-	for (int i = 0; i < count; ++i) {
-
-		float3 rayOrigin = r.origin - spheres[i].origin;
-		float radius = spheres[i].radius;
-
-		// Intersection logic
-		// ray origin =				a
-		// ray direction =		b
-		// radius =						r
-		// distance =					d
-	
-		float a = dot(r.direction, r.direction);
-		float b = 2.0f * dot(rayOrigin, r.direction);
-		float c = dot(rayOrigin, rayOrigin) - pow(radius, 2);
-	
-		// b^2 -4 * ac
-		float discriminant = b * b - 4.0f * a * c;
-	
-		if (discriminant <= 0.0f) continue;
-		
-		float intersect = (-b - sqrt(discriminant)) / (2.0f * a); // Closest intersection point
-
-		if (intersect > 0.0f && intersect < distance) {
-			distance = intersect;
-			index = i;
-		}
-	}
-
-	float3 origin = r.origin - spheres[index].origin;
-	float3 point = origin + r.direction * distance;
-	float3 normal = normalize(point);
-	point += spheres[index].origin;
-
-	Payload p;
-	p.index = index;
-	p.distance = distance;
-	p.position = point;
-	p.normal = normal;
-	return p;
-}
-
 [[kernel]]
 void computeKernel(
-	texture2d<float, access::write> buffer								[[texture(0)]],
-	constant float3& resolution														[[buffer(0)]],
-	constant float3& lightDir															[[buffer(1)]],
-	constant RTTransform& transform												[[buffer(2)]],
-	constant RTMaterial* materials												[[buffer(4)]],
-	raytracing::instance_acceleration_structure structure [[buffer(6)]],
-	constant Scene* scene																	[[buffer(9)]],
-	uint2 gid																							[[thread_position_in_grid]] 
+	texture2d<float, access::write> buffer									[[ texture(0)								]],
+	constant float3& resolution															[[ buffer(0)								]],
+	constant float3& lightDir																[[ buffer(1)								]],
+	constant RTTransform& transform													[[ buffer(2)								]],
+	raytracing::instance_acceleration_structure structure		[[ buffer(3)								]],
+	constant Scene* scene																		[[ buffer(4)								]],
+	uint2 gid																								[[ thread_position_in_grid	]] 
 ) {
 		// Initialize default color
 		float4 color = float4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -169,7 +134,7 @@ void computeKernel(
 		intersector.assume_geometry_type(raytracing::geometry_type::triangle);
 	
 		// The amount of times we allow for the ray to bounce from object to object.
-		int bounces = 2;
+		int bounces = 50;
 		float factor = 1.0f;
 		raytracing::intersection_result<raytracing::instancing, raytracing::triangle_data> intersection;
 		for (int i = 0; i < bounces; i++) {
@@ -179,7 +144,7 @@ void computeKernel(
 			
 			// If our ray does not hit, then we make the color of the sky light up a little
 			if (intersection.type == raytracing::intersection_type::none) {
-				float3 skyColor = float3(0.0f, 0.0f, 0.0f);
+				float3 skyColor = float3(0.4f, 0.5f, 0.4f);
 				color.xyz += skyColor * factor;
 				break;
 			}
@@ -224,13 +189,7 @@ void computeKernel(
 				float cosTheta = max(dot(normal, -lightDirN), 0.0f);
 				objectColor *= cosTheta;
 				color.xyz += objectColor * factor;
-				factor *= 0.7f;
-
-				//color = float4(objectColor, 1.0f);
-
-
-				//float3 origin = r.origin - spheres[index].origin;
-				//float3 point = origin + r.direction * distance;
+				factor *= 0.5f;
 
 				r.origin = pos + normal * 0.001;
 				r.direction = reflect(r.direction, normal);
