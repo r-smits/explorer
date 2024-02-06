@@ -4,6 +4,10 @@ using namespace metal;
 
 constexpr sampler sampler2d(address::clamp_to_edge, filter::linear); 
 
+constant float PI = 3.1415926535897932384626433832795;
+constant float TAU = PI * 2;
+constant float PI_INVERSE = 1 / PI;
+
 struct VertexAttributes {
 	float3 color;																	// {r, g, b}
 	float2 texture;																// {x, y}
@@ -23,14 +27,9 @@ struct Mesh
 		constant Submesh* submeshes;								// Submeshes related to the mesh
 };
 
-struct Model
-{
-		constant Mesh* meshes;											// Meshes related to model
-};
-
 struct Scene
 {
-    constant Model* models;											// All models in the scene
+		constant Mesh* meshes;											// All meshes related to all models
 };
 
 struct RTTransform {
@@ -47,39 +46,56 @@ struct RTMaterial {
 	float3 metallic;
 };
 
-uint32_t hash(uint32_t a) {
-    a = (a ^ 61) ^ (a >> 16);
-    a = a + (a << 3);
-    a = a ^ (a >> 4);
-    a = a * 0x27d4eb2d;
-    a = a ^ (a >> 15);
-    return a;
+struct Reservoir {
+	float y;								// chosen sample
+	float wsum;							// sum of weights
+	float M;								// number of 'bad' samples
+	float W;								// weight
+};
+
+
+/**
+void generateSamples(float2 p) {
+
+	Reservoir reservoir = {0.0f, 0.0f, 0.0f, 0.0f};
+
+	for (int i = 0; i < 32; i++) {
+		int lightToSample = min(int(rng(p) * 	
+
+
+
+	}
+
+
+
+}
+**/
+
+
+float rng(float2 p) {
+  float2 r = float2(23.1406926327792690, 2.6651441426902251);	
+	// e^pi (Gelfond's constant), 2^sqrt(2) (Gelfond–Schneider constant)
+	return fract(cos(fmod(123456789., 1e-7 + 256. * dot(p,r))));  
 }
 
-float rand(int x, int y, int z) {
-    int seed = x + y * 57 + z * 241;
-    seed= (seed<< 13) ^ seed;
-    return (( 1.0 - ( (seed * (seed * seed * 15731 + 789221) + 1376312589) & 2147483647) / 1073741824.0f) + 1.0f) / 2.0f - 0.5f;
+float3 bitangent(float3 u)
+{
+	float3 a = abs(u);
+	uint xm = ((a.x - a.y) < 0 && (a.x - a.z) < 0) ? 1 : 0;
+	uint ym = (a.y - a.z) < 0 ? (1 ^ xm) : 0;
+	uint zm = 1 ^ (xm | ym);
+	return cross(u, float3(xm, ym, zm));
 }
 
-float rand2(uint2 gid) {
-	int seed0 = 36969 * ((gid.x) & 65535) + ((gid.x) >> 16);  // hash the seeds using bitwise AND and bitshifts
-	int seed1 = 18000 * ((gid.y) & 65535) + ((gid.y) >> 16);
-
-	int ires = ((seed0) << 16) + (seed1);
-	
-	float f;
-	int ui;
-
-	// Convert to float
-	//union { 
-	//	float f;
-	//	int ui;
-	//} res;
-
-	ui = (ires & 0x007fffff) | 0x40000000;  // bitwise AND, bitwise OR
-	return (f - 2.f) / 2.f;
-}
+float3 hemiSample(float2 random, float3 normal) {
+	float3 bitan = bitangent(normal);
+  float3 tan = cross(bitan, normal);
+  float radius = sqrt(random.x);
+	float phi = TAU * random.y;
+  return tan		 * (radius * cos(phi)) + bitan 
+								 * (radius * sin(phi)) + normal 
+								 * sqrt(max(0.0f, 1.0f - random.x));
+};
 
 raytracing::ray buildRay(
 	constant float3& resolution,
@@ -116,25 +132,30 @@ void computeKernel(
 	constant RTTransform& transform													[[ buffer(2)								]],
 	raytracing::instance_acceleration_structure structure		[[ buffer(3)								]],
 	constant Scene* scene																		[[ buffer(4)								]],
+	constant float4x4& modelMatrix													[[ buffer(20)								]],
 	uint2 gid																								[[ thread_position_in_grid	]] 
 ) {
 		// Initialize default color
-		float4 color = float4(0.0f, 0.0f, 0.0f, 1.0f);
+		float4 color = float4(1.0f, 1.0f, 1.0f, 1.0f);
 		
 		// Check if instance acceleration structure was built succesfully
 		if (is_null_instance_acceleration_structure(structure)) {
-			buffer.write(color, gid);	
+			buffer.write(color, gid);
+			return;
 		}
 
 		// Build initial ray shoots out from the location of the pixel. Accounts for cameraView matrix.
 		raytracing::ray r = buildRay(resolution, transform, gid);
+		
+		float2 pixel = float2(gid);
+		pixel /= resolution.xy;
 
 		// Build intersector. This object is responsible to check if the loaded instances were intersected.
 		raytracing::intersector<raytracing::instancing, raytracing::triangle_data> intersector;
 		intersector.assume_geometry_type(raytracing::geometry_type::triangle);
 	
 		// The amount of times we allow for the ray to bounce from object to object.
-		int bounces = 50;
+		int bounces = 2;
 		float factor = 1.0f;
 		raytracing::intersection_result<raytracing::instancing, raytracing::triangle_data> intersection;
 		for (int i = 0; i < bounces; i++) {
@@ -144,8 +165,8 @@ void computeKernel(
 			
 			// If our ray does not hit, then we make the color of the sky light up a little
 			if (intersection.type == raytracing::intersection_type::none) {
-				float3 skyColor = float3(0.4f, 0.5f, 0.4f);
-				color.xyz += skyColor * factor;
+				float3 skyColor = float3(0.01f, 0.1f, 0.1f);
+				color.xyz * skyColor * factor;
 				break;
 			}
 
@@ -153,20 +174,26 @@ void computeKernel(
 			
 				// Look up the data belonging to the intersection in the scene
 				// This requires a bindless setup
-				Mesh mesh = scene->models[intersection.instance_id].meshes[0];
+				Mesh mesh = scene->meshes[intersection.instance_id];
 				Submesh submesh = mesh.submeshes[intersection.geometry_id];
 				texture2d<float> texture = submesh.texture;
 
 				float2 bary2 = intersection.triangle_barycentric_coord;
-				float3 bary3 = float3(1.0 - (bary2.x + bary2.y), bary2.x, bary2.y);
+				float3 bary3 = float3(1.0 - bary2.x - bary2.y, bary2.x, bary2.y);
 
 				uint32_t index1 = submesh.indices[intersection.primitive_id * 3 + 0];
 				uint32_t index2 = submesh.indices[intersection.primitive_id * 3 + 1];
 				uint32_t index3 = submesh.indices[intersection.primitive_id * 3 + 2];
 
-				float3 pos1 = mesh.vertices[index1];
-				float3 pos2 = mesh.vertices[index2];
-				float3 pos3 = mesh.vertices[index3];
+				float3 pos1 = (modelMatrix * float4(mesh.vertices[index1], 1.0f)).xyz;
+				float3 pos2 = (modelMatrix * float4(mesh.vertices[index2], 1.0f)).xyz;
+				float3 pos3 = (modelMatrix * float4(mesh.vertices[index3], 1.0f)).xyz;
+
+				float3 u = pos2 - pos1;
+				float3 v = pos3 - pos1;
+
+
+
 
 				float3 normal1 = mesh.attributes[index1].normal;
 				float3 normal2 = mesh.attributes[index2].normal;
@@ -177,22 +204,41 @@ void computeKernel(
 				float2 txCoord3 = mesh.attributes[index3].texture;
 				
 				float3 pos = (pos1 * bary3.x) + (pos2 * bary3.y) + (pos3 * bary3.z);
-				float3 normal = (normal1 * bary3.x) + (normal2 * bary3.y) + (normal3 * bary3.z);
+				float3 normal = normalize((normal1 * bary3.x) + (normal2 * bary3.y) + (normal3 * bary3.z));
+				normal = (modelMatrix * float4(normal, 1.0f)).xyz;
+
+				//normal = normalize(cross(u, v));
+
+				
+
 				float2 txCoord = (txCoord1 * bary3.x) + (txCoord2 * bary3.y) + (txCoord3 * bary3.z);
 
 				// We now know our ray hits. We can continue to calculate the reflection.
 				float3 objectColor = texture.sample(sampler2d, txCoord).xyz;
-				float3 lightDirN = normalize(lightDir);
+								
+				// Lambertian BSDF: bi-drectional scattering distribution function
+				// diffuse lighting uniformly relative to the incoming light direction (wi).
+				float3 wi = -normalize(lightDir);
+				float lambertianBSDF = saturate(dot(normal, wi)) * factor;
+				color.xyz = color.xyz * objectColor * lambertianBSDF;
 
-				// Angle between the outgoing light vector and normal, 90 degrees to the point
+				//float3 pos = r.origin + r.direction * intersection.distance;
+
+				//color.xyz = r.origin + r.direction * intersection.distance;
+				//color.xyz = normal;
+				
+				// reSTIR GI
+				// 1) Generate sample for visible point pos
+				//float2 random2 = float2(rng(pixel), rng(pixel));
+				//float3 L = normalize(hemiSample(random2, normal));
+
+
+
+				
 				// We assume for now that the surface is perfectly reflective.
-				float cosTheta = max(dot(normal, -lightDirN), 0.0f);
-				objectColor *= cosTheta;
-				color.xyz += objectColor * factor;
-				factor *= 0.5f;
-
 				r.origin = pos + normal * 0.001;
-				r.direction = reflect(r.direction, normal);
+				r.direction = reflect(r.direction, normal + 0.0 * (rng(pixel) -0.5f)); 
+
 			}
 		}
 

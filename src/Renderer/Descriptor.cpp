@@ -69,15 +69,19 @@ Renderer::Descriptor::compute(MTL::Device* device, std::string path) {
   return descriptor;
 }
 
-NS::Array* Renderer::Descriptor::primitives(Explorer::Model* model, const int& stride) {
+NS::Array* Renderer::Descriptor::primitives(const std::vector<Explorer::Model*>& scene, const int& stride) {
+	std::vector<Explorer::Mesh*> meshes;
+	for (Explorer::Model* model: scene) {
+		for (Explorer::Mesh* mesh : model->meshes) meshes.emplace_back(mesh);	
+	}
   std::vector<MTL::PrimitiveAccelerationStructureDescriptor*> descriptors;
-  for (Explorer::Mesh* mesh : model->meshes)
+  for (Explorer::Mesh* mesh : meshes)
     descriptors.emplace_back(Descriptor::primitive(mesh, stride));
   NS::Array* result = NS::Array::array((NS::Object* const*)&descriptors[0], descriptors.size());
   return result;
 }
 
-// For every mesh :: 1 PrimitiveAccelerationStructure
+// For every mesh :: 1 PrimitiveAccelerationStructure, 1 instance
 // For every submesh :: 1 Geometry
 MTL::PrimitiveAccelerationStructureDescriptor*
 Renderer::Descriptor::primitive(Explorer::Mesh* mesh, const int& stride) {
@@ -123,29 +127,37 @@ Renderer::Descriptor::primitive(Explorer::Mesh* mesh, const int& stride) {
 MTL::InstanceAccelerationStructureDescriptor* Renderer::Descriptor::instance(
     MTL::Device* device,
     NS::Array* primitiveStructures,
-    const int& instanceCount,
-    Explorer::Model* instances[]
-    // const std::vector<Explorer::Model*>& instances
+    const std::vector<Explorer::Model*>& scene
 ) {
+	int count = 0;
+	std::vector<Explorer::Mesh*> meshes;
+	for (Explorer::Model* model : scene) {
+		count += model->meshCount;
+		for (Explorer::Mesh* mesh : model->meshes) meshes.emplace_back(mesh);
+	}
+
   MTL::InstanceAccelerationStructureDescriptor* descriptor =
       MTL::InstanceAccelerationStructureDescriptor::descriptor();
+
   descriptor->setInstancedAccelerationStructures(primitiveStructures);
-  descriptor->setInstanceCount(instanceCount);
+  descriptor->setInstanceCount(count);
+
   MTL::Buffer* instanceDescriptorBuffer = device->newBuffer(
-      sizeof(MTL::AccelerationStructureInstanceDescriptor) * instanceCount,
+      sizeof(MTL::AccelerationStructureInstanceDescriptor) * count,
       MTL::ResourceStorageModeShared
   );
   MTL::AccelerationStructureInstanceDescriptor* instanceDescriptors =
       (MTL::AccelerationStructureInstanceDescriptor*)instanceDescriptorBuffer->contents();
-  for (int i = 0; i < instanceCount; ++i) {
+
+  for (int i = 0; i < count; i++) {
     instanceDescriptors[i].accelerationStructureIndex = i;
     instanceDescriptors[i].intersectionFunctionTableOffset = 0;
     instanceDescriptors[i].mask = 0xFF;
     instanceDescriptors[i].options = MTL::AccelerationStructureInstanceOptionNone;
-    MTL::PackedFloat4x3 modelViewTransform = Transformation::pack(instances[i]->f4x4()->get());
+    MTL::PackedFloat4x3 modelViewTransform = Transformation::pack(meshes[i]->f4x4()->get());
     instanceDescriptors[i].transformationMatrix = modelViewTransform;
   }
   descriptor->setInstanceDescriptorBuffer(instanceDescriptorBuffer);
-  DEBUG("Built instance structure descriptor. Instances: " + std::to_string(instanceCount));
+  DEBUG("Built instance structure descriptor. Instances: " + std::to_string(count));
   return descriptor;
 }

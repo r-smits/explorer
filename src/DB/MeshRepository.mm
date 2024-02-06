@@ -143,7 +143,8 @@ buildMDLVertexDescriptor(MTL::Device* device, MTL::VertexDescriptor* vertexDescr
 Explorer::Mesh*
 buildMesh(MTL::Device* device, MDLMesh* mdlMesh, MTL::VertexDescriptor* vertexDescriptor) {
   id<MTLDevice> objcppDevice = (__bridge id<MTLDevice>)device;
-
+	
+	//[mdlMesh addNormalsWithAttributeNamed:MDLVertexAttributeNormal creaseThreshold:0.7];
   mdlMesh.vertexDescriptor = buildMDLVertexDescriptor(device, vertexDescriptor);
 
   NSError* err = nil;

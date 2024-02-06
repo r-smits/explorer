@@ -20,7 +20,7 @@ public: // Setting up layer
 public: // Event
   void buildModels(MTL::Device* device);
   void buildAccelerationStructures(MTL::Device* device);
-	void buildBindlessScene(MTL::Device* device);
+	void buildBindlessScene(MTL::Device* device, const std::vector<Model*>& scene);
 	MTL::Size calcGridsize();
 
 private: // Initialization
@@ -45,18 +45,15 @@ private:
   simd::float3 _lightDir;
   Renderer::Sphere _spheres[3];
   Renderer::RTMaterial _materials[3];
-  //std::vector<Explorer::Model*> models;
+  std::vector<Explorer::Model*> scene;
   Explorer::Model* _modelsarr[1];
 
 private:
   MTL::Heap* _heap;
   NS::Array* _primitiveAccStructures;
   MTL::AccelerationStructure* _instanceAccStructure;
-	
-	//std::vector<MTL::Resource*> _resources;
 	MTL::Buffer* _sceneBuffer;
 	std::vector<MTL::Resource*> _resources;
-	//MTL::Resource* _resources[20];
 
 private:
 	int t = 0;

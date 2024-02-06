@@ -78,12 +78,12 @@ struct Mesh {
   uint64_t submeshes;  // Submeshes related to the mesh
 };
 
-struct Model {
-  uint64_t meshes; // Meshes related to model
-};
+//struct Model {
+//  uint64_t meshes; // Meshes related to model
+//};
 
 struct Scene {
-  uint64_t models; // All models in the scene
+  uint64_t meshes; // All models in the scene
 };
 
 }; // namespace Renderer

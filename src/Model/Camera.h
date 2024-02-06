@@ -4,7 +4,6 @@
 #include <View/ViewAdapter.hpp>
 #include <pch.h>
 #include <simd/simd.h>
-#include <glm/glm.hpp>
 
 namespace Explorer {
 
@@ -39,7 +38,6 @@ class VCamera {
 
 	private:
 		Renderer::RTTransform rTransform;
-		glm::vec3 gForward;
 		simd::float3 vForward;
 		simd::float3 vUp;
 		simd::float2 speed;

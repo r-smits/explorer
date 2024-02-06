@@ -39,16 +39,16 @@ struct Submesh {
       MTL::Buffer* indexBuffer,
       int offset
   )
-      : material(material), textures(textures), primitiveType(primitiveType), indexCount(indexCount),
-        indexType(indexType), indexBuffer(indexBuffer), offset(offset) {}
+      : material(material), textures(textures), primitiveType(primitiveType),
+        indexCount(indexCount), indexType(indexType), indexBuffer(indexBuffer), offset(offset) {}
   ~Submesh() {
     indexBuffer->release();
-		for (auto texture : textures)	
-    texture->release();
+    for (auto texture : textures)
+      texture->release();
   }
 
   Renderer::Material material;
-	std::vector<MTL::Texture*> textures;
+  std::vector<MTL::Texture*> textures;
   MTL::PrimitiveType primitiveType;
   NS::UInteger indexCount;
   MTL::IndexType indexType;
@@ -60,8 +60,8 @@ struct Mesh : public Object {
 public:
   Mesh(
       std::vector<MTL::Buffer*> buffers,
-			std::vector<int> offsets,
-			const int& bufferCount,
+      std::vector<int> offsets,
+      const int& bufferCount,
       std::string name = "Mesh",
       int vertexCount = -1
   );
@@ -70,9 +70,9 @@ public:
     for (Submesh* subMesh : vSubmeshes) {
       delete subMesh;
     }
-		for (MTL::Buffer* buffer : buffers) {
-			buffer->release();
-		}
+    for (MTL::Buffer* buffer : buffers) {
+      buffer->release();
+    }
   };
 
 public:
@@ -87,9 +87,9 @@ public:
   std::vector<Submesh*> submeshes() { return vSubmeshes; }
 
 public:
-	std::vector<MTL::Buffer*> buffers;
-	std::vector<int> offsets;
-	int bufferCount;
+  std::vector<MTL::Buffer*> buffers;
+  std::vector<int> offsets;
+  int bufferCount;
   int count;
 
 private:
@@ -102,9 +102,22 @@ private:
 
 struct Model : public Object {
 public:
-  Model(std::vector<Mesh*> meshes, std::string name = "Model", int vertexCount = -1)
-      : name(name), vertexCount(vertexCount), meshes(meshes) {}
+  Model(const std::vector<Mesh*>& meshes, std::string name = "Model", int vertexCount = -1)
+      : name(name), vertexCount(vertexCount) {
+    add(meshes);
+  }
   Model(Mesh* mesh) { meshes.push_back(mesh); }
+
+  void add(Mesh* mesh) {
+    meshes.emplace_back(mesh);
+    meshCount += 1;
+  }
+
+  void add(const std::vector<Mesh*>& meshes) {
+    for (Mesh* mesh : meshes)
+      add(mesh);
+  }
+
   ~Model() {
     for (Mesh* mesh : meshes) {
       delete mesh;
@@ -124,6 +137,7 @@ private:
 
 public:
   std::vector<Mesh*> meshes;
+  int meshCount;
 };
 
 struct Light : public Object {
