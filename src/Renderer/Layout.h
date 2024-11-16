@@ -123,6 +123,7 @@ struct Layouts {
   );
 
 	// Non-Interleaved vertex buffers
+	// Tightly packed vec3 
   inline static BufferLayouts vertexNIP = BufferLayouts(
       {
           {{ShaderDataType::Packed3, "position"}},

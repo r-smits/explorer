@@ -15,16 +15,16 @@ Explorer::Object* Explorer::Object::f4x4() {
   orientation = Transformation::translation(position) * rotation * Transformation::scale(factor);
   return this;
 }
-Explorer::Object* Explorer::Object::translate(simd::float3 position) {
+Explorer::Object* Explorer::Object::translate(const simd::float3& position) {
   this->position += position;
   return this;
 }
 
-Explorer::Object* Explorer::Object::scale(float factor) {
+Explorer::Object* Explorer::Object::scale(const float& factor) {
   this->factor = factor;
   return this;
 }
-Explorer::Object* Explorer::Object::rotate(simd::float4x4 rotation) {
+Explorer::Object* Explorer::Object::rotate(const simd::float4x4& rotation) {
   this->rotation = rotation;
   return this;
 }
@@ -40,11 +40,13 @@ Explorer::Mesh::Mesh(
     std::vector<MTL::Buffer*> buffers,
     std::vector<int> offsets,
     const int& bufferCount,
-    std::string name,
-    int vertexCount
+    const std::string& name,
+    const int& vertexCount
 )
     : buffers(buffers), bufferCount(bufferCount), offsets(offsets), name(name),
-      vertexCount(vertexCount), count(0) {}
+      vertexCount(vertexCount), count(0) {
+				DEBUG("Mesh: '" + this->name + "', vertex count: " + std::to_string(this->vertexCount));
+}
 
 Explorer::Model* Explorer::MeshFactory::pyramid(MTL::Device* device, std::string texture) {
   Renderer::Vertex vertices[4] = {
@@ -169,7 +171,7 @@ Explorer::Model* Explorer::MeshFactory::quad(MTL::Device* device, std::string te
   return new Model(quad);
 }
 
-Explorer::Light* Explorer::Light::translate(simd::float3 pos) {
+Explorer::Light* Explorer::Light::translate(const simd::float3& pos) {
   position += pos;
   data.position = position;
   // data.position = convert();

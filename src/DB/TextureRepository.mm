@@ -72,7 +72,7 @@
   for (MDLMaterialProperty* property : properties) {
     
 		assert(property.semantic == semantic);
-    std::string propertyURL = "/Users/ramonsmits/Code/Explorer/src/Assets/Meshes/f16/";
+    std::string propertyURL = "/Users/ramonsmits/Code/cpp/graphics/Explorer/src/Assets/Meshes/f16/";
 		name = [property.name UTF8String];
 		
 		if (property.type == MDLMaterialPropertyTypeFloat3) {

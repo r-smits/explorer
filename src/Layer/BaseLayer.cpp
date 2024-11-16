@@ -88,13 +88,13 @@ void Explorer::BaseLayer::buildMeshes() {
   // "bugatti/bugatti"); bugatti->position.z -= 80;
 
   sphere = Repository::Meshes::read(device, _vertexDescriptor, config->meshPath + "sphere/sphere", false, false);
-  sphere->translate({0.0f, 0.30f, -2.5f})->scale(0.1)->f4x4();
+  sphere->move({0.0f, 0.30f, -2.5f})->scale(0.1)->f4x4();
 
   f16 = Repository::Meshes::read2(device, _vertexDescriptor, config->meshPath + "f16/f16");
-  f16->translate({0.0f, 0.0f, -2.5f});
+  f16->move({0.0f, 0.0f, -2.5f});
 
   cruiser = Repository::Meshes::read(device, _vertexDescriptor, config->meshPath + "cruiser/cruiser");
-  cruiser->translate({0.0f, 0.0f, -2.5f})->scale(0.5f)->f4x4();
+  cruiser->move({0.0f, 0.0f, -2.5f})->scale(0.5f)->f4x4();
 
   light = MeshFactory::light(this->device);
   light->translate({0.0f, 0.5f, -2.5f});
@@ -131,16 +131,16 @@ void Explorer::BaseLayer::checkIO() {
   camera.f4x4();
 
   if (IO::isPressed(ARROW_UP)) {
-    f16->rotate(Transformation::xRotation(camera.rotateSpeed) * f16->rotation);
+    f16->rotate(Transformation::xRotation(camera.rotateSpeed));
   }
   if (IO::isPressed(ARROW_DOWN)) {
-    f16->rotate(Transformation::xRotation(-camera.rotateSpeed) * f16->rotation);
+    f16->rotate(Transformation::xRotation(-camera.rotateSpeed));
   }
   if (IO::isPressed(ARROW_LEFT)) {
-    f16->rotate(Transformation::yRotation(camera.rotateSpeed) * f16->rotation);
+    f16->rotate(Transformation::yRotation(camera.rotateSpeed));
   }
   if (IO::isPressed(ARROW_RIGHT)) {
-    f16->rotate(Transformation::yRotation(-camera.rotateSpeed) * f16->rotation);
+    f16->rotate(Transformation::yRotation(-camera.rotateSpeed));
   }
   f16->f4x4();
 }
@@ -153,10 +153,10 @@ void Explorer::BaseLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* e
   encoder->setRenderPipelineState(generalPipelineState);
   encoder->setDepthStencilState(depthStencilState);
 
-  (t < 90 || t > 270) ? sphere->translate({1.0 / 180, 0.0f, 0.0f})->f4x4()
-                      : sphere->translate({-1.0 / 180, 0.0f, -0.0f})->f4x4();
+  (t < 90 || t > 270) ? sphere->move({1.0 / 180, 0.0f, 0.0f})->f4x4()
+                      : sphere->move({-1.0 / 180, 0.0f, -0.0f})->f4x4();
 
-  light->data.position = sphere->position;
+  light->data.position = sphere->meshes[0]->position;
 
   Renderer::Draw::light(encoder, camera, light);
   Renderer::Draw::model(encoder, camera, sphere);

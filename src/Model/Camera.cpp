@@ -1,3 +1,4 @@
+#include "Math/Transformation.h"
 #include <Events/IOState.h>
 #include <Model/Camera.h>
 #include <Model/MeshFactory.h>
@@ -18,12 +19,16 @@ VCamera::VCamera() {
   float fov = frame.size.width / frame.size.height;
   lastMousePos = IO::getMouse() / resolution * 2 - 1;
 
-  simd::float3 vOrigin = {0.0f, 0.0f, 2.5f};
-  simd::float4x4 mProjection = Transformation::perspective(45.0f, fov, 0.1f, 100.0f);
-  simd::float4x4 mInverseProjection = simd::inverse(mProjection);
+  simd::float3 vOrigin = {0.0f, 0.0f, 2.0f};
+
+	//simd::float4x4 mProjection = Transformation::orthographic(-1, 1, -1, 1, 1, -1);
+	simd::float4x4 mProjection = Transformation::perspective(45.0f, fov, 0.1f, 100.0f);
+  
+	simd::float4x4 mInverseProjection = simd::inverse(mProjection);
   simd::float4x4 mView = Transformation::lookat(vOrigin, vOrigin + vForward, vUp);
   simd::float4x4 mInverseView = simd::inverse(mView);
-  rTransform = {mProjection, mView, mInverseProjection, mInverseView, vOrigin};
+  
+	rTransform = {mProjection, mView, mInverseProjection, mInverseView, vOrigin};
 };
 
 simd::float3 VCamera::vRight() { return simd::cross(vForward, vUp); }
@@ -31,7 +36,7 @@ simd::float3 VCamera::vRight() { return simd::cross(vForward, vUp); }
 const void VCamera::setSpeed(float speed) { this->speed = speed; }
 
 void VCamera::Iso() {
-	simd::quatf rotX = simd::quatf(-30.0f * M_PI/180, vRight());
+	simd::quatf rotX = simd::quatf(-45.0f * M_PI/180, vRight());
 	simd::quatf rotY = simd::quatf(-45.0f * M_PI/180, vUp);
 	simd::quatf angle = simd::normalize(rotX * rotY);
 	vForward = simd_act(angle, vForward);

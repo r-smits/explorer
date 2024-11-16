@@ -13,10 +13,10 @@ Renderer::Descriptor::vertex(MTL::Device* device, const BufferLayouts& layouts) 
     int stride = 0;
 
     for (BufferElement element : layout.getElements()) {
-      DEBUG(
-          "Layout: " + std::to_string(layoutIndex) + " Element: " + std::to_string(elementIndex) +
-          ", Offset: " + std::to_string(stride)
-      );
+      //DEBUG(
+      //    "Layout: " + std::to_string(layoutIndex) + " Element: " + std::to_string(elementIndex) +
+      //    ", Offset: " + std::to_string(stride)
+      //);
       MTL::VertexAttributeDescriptor* positionDescriptor =
           vertexDescriptor->attributes()->object(elementIndex);
       positionDescriptor->setFormat((MTL::VertexFormat)element.type);
@@ -25,7 +25,7 @@ Renderer::Descriptor::vertex(MTL::Device* device, const BufferLayouts& layouts) 
       stride += element.size;
       elementIndex += 1;
     }
-    DEBUG("Layout: " + std::to_string(layoutIndex) + ", Stride: " + std::to_string(stride));
+    //DEBUG("Layout: " + std::to_string(layoutIndex) + ", Stride: " + std::to_string(stride));
     MTL::VertexBufferLayoutDescriptor* layoutDescriptor =
         vertexDescriptor->layouts()->object(layoutIndex);
     layoutDescriptor->setStride(stride);
@@ -105,10 +105,10 @@ Renderer::Descriptor::primitive(Explorer::Mesh* mesh, const int& stride) {
     geometryDescriptor->setTriangleCount(submesh->indexCount / 3);
     geometryDescriptors.emplace_back(geometryDescriptor);
 
-    DEBUG(
-        "Built triangle geometry descriptor. Indices: " + std::to_string(submesh->indexCount) +
-        " Triangles: " + std::to_string(geometryDescriptor->triangleCount())
-    );
+    //DEBUG(
+    //    "Built triangle geometry descriptor. Indices: " + std::to_string(submesh->indexCount) +
+    //    " Triangles: " + std::to_string(geometryDescriptor->triangleCount())
+    //);
   }
 
   MTL::PrimitiveAccelerationStructureDescriptor* dPrimitive =
@@ -117,10 +117,10 @@ Renderer::Descriptor::primitive(Explorer::Mesh* mesh, const int& stride) {
       NS::Array::array((NS::Object* const*)&geometryDescriptors[0], geometryDescriptors.size());
   dPrimitive->setGeometryDescriptors(aGeometries);
 
-  DEBUG(
-      "Built primitive descriptor. Geometries: " +
-      std::to_string(dPrimitive->geometryDescriptors()->count())
-  );
+  //DEBUG(
+  //    "Built primitive descriptor. Geometries: " +
+  //    std::to_string(dPrimitive->geometryDescriptors()->count())
+  //);
   return dPrimitive;
 }
 
@@ -158,6 +158,6 @@ MTL::InstanceAccelerationStructureDescriptor* Renderer::Descriptor::instance(
     instanceDescriptors[i].transformationMatrix = modelViewTransform;
   }
   descriptor->setInstanceDescriptorBuffer(instanceDescriptorBuffer);
-  DEBUG("Built instance structure descriptor. Instances: " + std::to_string(count));
+  //DEBUG("Built instance structure descriptor. Instances: " + std::to_string(count));
   return descriptor;
 }

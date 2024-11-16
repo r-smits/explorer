@@ -1,3 +1,5 @@
+#include "Renderer/Types.h"
+#include "util.h"
 #include <DB/Repository.h>
 #include <DB/Repository.hpp>
 #include <MetalKit/MetalKit.h>
@@ -13,8 +15,9 @@ Explorer::Model* Repository::Meshes::read(
     bool useLight
 ) {
   NSURL* url = (__bridge NSURL*)Explorer::nsUrl(path + ".obj");
-  MDLVertexDescriptor* mdlVertexDescriptor =
-      MTKModelIOVertexDescriptorFromMetal((__bridge MTLVertexDescriptor*)vertexDescriptor);
+  MDLVertexDescriptor* mdlVertexDescriptor = MTKModelIOVertexDescriptorFromMetal(
+    (__bridge MTLVertexDescriptor*)vertexDescriptor
+  );
 
   [[[mdlVertexDescriptor attributes] objectAtIndex:0] setName:MDLVertexAttributePosition];
   [[[mdlVertexDescriptor attributes] objectAtIndex:1] setName:MDLVertexAttributeColor];
@@ -104,18 +107,22 @@ Explorer::Model* Repository::Meshes::read(
 }
 
 Explorer::Submesh*
-buildSubmesh(MTL::Device* device, MTKSubmesh* mtkSubmesh, MDLSubmesh* mdlSubmesh) {
-  Renderer::Material material = [TextureRepository readMaterial:device
-                                                       material:mdlSubmesh.material];
-	material.useLight = true;
-	material.useColor = false;
+buildSubmesh(
+	MTL::Device* device, 
+	MTKSubmesh* mtkSubmesh, 
+	MDLSubmesh* mdlSubmesh
+) {
+  Renderer::Material material = [TextureRepository readMaterial:device material:mdlSubmesh.material];
+
   std::vector<MTL::Texture*> textures;
+	MTL::Texture* texture = [TextureRepository read2:device material:mdlSubmesh.material semantic:MDLMaterialSemanticBaseColor];
+	textures.emplace_back(texture);
 
-  textures.emplace_back([TextureRepository read2:device
-                                        material:mdlSubmesh.material
-                                        semantic:MDLMaterialSemanticBaseColor]);
+	material.useColor = (!texture) ? false : true;
+	material.useLight = false;
 
-	DEBUG("Submesh index type: " + std::to_string(mtkSubmesh.indexType));
+	DEBUG("Material texture: " + std::to_string(material.useColor));
+	DEBUG("Material emissive: " + std::to_string(material.useLight));
 
   Explorer::Submesh* submesh = new Explorer::Submesh(
       material,
@@ -152,17 +159,16 @@ buildMesh(MTL::Device* device, MDLMesh* mdlMesh, MTL::VertexDescriptor* vertexDe
   if (err) Explorer::printError((__bridge NS::Error*)err);
   assert(mtkMesh.submeshes.count == mtkMesh.submeshes.count);
 
-  DEBUG("Number of vertex buffers detected: " + std::to_string(mtkMesh.vertexBuffers.count));
   std::vector<MTL::Buffer*> buffers;
   std::vector<int> offsets;
   for (int i = 0; i < mtkMesh.vertexBuffers.count; i++) {
-    MTL::Buffer* buffer = (__bridge MTL::Buffer*)[mtkMesh.vertexBuffers objectAtIndex:i].buffer;
+		MTL::Buffer* buffer = (__bridge MTL::Buffer*)[mtkMesh.vertexBuffers objectAtIndex:i].buffer;
     int offset = [mtkMesh.vertexBuffers objectAtIndex:i].offset;
     buffers.emplace_back(buffer);
     offsets.emplace_back(offset);
   }
-
-  Explorer::Mesh* mesh = new Explorer::Mesh(
+	
+	Explorer::Mesh* mesh = new Explorer::Mesh(
       buffers,
       offsets,
       mtkMesh.vertexBuffers.count,
@@ -172,13 +178,23 @@ buildMesh(MTL::Device* device, MDLMesh* mdlMesh, MTL::VertexDescriptor* vertexDe
 	
 	DEBUG("Submeshes: " + std::to_string(mtkMesh.submeshes.count));
   for (int i = 0; i < mtkMesh.submeshes.count; i++) {
-    mesh->add(buildSubmesh(device, mtkMesh.submeshes[i], mdlMesh.submeshes[i]));
+    mesh->add(
+			buildSubmesh(
+				device, 
+				mtkMesh.submeshes[i], 
+				mdlMesh.submeshes[i]
+			)
+		);
   }
   return mesh;
 }
 
 std::vector<Explorer::Mesh*>
-buildMeshes(MTL::Device* device, MDLObject* object, MTL::VertexDescriptor* vertexDescriptor) {
+buildMeshes(
+	MTL::Device* device, 
+	MDLObject* object, 
+	MTL::VertexDescriptor* vertexDescriptor 
+) {
   std::vector<Explorer::Mesh*> meshes;
   if ([object isKindOfClass:[MDLMesh class]]) {
     DEBUG("Found MDLMesh class. Building mesh...");
@@ -194,49 +210,24 @@ buildMeshes(MTL::Device* device, MDLObject* object, MTL::VertexDescriptor* verte
   return meshes;
 }
 
-/**
-Explorer::Model*
-Repository::Meshes::read2(MTL::Device* device, std::string path, bool
-useTexture, bool useLight) { return nullptr;
-}
-**/
-
 Explorer::Model* Repository::Meshes::read2(
     MTL::Device* device,
     MTL::VertexDescriptor* vertexDescriptor,
-    std::string path,
-    bool useTexture,
-    bool useLight
+    std::string path
 ) {
   DEBUG("Reading mesh...");
-
   NSURL* url = (__bridge NSURL*)Explorer::nsUrl(path + ".obj");
-  MTKMeshBufferAllocator* bufferAllocator =
-      [[MTKMeshBufferAllocator alloc] initWithDevice:(__bridge id<MTLDevice>)device];
+  MTKMeshBufferAllocator* bufferAllocator = [[MTKMeshBufferAllocator alloc] initWithDevice:(__bridge id<MTLDevice>)device];
 
   DEBUG("Reading asset...");
-  MDLAsset* mdlAsset = [[MDLAsset alloc] initWithURL:url
-                                    vertexDescriptor:nil
-                                     bufferAllocator:bufferAllocator];
+  MDLAsset* mdlAsset = [[MDLAsset alloc] initWithURL:url vertexDescriptor:nil bufferAllocator:bufferAllocator];
 
-  MTKTextureLoader* textureLoader =
-      [[MTKTextureLoader alloc] initWithDevice:(__bridge id<MTLDevice>)device];
-
-  std::vector<Explorer::Mesh*> assetMeshes;
+  std::vector<Explorer::Mesh*> allMeshes;
   for (MDLObject* mdlObject : mdlAsset) {
-    DEBUG("One object to meshes...");
-    std::vector<Explorer::Mesh*> objMeshes = buildMeshes(device, mdlObject, vertexDescriptor);
-
-    for (int i = 0; i < objMeshes.size(); i++) {
-      DEBUG("Adding mesh to vector ...");
-      std::stringstream ss;
-      ss << objMeshes.size();
-      DEBUG(ss.str());
-      assetMeshes.emplace_back(objMeshes[i]);
-    }
+    std::vector<Explorer::Mesh*> meshes = buildMeshes(device, mdlObject, vertexDescriptor);
+		for (Explorer::Mesh* mesh : meshes) { allMeshes.emplace_back(mesh); }
   }
-  DEBUG("Initializing model ...");
-  Explorer::Model* model = new Explorer::Model(assetMeshes, "model", -1);
-  DEBUG("MeshRepository -> " + model->toString());
+
+  Explorer::Model* model = new Explorer::Model(allMeshes, "model", -1);
   return model;
 }

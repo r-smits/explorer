@@ -12,6 +12,7 @@ NS::String* Repository::Shaders::open(std::string path) {
 }
 
 MTL::Library* Repository::Shaders::readLibrary(MTL::Device* device, std::string path) {
+  DEBUG("hello world");
   DEBUG("Loading: " + path + ".metal" + " ... ");
   NS::Error* error = nullptr;
   MTL::CompileOptions* options = nullptr;
