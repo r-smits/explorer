@@ -35,6 +35,6 @@ public:
   Meshes(){};
   ~Meshes(){};
   static Explorer::Model* read(MTL::Device* device, MTL::VertexDescriptor* vertexDescriptor, std::string path, bool useTexture = true, bool useLight = true);
-	static Explorer::Model* read2(MTL::Device* device, MTL::VertexDescriptor* vertexDescriptor, std::string path, bool useTexture = true, bool useLight = true);
+	static Explorer::Model* read2(MTL::Device* device, MTL::VertexDescriptor* vertexDescriptor, std::string path);
 };
 }; // namespace Repository

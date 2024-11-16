@@ -62,28 +62,30 @@ struct Projection {
 };
 
 struct VertexAttributes {
-  simd::float4 color;   // [[ id(0) ]]; // {r, g, b}
+  simd::float4 color;   // [[ id(0) ]]; // {r, g, b, w}
   simd::float2 texture; // [[ id(1) ]]; // {x, y}
-  simd::float3 normal;  // [[ id(2) ]]; // v{x, y, z}
+  simd::float3 normal;  // [[ id(2) ]]; // {x, y, z}
 };
 
 struct Submesh {
   uint64_t indices;					// Indices pointing at the packed vertices
 	MTL::ResourceID texture;	// Resource ID pointing at texture of submesh
+	bool textured;						// Whether to use texture for indices
+	bool emissive;						// Whether material is a light or not
 };
 
 struct Mesh {
-  uint64_t vertices;   // Vertices packed: XYZXYZ...
-  uint64_t attributes; // Attributes of the vertices. See shader for data types
-  uint64_t submeshes;  // Submeshes related to the mesh
+  uint64_t vertices;						// Vertices packed: XYZXYZ...
+  uint64_t attributes;					// Attributes of the vertices. See shader for data types
+  uint64_t submeshes;						// Submeshes related to the mesh
 };
 
-struct Model {
-  uint64_t meshes; // Meshes related to model
-};
+//struct Model {
+//  uint64_t meshes; // Meshes related to model
+//};
 
 struct Scene {
-  uint64_t models; // All models in the scene
+  uint64_t meshes; // All models in the scene
 };
 
 }; // namespace Renderer

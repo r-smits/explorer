@@ -14,10 +14,10 @@ public:
 
 public:
   virtual Object* f4x4();
-  virtual Object* translate(simd::float3 pos);
-  virtual Object* scale(float factor);
-  virtual Object* rotate(simd::float4x4 rotation);
-  virtual simd::float4x4 get() { return orientation; }
+  virtual Object* translate(const simd::float3& pos);
+  virtual Object* scale(const float& factor);
+  virtual Object* rotate(const simd::float4x4& rotation);
+  virtual const simd::float4x4& get() { return orientation; }
 
 public:
   simd::float4x4 rotation;
@@ -29,6 +29,14 @@ public:
 };
 
 struct Submesh {
+public:
+  Renderer::Material material;
+  std::vector<MTL::Texture*> textures;
+  MTL::PrimitiveType primitiveType;
+  NS::UInteger indexCount;
+  MTL::IndexType indexType;
+  MTL::Buffer* indexBuffer;
+  NS::UInteger offset;
 
   Submesh(
       Renderer::Material material,
@@ -39,40 +47,39 @@ struct Submesh {
       MTL::Buffer* indexBuffer,
       int offset
   )
-      : material(material), textures(textures), primitiveType(primitiveType), indexCount(indexCount),
-        indexType(indexType), indexBuffer(indexBuffer), offset(offset) {}
+      : material(material), textures(textures), primitiveType(primitiveType),
+        indexCount(indexCount), indexType(indexType), indexBuffer(indexBuffer), offset(offset) {}
   ~Submesh() {
     indexBuffer->release();
-		for (auto texture : textures)	
-    texture->release();
+    for (auto texture : textures)
+      texture->release();
   }
-
-  Renderer::Material material;
-	std::vector<MTL::Texture*> textures;
-  MTL::PrimitiveType primitiveType;
-  NS::UInteger indexCount;
-  MTL::IndexType indexType;
-  MTL::Buffer* indexBuffer;
-  NS::UInteger offset;
 };
 
 struct Mesh : public Object {
 public:
+  std::vector<MTL::Buffer*> buffers;
+  std::vector<int> offsets;
+  int bufferCount;
+  int count;
+	
+private:
+  std::vector<Submesh*> vSubmeshes;
+  std::string name;
+  int vertexCount;
+
+public:
   Mesh(
       std::vector<MTL::Buffer*> buffers,
-			std::vector<int> offsets,
-			const int& bufferCount,
-      std::string name = "Mesh",
-      int vertexCount = -1
+      std::vector<int> offsets,
+      const int& bufferCount,
+      const std::string& name = "Mesh",
+      const int& vertexCount = -1
   );
   Mesh(Submesh* submesh, std::string name = "Mesh", int vertexCount = -1);
   ~Mesh() {
-    for (Submesh* subMesh : vSubmeshes) {
-      delete subMesh;
-    }
-		for (MTL::Buffer* buffer : buffers) {
-			buffer->release();
-		}
+    for (Submesh* subMesh : vSubmeshes) { delete subMesh; }
+    for (MTL::Buffer* buffer : buffers) { buffer->release(); }
   };
 
 public:
@@ -84,27 +91,82 @@ public:
     vSubmeshes.emplace_back(submesh);
     count += 1;
   }
+	void setColor(const simd::float4& color) {
+		for (int i = 0; i < this->vertexCount; i += 1) {
+			Renderer::VertexAttributes* attributes = (Renderer::VertexAttributes*) buffers[1]->contents() + i;
+			attributes->color = color;
+		}
+	}
+
   std::vector<Submesh*> submeshes() { return vSubmeshes; }
-
-public:
-	std::vector<MTL::Buffer*> buffers;
-	std::vector<int> offsets;
-	int bufferCount;
-  int count;
-
-private:
-  std::vector<Submesh*> vSubmeshes;
-
-private:
-  std::string name;
-  int vertexCount;
 };
 
-struct Model : public Object {
+struct Model {
 public:
-  Model(std::vector<Mesh*> meshes, std::string name = "Model", int vertexCount = -1)
-      : name(name), vertexCount(vertexCount), meshes(meshes) {}
+  Model(const std::vector<Mesh*>& meshes, std::string name = "Model", int vertexCount = -1)
+      : name(name), vertexCount(vertexCount) {
+    add(meshes);
+  }
   Model(Mesh* mesh) { meshes.push_back(mesh); }
+
+  void add(Mesh* mesh) {
+    meshes.emplace_back(mesh);
+    meshCount += 1;
+  }
+
+  void add(const std::vector<Mesh*>& meshes) {
+    for (Mesh* mesh : meshes)
+      add(mesh);
+  }
+
+	Explorer::Model* rotate(const simd::float4x4& rotation) {
+		for (Mesh* mesh : meshes) {
+			mesh->rotate(rotation * mesh->rotation);
+		}
+		return this;
+	}
+
+	Explorer::Model* scale(const float& scalar) {
+		for (Mesh* mesh: meshes) {
+			mesh->scale(scalar);	
+		}
+		return this;
+	}
+
+	Explorer::Model* move(const simd::float3& vec) {
+		for (Mesh* mesh: meshes) {
+			mesh->translate(vec);
+		}
+		return this;
+	}
+
+	Explorer::Model* f4x4() {	
+		for (Mesh* mesh: meshes) {
+			mesh->f4x4();
+		}
+		return this;
+	}
+	
+	Explorer::Model* setColor(const simd::float4& color) {
+		for (Mesh* mesh : this->meshes) {
+			mesh->setColor(color);
+		}
+		return this;
+	}
+
+	Explorer::Model* setEmissive(const bool& emissive) {
+		for (Mesh* mesh : this->meshes) {
+			for (Submesh* submesh : mesh->submeshes()) {
+				submesh->material.useLight = emissive;
+			}
+		}
+		return this;
+	}
+
+	const simd::float4x4& get() {
+		return this->meshes[0]->get();
+	}
+
   ~Model() {
     for (Mesh* mesh : meshes) {
       delete mesh;
@@ -124,6 +186,7 @@ private:
 
 public:
   std::vector<Mesh*> meshes;
+  int meshCount;
 };
 
 struct Light : public Object {
@@ -137,7 +200,7 @@ struct Light : public Object {
   ~Light(){};
 
 public:
-  virtual Light* translate(simd::float3 pos) override;
+  virtual Light* translate(const simd::float3& pos) override;
   virtual simd::float3 convert();
 
 public:

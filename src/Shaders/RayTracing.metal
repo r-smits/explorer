@@ -2,43 +2,36 @@
 #include <metal_raytracing>
 using namespace metal;
 
-constexpr sampler sampler2d(address::repeat, filter::linear);
+constexpr sampler sampler2d(address::clamp_to_edge, filter::linear); 
 
-/**
-constexpr sampler linearSampler (address::repeat,
-                                 mip_filter::linear,
-                                 mag_filter::linear,
-                                 min_filter::linear);
-**/
-
+constant float PI = 3.1415926535897932384626433832795;
+constant float TAU = PI * 2;
+constant float PI_INVERSE = 1 / PI;
 
 struct VertexAttributes {
-	float3 color;																	// {r, g, b}
-	float2 texture;																// {x, y}
-	float3 normal;																// v{x, y, z}
+	float4 color;									// {r, g, b, w}
+	float2 texture;								// {x, y}
+	float3 normal;								// v{x, y, z}
 };
 
 struct Submesh
 {
-    constant uint32_t* indices;									// Indices pointing at the packed vertices
-		texture2d<float> texture;
+  constant uint32_t* indices;					// Indices pointing at the packed vertices
+	texture2d<float> texture;
+	bool textured;
+	bool emissive;
 };
 
 struct Mesh
 {
-		constant packed_float3* vertices;						// Vertices packed: XYZXYZ...
-    constant VertexAttributes* attributes;			// Attributes of the vertices
-		constant Submesh* submeshes;								// Submeshes related to the mesh
-};
-
-struct Model
-{
-		constant Mesh* meshes;											// Meshes related to model
+	constant packed_float3* vertices;				// Vertices packed: XYZXYZ...
+  constant VertexAttributes* attributes;	// Attributes of the vertices
+	constant Submesh* submeshes;						// Submeshes related to the mesh
 };
 
 struct Scene
 {
-    constant Model* models;											// All models in the scene
+	constant Mesh* meshes;						// All meshes related to all models
 };
 
 struct RTTransform {
@@ -55,16 +48,74 @@ struct RTMaterial {
 	float3 metallic;
 };
 
-struct Sphere {
-	float3 origin;
-	float radius;
+struct Reservoir {
+	float y;									// chosen sample
+	float wsum;									// sum of weights
+	float M;									// number of 'bad' samples
+	float W;									// weight
 };
 
-struct Payload {
-	int index;
-	float distance;
-	float3 position;
-	float3 normal;
+
+/**
+void generateSamples(float2 p) {
+
+	Reservoir reservoir = {0.0f, 0.0f, 0.0f, 0.0f};
+
+	for (int i = 0; i < 32; i++) {
+		int lightToSample = min(int(rng(p) * 	
+
+
+
+	}
+}
+**/
+
+
+// bi-directional reflectance distribution function
+float brdf(float3 incoming, float3 point, float3 outgoing) {
+
+}
+
+// bi-directional transmittance distribution function
+float btdf(float3 incoming, float3 point, float3 outgoing) {
+
+}
+
+
+float rng(float2 p) {
+  float2 r = float2(23.1406926327792690, 2.6651441426902251);	
+	// e^pi (Gelfond's constant), 2^sqrt(2) (Gelfond–Schneider constant)
+	return fract(cos(fmod(123456789., 1e-7 + 256. * dot(p,r))));  
+}
+
+
+float rand(int x, int y, int z)
+{
+  int seed = x + y * 57 + z * 241;
+  seed = (seed<< 13) ^ seed;
+  return (( 1.0 - ( (seed * (seed * seed * 15731 + 789221) + 1376312589) & 2147483647) / 1073741824.0f) + 1.0f) / 2.0f;
+}	
+			
+			
+			
+
+float3 bitangent(float3 u)
+{
+	float3 a = abs(u);
+	uint xm = ((a.x - a.y) < 0 && (a.x - a.z) < 0) ? 1 : 0;
+	uint ym = (a.y - a.z) < 0 ? (1 ^ xm) : 0;
+	uint zm = 1 ^ (xm | ym);
+	return cross(u, float3(xm, ym, zm));
+}
+
+float3 hemiSample(float2 random, float3 normal) {
+	float3 bitan = bitangent(normal);
+  float3 tan = cross(bitan, normal);
+  float radius = sqrt(random.x);
+	float phi = TAU * random.y;
+  return tan		 * (radius * cos(phi)) + bitan 
+								 * (radius * sin(phi)) + normal 
+								 * sqrt(max(0.0f, 1.0f - random.x));
 };
 
 raytracing::ray buildRay(
@@ -72,7 +123,7 @@ raytracing::ray buildRay(
 	constant RTTransform &transform,
 	uint2 gid
 ) {
-	// Pixel coordinate needs to be within world space:
+	// Camera point needs to be within world space:
 	// -1 >= x >= 1 :: Normalized
 	// -1 >= y >= 1 :: We want to scale y in opposite direction for viewport coordinates
 	// -1 >= z >= 0 :: The camera is pointed towards -z axis, as we use right handed
@@ -84,7 +135,7 @@ raytracing::ray buildRay(
 	// Projection transformations
 	float4 projTransform = transform.mInverseProjection * float4(pixel, 1);
 	float4 projTransformN = float4(normalize(projTransform.xyz / projTransform.w), 0.0f);
-	float3 rayDirection = (transform.mView * projTransformN).xyz;
+	float3 rayDirection = normalize(transform.mView * projTransformN).xyz;
 
 	raytracing::ray r;
 	r.origin = transform.rayOrigin;
@@ -94,149 +145,95 @@ raytracing::ray buildRay(
 	return r;
 }
 
-Payload hit(
-	raytracing::ray r,
-	constant Sphere* spheres,
-	constant float& count
-) {
-	int index = -1;
-	float distance = 9999;
-	for (int i = 0; i < count; ++i) {
-
-		float3 rayOrigin = r.origin - spheres[i].origin;
-		float radius = spheres[i].radius;
-
-		// Intersection logic
-		// ray origin =				a
-		// ray direction =		b
-		// radius =						r
-		// distance =					d
-	
-		float a = dot(r.direction, r.direction);
-		float b = 2.0f * dot(rayOrigin, r.direction);
-		float c = dot(rayOrigin, rayOrigin) - pow(radius, 2);
-	
-		// b^2 -4 * ac
-		float discriminant = b * b - 4.0f * a * c;
-	
-		if (discriminant <= 0.0f) continue;
-		
-		float intersect = (-b - sqrt(discriminant)) / (2.0f * a); // Closest intersection point
-
-		if (intersect > 0.0f && intersect < distance) {
-			distance = intersect;
-			index = i;
-		}
-	}
-
-	float3 origin = r.origin - spheres[index].origin;
-	float3 point = origin + r.direction * distance;
-	float3 normal = normalize(point);
-	point += spheres[index].origin;
-
-	Payload p;
-	p.index = index;
-	p.distance = distance;
-	p.position = point;
-	p.normal = normal;
-	return p;
-}
-
 [[kernel]]
 void computeKernel(
-	texture2d<float, access::write> buffer								[[texture(0)]],
-	constant float3& resolution														[[buffer(0)]],
-	constant float3& lightDir															[[buffer(1)]],
-	constant RTTransform& transform												[[buffer(2)]],
-	constant RTMaterial* materials												[[buffer(4)]],
-	raytracing::instance_acceleration_structure structure [[buffer(6)]],
-	constant Scene* scene																	[[buffer(9)]],
-	uint2 gid																							[[thread_position_in_grid]] 
+	texture2d<float, access::write> buffer					[[ texture(0) 	]],
+	constant float3& resolution								[[ buffer(0)	]],
+	constant float3& lightDir								[[ buffer(1)	]],
+	constant RTTransform& transform							[[ buffer(2)	]],
+	raytracing::instance_acceleration_structure structure	[[ buffer(3)	]],
+	constant Scene* scene									[[ buffer(4)	]],
+	uint2 gid												[[ thread_position_in_grid	]] 
 ) {
 		// Initialize default color
 		float4 color = float4(0.0f, 0.0f, 0.0f, 1.0f);
+		float4 contribution = float4(1.0f, 1.0f, 1.0f, 1.0f);
 		
 		// Check if instance acceleration structure was built succesfully
 		if (is_null_instance_acceleration_structure(structure)) {
-			buffer.write(color, gid);	
+			buffer.write(color, gid);
+			return;
 		}
 
-		// Build initial ray shoots out from the location of the pixel. Accounts for cameraView matrix.
+		// Ray shoots out from point (gid). 
+		// Camera is a grid, point is a coordinate on the grid. 
 		raytracing::ray r = buildRay(resolution, transform, gid);
-
+		
 		// Build intersector. This object is responsible to check if the loaded instances were intersected.
-		raytracing::intersector<raytracing::instancing, raytracing::triangle_data> intersector;
+		// raytracing::intersector<raytracing::instancing, raytracing::triangle_data, raytracing::world_space_data> intersector;
+		raytracing::intersector<raytracing::instancing, raytracing::triangle_data, raytracing::world_space_data> intersector;	
 		intersector.assume_geometry_type(raytracing::geometry_type::triangle);
 	
 		// The amount of times we allow for the ray to bounce from object to object.
-		int bounces = 2;
-		float factor = 1.0f;
-		raytracing::intersection_result<raytracing::instancing, raytracing::triangle_data> intersection;
+		int bounces = 5;
+		raytracing::intersection_result<raytracing::instancing, raytracing::triangle_data, raytracing::world_space_data> intersection;
+		
 		for (int i = 0; i < bounces; i++) {
-			
+
 			// Verify if ray has intersected the geometry
 			intersection = intersector.intersect(r, structure, 0xFF);
-			
-			// If our ray does not hit, then we make the color of the sky light up a little
-			if (intersection.type == raytracing::intersection_type::none) {
-				float3 skyColor = float3(0.0f, 0.0f, 0.0f);
-				color.xyz += skyColor * factor;
-				break;
-			}
 
-			if (intersection.type == raytracing::intersection_type::triangle) {
+			// If our ray does not hit, we return sky color, e.g. black.
+			if (intersection.type == raytracing::intersection_type::none) {
+				color += contribution * float4(0.4f, 0.5f, 0.6f, 1.0f);
+				break;
+			} 
 			
+			if (intersection.type == raytracing::intersection_type::triangle) {
 				// Look up the data belonging to the intersection in the scene
 				// This requires a bindless setup
-				Mesh mesh = scene->models[intersection.instance_id].meshes[0];
+				Mesh mesh = scene->meshes[intersection.instance_id];
 				Submesh submesh = mesh.submeshes[intersection.geometry_id];
 				texture2d<float> texture = submesh.texture;
 
-				float2 bary2 = intersection.triangle_barycentric_coord;
-				float3 bary3 = float3(1.0 - (bary2.x + bary2.y), bary2.x, bary2.y);
+				float2 bary_2d = intersection.triangle_barycentric_coord;
+				float3 bary_3d = float3(1.0 - bary_2d.x - bary_2d.y, bary_2d.x, bary_2d.y);
 
-				uint32_t index1 = submesh.indices[intersection.primitive_id * 3 + 0];
-				uint32_t index2 = submesh.indices[intersection.primitive_id * 3 + 1];
-				uint32_t index3 = submesh.indices[intersection.primitive_id * 3 + 2];
+				uint32_t tri_index_1 = submesh.indices[intersection.primitive_id * 3 + 0];
+				uint32_t tri_index_2 = submesh.indices[intersection.primitive_id * 3 + 1];
+				uint32_t tri_index_3 = submesh.indices[intersection.primitive_id * 3 + 2];
 
-				float3 pos1 = mesh.vertices[index1];
-				float3 pos2 = mesh.vertices[index2];
-				float3 pos3 = mesh.vertices[index3];
-
-				float3 normal1 = mesh.attributes[index1].normal;
-				float3 normal2 = mesh.attributes[index2].normal;
-				float3 normal3 = mesh.attributes[index3].normal;
-
-				float2 txCoord1 = mesh.attributes[index1].texture;
-				float2 txCoord2 = mesh.attributes[index2].texture;
-				float2 txCoord3 = mesh.attributes[index3].texture;
+				VertexAttributes attr_1 = mesh.attributes[tri_index_1];
+				VertexAttributes attr_2 = mesh.attributes[tri_index_2];
+				VertexAttributes attr_3 = mesh.attributes[tri_index_3];
 				
-				float3 pos = (pos1 * bary3.x) + (pos2 * bary3.y) + (pos3 * bary3.z);
-				float3 normal = (normal1 * bary3.x) + (normal2 * bary3.y) + (normal3 * bary3.z);
-				float2 txCoord = (txCoord1 * bary3.x) + (txCoord2 * bary3.y) + (txCoord3 * bary3.z);
-
-				// We now know our ray hits. We can continue to calculate the reflection.
-				float3 objectColor = texture.sample(sampler2d, txCoord).xyz;
-				float3 lightDirN = normalize(lightDir);
-
-				// Angle between the outgoing light vector and normal, 90 degrees to the point
+				// Calculate variables needed to solve the rendering equation
 				// We assume for now that the surface is perfectly reflective.
-				float cosTheta = max(dot(normal, -lightDirN), 0.0f);
-				objectColor *= cosTheta;
-				color.xyz += objectColor * factor;
-				factor *= 0.7f;
-
-				//color = float4(objectColor, 1.0f);
-
-
-				//float3 origin = r.origin - spheres[index].origin;
-				//float3 point = origin + r.direction * distance;
-
-				r.origin = pos + normal * 0.001;
-				r.direction = reflect(r.direction, normal);
+				// You can chance this for materials and so forth
+				// Called: BSDF: bi-directional scattering distribution function.
+				float3 normal = (attr_1.normal * bary_3d.x) + (attr_2.normal * bary_3d.y) + (attr_3.normal * bary_3d.z);
+				normal = normalize((intersection.object_to_world_transform * float4(normal, 0.0f)).xyz);
+				
+				float3 hit = r.origin + r.direction * intersection.distance;
+				r.origin = hit + normal * 0.001;
+				//float3 rand_vec3 = float3(
+				//	rand(hit.x, hit.y, hit.z), 
+				//	rand(gid.x, gid.y, gid.x - gid.y), 
+				//	rand(bary_3d.x, bary_3d.y, bary_3d.z)
+				//);
+				r.direction = reflect(r.direction, normal); // * rand_vec3);// * rand(hit.x, hit.y, hit.z));
+				float3 wi = normalize(r.direction);
+				float wi_dot_n = max(0.01, saturate(dot(wi, normal)));
+				
+				// Calculate all color contributions; use texture / emission if there is one
+				float2 tx_point = (attr_1.texture * bary_3d.x) + (attr_2.texture * bary_3d.y) + (attr_3.texture * bary_3d.z);
+				float4 wo_color = (submesh.textured) ? texture.sample(sampler2d, tx_point) : attr_1.color;
+				
+				contribution *= wo_color * wi_dot_n;
+				color += submesh.emissive * wo_color * 1; 
 			}
 		}
-
+		
 		buffer.write(color, gid);
 	}
 	

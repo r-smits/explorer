@@ -69,3 +69,12 @@ void Explorer::print(simd::quatf q) {
 	DEBUG("--simd::quatf");
 	DEBUG(ss.str());
 }
+
+std::string Explorer::simd2str(const simd::float3 &vec3) {
+	return "[x:" + std::to_string(vec3.x) + ", y: " + std::to_string(vec3.y) + ", z: " + std::to_string(vec3.z) + "]";
+}
+
+std::string Explorer::simd2str(const simd::float4 &vec4) {
+	return "[x:" + std::to_string(vec4.x) + ", y: " + std::to_string(vec4.y) + ", z: " + std::to_string(vec4.z) + ", w: " + std::to_string(vec4.w) + "]";
+}
+
