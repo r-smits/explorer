@@ -58,6 +58,8 @@ void Explorer::RayTraceLayer::buildModels(MTL::Device* device) {
 	
 	scene.emplace_back(sphere1);
 	scene.emplace_back(sphere2);
+
+	DEBUG("Max of uint32: " + std::to_string(0xffffffff));
 }
 
 MTL::Size Explorer::RayTraceLayer::calcGridsize() {
