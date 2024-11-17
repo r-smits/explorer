@@ -48,45 +48,39 @@ struct RTMaterial {
 	float3 metallic;
 };
 
+uint32_t pcg_hash(thread uint32_t input) {
+	uint32_t state = input * 747796405u + 2891336453u;
+	uint32_t word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+	return (word >> 22u) ^ word;
+}
+
+float random_float(thread uint32_t& seed) {
+	seed = pcg_hash(seed);
+	return (float)seed / (float)0xffffffff;
+}
+
+float3 random_float3(thread uint32_t& seed) {
+	return normalize(
+		float3(
+			random_float(seed), 
+			random_float(seed), 
+			random_float(seed)
+		)
+	);
+}
+
 struct Reservoir {
 	float y;									// chosen sample
-	float wsum;									// sum of weights
-	float M;									// number of 'bad' samples
-	float W;									// weight
+	float w_sum;							// sum of weights
+	float m;									// number of samples
+	float w;									// weight
+
+	void update(constant float3& sample, constant float& weight) {
+		w_sum += weight;
+		m += 1;
+	}
 };
 
-
-/**
-void generateSamples(float2 p) {
-
-	Reservoir reservoir = {0.0f, 0.0f, 0.0f, 0.0f};
-
-	for (int i = 0; i < 32; i++) {
-		int lightToSample = min(int(rng(p) * 	
-
-
-
-	}
-}
-**/
-
-
-// bi-directional reflectance distribution function
-float brdf(float3 incoming, float3 point, float3 outgoing) {
-
-}
-
-// bi-directional transmittance distribution function
-float btdf(float3 incoming, float3 point, float3 outgoing) {
-
-}
-
-
-float rng(float2 p) {
-  float2 r = float2(23.1406926327792690, 2.6651441426902251);	
-	// e^pi (Gelfond's constant), 2^sqrt(2) (Gelfond–Schneider constant)
-	return fract(cos(fmod(123456789., 1e-7 + 256. * dot(p,r))));  
-}
 
 
 float rand(int x, int y, int z)
@@ -147,13 +141,13 @@ raytracing::ray buildRay(
 
 [[kernel]]
 void computeKernel(
-	texture2d<float, access::write> buffer					[[ texture(0) 	]],
-	constant float3& resolution								[[ buffer(0)	]],
-	constant float3& lightDir								[[ buffer(1)	]],
-	constant RTTransform& transform							[[ buffer(2)	]],
+	texture2d<float, access::write> buffer								[[ texture(0) ]],
+	constant float3& resolution														[[ buffer(0)	]],
+	constant float3& lightDir															[[ buffer(1)	]],
+	constant RTTransform& transform												[[ buffer(2)	]],
 	raytracing::instance_acceleration_structure structure	[[ buffer(3)	]],
-	constant Scene* scene									[[ buffer(4)	]],
-	uint2 gid												[[ thread_position_in_grid	]] 
+	constant Scene* scene																	[[ buffer(4)	]],
+	uint2 gid																							[[ thread_position_in_grid	]] 
 ) {
 		// Initialize default color
 		float4 color = float4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -175,20 +169,20 @@ void computeKernel(
 		intersector.assume_geometry_type(raytracing::geometry_type::triangle);
 	
 		// The amount of times we allow for the ray to bounce from object to object.
-		int bounces = 5;
+		int bounces = 10;
 		raytracing::intersection_result<raytracing::instancing, raytracing::triangle_data, raytracing::world_space_data> intersection;
 		
-		for (int i = 0; i < bounces; i++) {
-
+		for (int i = 1; i <= bounces; i++) {
 			// Verify if ray has intersected the geometry
 			intersection = intersector.intersect(r, structure, 0xFF);
 
 			// If our ray does not hit, we return sky color, e.g. black.
 			if (intersection.type == raytracing::intersection_type::none) {
-				color += contribution * float4(0.4f, 0.5f, 0.6f, 1.0f);
+				//color *= contribution;
+				color += contribution * float4(.2f, .3f, .4f, 1.0f);
 				break;
 			} 
-			
+
 			if (intersection.type == raytracing::intersection_type::triangle) {
 				// Look up the data belonging to the intersection in the scene
 				// This requires a bindless setup
@@ -214,23 +208,21 @@ void computeKernel(
 				float3 normal = (attr_1.normal * bary_3d.x) + (attr_2.normal * bary_3d.y) + (attr_3.normal * bary_3d.z);
 				normal = normalize((intersection.object_to_world_transform * float4(normal, 0.0f)).xyz);
 				
+				thread uint32_t seed = gid.x * (tri_index_1 * bary_2d.x * i) + gid.y * (tri_index_3 * bary_2d.y * (bounces - i));
 				float3 hit = r.origin + r.direction * intersection.distance;
 				r.origin = hit + normal * 0.001;
-				//float3 rand_vec3 = float3(
-				//	rand(hit.x, hit.y, hit.z), 
-				//	rand(gid.x, gid.y, gid.x - gid.y), 
-				//	rand(bary_3d.x, bary_3d.y, bary_3d.z)
-				//);
-				r.direction = reflect(r.direction, normal); // * rand_vec3);// * rand(hit.x, hit.y, hit.z));
+				normal = normalize(normal + random_float3(seed) * 0.2);
+				r.direction = reflect(r.direction, normal);
+
 				float3 wi = normalize(r.direction);
-				float wi_dot_n = max(0.01, saturate(dot(wi, normal)));
+				float wi_dot_n = max(0.001, saturate(dot(wi, normal)));
 				
 				// Calculate all color contributions; use texture / emission if there is one
 				float2 tx_point = (attr_1.texture * bary_3d.x) + (attr_2.texture * bary_3d.y) + (attr_3.texture * bary_3d.z);
 				float4 wo_color = (submesh.textured) ? texture.sample(sampler2d, tx_point) : attr_1.color;
 				
 				contribution *= wo_color * wi_dot_n;
-				color += submesh.emissive * wo_color * 1; 
+				color += submesh.emissive * wo_color * 1;
 			}
 		}
 		
