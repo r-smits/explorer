@@ -10,18 +10,45 @@ namespace Renderer {
 typedef std::vector<MTL::PrimitiveAccelerationStructureDescriptor*> PDV;
 
 struct Descriptor {
-public:
-  static MTL::VertexDescriptor* vertex(MTL::Device* device, const BufferLayouts& layouts);
-  static MTL::RenderPipelineDescriptor*
-  render(MTL::Device* device, MTL::VertexDescriptor* vertexDescriptor, std::string path);
-  static MTL::ComputePipelineDescriptor* compute(MTL::Device* device, std::string path);
-  static MTL::PrimitiveAccelerationStructureDescriptor*
-  primitive(Explorer::Mesh* mesh, const int& stride);
-  static NS::Array* primitives(const std::vector<Explorer::Model*>& scene, const int& stride);
+  
+	static MTL::VertexDescriptor* vertex(
+			MTL::Device* device, 
+			const BufferLayouts& layouts
+	);
+
+  static MTL::RenderPipelineDescriptor* render(
+			MTL::Device* device, 
+			MTL::VertexDescriptor* vertexDescriptor, 
+			const std::string& path
+	);
+
+  static MTL::ComputePipelineDescriptor* compute(
+			MTL::Device* device, 
+			const std::string& path
+	);
+
+  static MTL::PrimitiveAccelerationStructureDescriptor* primitive(
+			Explorer::Mesh* mesh, 
+			const int& vStride, 
+			const int& pStride
+	);
+
+  static std::vector<MTL::PrimitiveAccelerationStructureDescriptor*> primitives(
+			const std::vector<Explorer::Model*>& scene, 
+			const int& vStride, 
+			const int& pStride
+	);
+
   static MTL::InstanceAccelerationStructureDescriptor* instance(
       MTL::Device* device,
-      NS::Array* primitiveStructures,
+      const std::vector<MTL::AccelerationStructure*>& primitiveStructures,
       const std::vector<Explorer::Model*>& scene
   );
+
+	static MTL::InstanceAccelerationStructureDescriptor* updateTransformationMatrix(
+			const std::vector<Explorer::Model*>& scene,
+			MTL::InstanceAccelerationStructureDescriptor* descriptor
+	);
+
 };
 }; // namespace Renderer

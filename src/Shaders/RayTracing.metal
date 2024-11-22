@@ -81,18 +81,6 @@ struct Reservoir {
 	}
 };
 
-
-
-float rand(int x, int y, int z)
-{
-  int seed = x + y * 57 + z * 241;
-  seed = (seed<< 13) ^ seed;
-  return (( 1.0 - ( (seed * (seed * seed * 15731 + 789221) + 1376312589) & 2147483647) / 1073741824.0f) + 1.0f) / 2.0f;
-}	
-			
-			
-			
-
 float3 bitangent(float3 u)
 {
 	float3 a = abs(u);
@@ -102,15 +90,11 @@ float3 bitangent(float3 u)
 	return cross(u, float3(xm, ym, zm));
 }
 
-float3 hemiSample(float2 random, float3 normal) {
-	float3 bitan = bitangent(normal);
-  float3 tan = cross(bitan, normal);
-  float radius = sqrt(random.x);
-	float phi = TAU * random.y;
-  return tan		 * (radius * cos(phi)) + bitan 
-								 * (radius * sin(phi)) + normal 
-								 * sqrt(max(0.0f, 1.0f - random.x));
-};
+float wi_dot_n(float distance, float3 wi, float3 normal) {
+	float cosine = max(0.001, saturate(dot(wi, normal)));
+	float result = cosine / abs(distance * distance);
+	return result;
+}
 
 raytracing::ray buildRay(
 	constant float3& resolution,
@@ -164,7 +148,6 @@ void computeKernel(
 		raytracing::ray r = buildRay(resolution, transform, gid);
 		
 		// Build intersector. This object is responsible to check if the loaded instances were intersected.
-		// raytracing::intersector<raytracing::instancing, raytracing::triangle_data, raytracing::world_space_data> intersector;
 		raytracing::intersector<raytracing::instancing, raytracing::triangle_data, raytracing::world_space_data> intersector;	
 		intersector.assume_geometry_type(raytracing::geometry_type::triangle);
 	
@@ -184,6 +167,7 @@ void computeKernel(
 			} 
 
 			if (intersection.type == raytracing::intersection_type::triangle) {
+
 				// Look up the data belonging to the intersection in the scene
 				// This requires a bindless setup
 				Mesh mesh = scene->meshes[intersection.instance_id];
@@ -201,17 +185,20 @@ void computeKernel(
 				VertexAttributes attr_2 = mesh.attributes[tri_index_2];
 				VertexAttributes attr_3 = mesh.attributes[tri_index_3];
 				
+				//const device VertexAttributes* attr = (const device VertexAttributes*) intersection.primitive_data;
+
 				// Calculate variables needed to solve the rendering equation
 				// We assume for now that the surface is perfectly reflective.
 				// You can chance this for materials and so forth
 				// Called: BSDF: bi-directional scattering distribution function.
+				
 				float3 normal = (attr_1.normal * bary_3d.x) + (attr_2.normal * bary_3d.y) + (attr_3.normal * bary_3d.z);
 				normal = normalize((intersection.object_to_world_transform * float4(normal, 0.0f)).xyz);
 				
 				thread uint32_t seed = gid.x * (tri_index_1 * bary_2d.x * i) + gid.y * (tri_index_3 * bary_2d.y * (bounces - i));
 				float3 hit = r.origin + r.direction * intersection.distance;
 				r.origin = hit + normal * 0.001;
-				normal = normalize(normal + random_float3(seed) * 0.2);
+				normal = normalize(normal + random_float3(seed) * .6);
 				r.direction = reflect(r.direction, normal);
 
 				float3 wi = normalize(r.direction);
