@@ -127,7 +127,7 @@ struct Layouts {
   inline static BufferLayouts vertexNIP = BufferLayouts(
       {
           {{ShaderDataType::Packed3, "position"}},
-          {{ShaderDataType::Float3, "color"},
+          {{ShaderDataType::Float4, "color"},
            {ShaderDataType::Float2, "texture"},
            {ShaderDataType::Float3, "normal"}},
   },

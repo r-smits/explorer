@@ -26,7 +26,6 @@ Explorer::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* confi
   buildModels(device);
   buildAccelerationStructures(device);
   buildBindlessScene(device, scene);
-
 }
 
 void Explorer::RayTraceLayer::buildModels(MTL::Device* device) {
@@ -54,12 +53,10 @@ void Explorer::RayTraceLayer::buildModels(MTL::Device* device) {
 	f16->move({0.0f, 0.0f, 0.0f});
 	sphere1->setEmissive(true)->setColor({1.0f, 1.0f, 0.0f, 0.0f})->scale(.3f)->move({-.2f, .5f, .3f});
 	sphere2->setColor({0.0f, 1.0f, 0.0f, 1.0f})->scale(.3f)->move({-.2f, .5f, -.3f});
-	scene.emplace_back(f16);
 	
+	scene.emplace_back(f16);
 	scene.emplace_back(sphere1);
 	scene.emplace_back(sphere2);
-
-	DEBUG("Max of uint32: " + std::to_string(0xffffffff));
 }
 
 MTL::Size Explorer::RayTraceLayer::calcGridsize() {
@@ -69,14 +66,22 @@ MTL::Size Explorer::RayTraceLayer::calcGridsize() {
 }
 
 void Explorer::RayTraceLayer::buildAccelerationStructures(MTL::Device* device) {
-  MTL::Event* buildEvent = device->newEvent();
-  NS::Array* primitiveDescriptors = Renderer::Descriptor::primitives(scene, _vertexDescriptor->layouts()->object(0)->stride());
-  MTL::AccelerationStructureSizes sizes = Renderer::Acceleration::sizes(device, primitiveDescriptors);
+	_buildEvent = device->newEvent();
+  _primitiveDescriptors = Renderer::Descriptor::primitives(
+			scene, 
+			_vertexDescriptor->layouts()->object(0)->stride(),
+			_vertexDescriptor->layouts()->object(1)->stride()
+	);
+  MTL::AccelerationStructureSizes sizes = Renderer::Acceleration::sizes(device, _primitiveDescriptors);
   _heap = Renderer::Heap::primitives(device, sizes);
-  _primitiveAccStructures = Renderer::Acceleration::primitives(device, _heap, queue, primitiveDescriptors, sizes, buildEvent);
-  MTL::InstanceAccelerationStructureDescriptor* instanceDescriptor = 
-		Renderer::Descriptor::instance(device, _primitiveAccStructures, scene);
-  _instanceAccStructure = Renderer::Acceleration::instance(device, queue, instanceDescriptor, buildEvent);
+  _primitiveAccStructures = Renderer::Acceleration::primitives(device, _heap, queue, _primitiveDescriptors, sizes, _buildEvent);
+  _instanceDescriptor = Renderer::Descriptor::instance(device, _primitiveAccStructures, scene);
+  _instanceAccStructure = Renderer::Acceleration::instance(device, queue, _instanceDescriptor, _buildEvent);
+}
+
+void Explorer::RayTraceLayer::rebuildAccelerationStructures(MTL::Device* device) {
+  _instanceDescriptor = Renderer::Descriptor::instance(device, _primitiveAccStructures, scene);
+	_instanceAccStructure = Renderer::Acceleration::instance(device, queue, _instanceDescriptor, _buildEvent);
 }
 
 void Explorer::RayTraceLayer::buildBindlessScene(MTL::Device* device, const std::vector<Model*>& scene) {
@@ -136,17 +141,7 @@ void Explorer::RayTraceLayer::buildBindlessScene(MTL::Device* device, const std:
 
 void Explorer::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* notUsed) {
   
-
-	//t += 1.0f;
-  //if (t > 360) t -= 360.0f;
-  //(t < 180) ? _lightDir += {0.0f, 1.0 / 90, 0.0f} : _lightDir += {0.0f, -1.0 /
-  // 90, -0.0f}; (t < 180) ? _lightDir += {1.0 / 90, 0.0f, 0.0f} : _lightDir +=
-  //{-1.0 / 90, 0.0f, -0.0f}; (t < 180) ? _lightDir += {0.0f, 0.0f, 1.0 / 90} :
-  //_lightDir += {0.0f, 0.0f, -1.0 / 90}; DEBUG("Light dir: " +
-  // std::to_string(_lightDir.x) + " " + std::to_string(_lightDir.y) + " " +
-  // std::to_string(_lightDir.z));
-
-  MTL::CommandBuffer* buffer = queue->commandBuffer();
+	MTL::CommandBuffer* buffer = queue->commandBuffer();
   MTL::ComputeCommandEncoder* encoder = buffer->computeCommandEncoder();
 
   encoder->setComputePipelineState(_raytrace);
@@ -166,11 +161,10 @@ void Explorer::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncode
 			model->rotate(Transformation::yRotation(-1.0f));
 		}
 	}
+
+	rebuildAccelerationStructures(view->device());
 	
-	buildAccelerationStructures(view->device());
-	buildBindlessScene(view->device(), scene);
-	
-  encoder->useHeap(_heap);
+	encoder->useHeap(_heap);
   encoder->setAccelerationStructure(_instanceAccStructure, 3);
   
   for (auto resource : _resources) {
@@ -183,4 +177,5 @@ void Explorer::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncode
   encoder->endEncoding();
   buffer->presentDrawable(drawable);
   buffer->commit();
-}
+
+	}
