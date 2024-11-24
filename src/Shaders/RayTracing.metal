@@ -54,17 +54,19 @@ uint32_t pcg_hash(thread uint32_t input) {
 	return (word >> 22u) ^ word;
 }
 
-float random_float(thread uint32_t& seed) {
+// Generates float within domain 0 <= n <= 1
+float rand(thread uint32_t& seed) {
 	seed = pcg_hash(seed);
 	return (float)seed / (float)0xffffffff;
 }
 
+// Normalizes float between -1 <= n <= 1, then normalizes so vec3 sums to 1.
 float3 random_float3(thread uint32_t& seed) {
 	return normalize(
 		float3(
-			random_float(seed), 
-			random_float(seed), 
-			random_float(seed)
+			rand(seed) * 2 - 1, 
+			rand(seed) * 2 - 1, 
+			rand(seed) * 2 - 1
 		)
 	);
 }
@@ -198,7 +200,7 @@ void computeKernel(
 				thread uint32_t seed = gid.x * (tri_index_1 * bary_2d.x * i) + gid.y * (tri_index_3 * bary_2d.y * (bounces - i));
 				float3 hit = r.origin + r.direction * intersection.distance;
 				r.origin = hit + normal * 0.001;
-				normal = normalize(normal + random_float3(seed) * .6);
+				normal = normalize(normal + random_float3(seed) * .25);
 				r.direction = reflect(r.direction, normal);
 
 				float3 wi = normalize(r.direction);
