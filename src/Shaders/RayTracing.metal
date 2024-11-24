@@ -7,10 +7,6 @@ constant float PI = 3.1415926535897932384626433832795;
 constant float TAU = PI * 2;
 constant float PI_INVERSE = 1 / PI;
 
-// ReSTIR constants
-constant int num_samples = 3;
-constant float3 samples[samples]; 
-
 // Object constants
 constexpr sampler sampler2d(address::clamp_to_edge, filter::linear); 
 
@@ -54,39 +50,7 @@ struct RTMaterial {
 	float3 metallic;
 };
 
-struct Sample {
-	
-	float4
-
-// Generates float within domain 0 <= n <= 1
-float rand(thread uint32_t& seed) {
-	seed = pcg_hash(seed);
-	return (float)seed / (float)0xffffffff;
-}
-
-// Normalizes float between -1 <= n <= 1, then normalizes so vec3 sums to 1.
-float3 random_float3(thread uint32_t& seed) {
-	return normalize(
-		float3(
-			rand(seed) * 2 - 1, 
-			rand(seed) * 2 - 1, 
-			rand(seed) * 2 - 1
-		)
-	);
-}
-
-struct Reservoir {
-	float w_sum;							// sum of weights
-	float m;									// number of samples
-	float y;									// chosen sample (ray direction)
-	float w;									// weight
-
-	void update(constant float3& sample, constant float& weight) {
-		w_sum += weight;
-		m += 1;
-	}
-};
-
+// PCG Hash for random number generation
 uint32_t pcg_hash(thread uint32_t input) {
 	uint32_t state = input * 747796405u + 2891336453u;
 	uint32_t word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
@@ -100,16 +64,41 @@ float rand(thread uint32_t& seed) {
 }
 
 // Uniformly distributed probability density function (PDF)
+// Normalizes float between -1 <= n <= 1, then normalizes so vec3 sums to 1.
 float3 uniform_pdf(thread uint32_t& seed) {
 	return normalize(
 		float3(
-			rand(seed), 
-			rand(seed), 
-			rand(seed)
+			rand(seed) * 2 - 1, 
+			rand(seed) * 2 - 1, 
+			rand(seed) * 2 - 1
 		)
 	);
 }
 
+// Struct required for reservoir sampling
+struct Reservoir {
+	float w_sum = 0;					// sum of weights
+	float m = 0;							// number of samples
+	float w = 0;							// weight
+	float3 y = float3(0.0f);	// chosen sample (ray direction)
+
+	void update(
+		thread float3& sample, 
+		thread float& weight,
+		thread uint32_t& seed
+	) {
+		w_sum += weight;
+		m += 1;
+		float random = rand(seed);
+		if (random <= (weight / w_sum)) {
+			y = sample;
+			w = weight;
+		}
+	}
+};
+
+// Cosine: decrease light intensity based on the angle between the normal and outgoing light direction (wi).
+// Inverse square: light intensity inverse proportional to distance.
 float wi_dot_n_inverse_square(
 	thread float& distance, 
 	thread float3& wi, 
@@ -120,8 +109,14 @@ float wi_dot_n_inverse_square(
 	return result;
 }
 
+// Check whether there is direct visibility between two points
 float visibility_check() {
 	return 1;
+}
+
+// Calculate the intensity of a vector based on its constituent components excluding the w term
+float intensity(thread float4& vector) {
+	return (vector.x + vector.y + vector.z) / 3;
 }
 
 raytracing::ray build_ray(
@@ -172,13 +167,8 @@ void transport(
 		// Verify if ray has intersected the geometry
 		intersection = intersector.intersect(r, structure, 0xFF);
 
-		// If our ray does not hit, we return sky color, e.g. black.
-		if (intersection.type == raytracing::intersection_type::none) {
-			//color *= contribution;
-			color = (color + sky_color) + contribution; 
-			break;
-		} 
-
+		// If our ray does not hit, terminate early.
+		if (intersection.type == raytracing::intersection_type::none) { break; } 
 		if (intersection.type == raytracing::intersection_type::triangle) {
 
 			// Look up the data belonging to the intersection in the scene
@@ -206,9 +196,9 @@ void transport(
 			float3 normal = (attr_1.normal * bary_3d.x) + (attr_2.normal * bary_3d.y) + (attr_3.normal * bary_3d.z);
 			normal = normalize((intersection.object_to_world_transform * float4(normal, 0.0f)).xyz);
 				
-			thread uint32_t seed = gid.x * (tri_index_1 * bary_2d.x * i) + gid.y * (tri_index_3 * bary_2d.y * (bounces - i));
+			seed = gid.x * (tri_index_1 * bary_2d.x * i) + gid.y * (tri_index_3 * bary_2d.y * (bounces - i));
 			r.origin = r.origin + r.direction * intersection.distance; 
-			normal = normalize(normal + uniform_pdf(seed) * .6);
+			// normal = normalize(normal + uniform_pdf(seed) * .0);
 			r.direction = reflect(r.direction, normal);
 
 			float3 wi = normalize(r.direction);
@@ -223,6 +213,7 @@ void transport(
 			color += submesh.emissive * wo_color;
 		}
 	}
+	color += contribution * sky_color;
 }
 
 [[kernel]]
@@ -236,16 +227,27 @@ void computeKernel(
 	uint2 gid																							[[ thread_position_in_grid	]] 
 ) {
 	
+		// Initialize default parameters
+	float4 color = float4(0.0f, 0.0f, 0.0f, 1.0f);
+	float4 contribution = float4(1.0f, 1.0f, 1.0f, 1.0f);
+	thread uint32_t seed = 0;
+	thread int bounces = 3;
+
 	// Check if instance acceleration structure was built succesfully
 	if (is_null_instance_acceleration_structure(structure)) {
 		buffer.write(color, gid);
 		return;
 	}
+
+	// Initialize ReSTIR variables (later to reconsider the memory scope)
+	// N good samples defined in constant address space, maybe there is a better way of doing things
+	thread int m = 4;									// Number of bad samples
+	thread int n = 8;										// Number of good samples
 	
-	// Initialize default parameters
-	float4 color = float4(0.0f, 0.0f, 0.0f, 1.0f);
-	float4 contribution = float4(1.0f, 1.0f, 1.0f, 1.0f);
-	thread uint32_t seed = 0;
+	// In the future we need to pass it in as an argument to the kernel shader
+	// Otherwise you have to instantiate them here
+	// This particular technique is.. very slow, probably doing something wrong
+	Reservoir r1;
 
 	// Build ray. Ray shoots out from point (gid). Camera is a grid, point is a coordinate on the grid. 
 	raytracing::ray r = build_ray(resolution, transform, gid);
@@ -258,74 +260,61 @@ void computeKernel(
 
 	// Shoot initial ray from the camera into the scene. 
 	// This will set the ray, color and seed by reference. 
-	transport(r, structure, intersector, intersection, scene, gid, 0, color, seed, true);
+	transport(r, structure, intersector, intersection, scene, gid, bounces, color, seed, true);
 	x = r;
 	
-	// ReSTIR implementation
+	// ReSTIR GI implementation
+	for (int i = 0; i < m; i += 1) {
+		// 1. Calculate the samples from the uniform pdf.
+		// All samples in a uniform have equal weights, so we don't have to calculate them. The sum of weights would be 1.
+		float3 pdf_sample = uniform_pdf(seed);
+		
+		/**
+		if (m == 8 && i == 0 && seed == 2145236065) {
+			buffer.write(float4(0.0f, 1.0f, 0.0f, 1.0f), gid);
+			return;
+		} else {
 
-	// 1. Calculate the samples from the uniform pdf.
-	// Take 3 random samples of the hemisphere around point x, this will be our uniform pdf.
-	// All samples in a uniform have equal weights, so we don't have to calculate them. The sum of weights would be 1.
-	for (int i = 0; i < num_samples; i += 1) samples[i] = uniform_pdf(seed);	
-	
-	// 2. Calculate the weights of the complex pdf through the unshadowed light contribution.
-	// For the complex pdf, we take the color contribution as the weights. 
-	// So color signifies both as the sample (output) of the funcion, as well as the weight attributed to that sample.
-	for (int i = 0; i < num_samples; i += 1) {
-		float4 weight = float4(1.0f);
-		x.direction = samples[i];
-		transport(x, structure, intersector, intersection, scene, gid, 3, weight, seed, true);
+			float3 denorm_sample = (pdf_sample + 1) / 2;
+			buffer.write(float4(denorm_sample, 1.0f), gid); 
+			return;
+		}
+		**/
 
-		// Before you re-assign ray x to y to choose a new random direction, you may need x.direction
-		// Because there is a relation between the direction vector and the weight you calculated.
-		// Because if the weight gets sampled, you have to use that direction to shoot the ray in to calculate the color.
+		// 2. Calculate the weights of the complex pdf through the unshadowed light contribution.
+		// For the complex pdf, we take the color contribution as the weights, required for the re-sample. 
+		float4 sample_color = float4(0.0f, 0.0f, 0.0f, 1.0f);
+		x.direction = pdf_sample;
+		transport(x, structure, intersector, intersection, scene, gid, bounces, sample_color, seed, true);
+		
+		float pdf_weight = intensity(sample_color);
 		x = r;
+		
+		// 3. Build the complex pdf to re-sample the samples from a complex pdf.
+		// Sample color intensity are weights for the complex pdf. They need to be re-sampled.
+		r1.update(pdf_sample, pdf_weight, seed);
+
+		/**
+		buffer.write(sample_color, gid);
+		return;
+		**/
 	}
 
-	// 3. Sample the complex pdf built during step 2 and calculate the color contribution. 
-	// The first time, the output only counts as weights for the complex pdf.
-	// You will then have built the complex pdf, and you need to sample it.
-	
-	// To build this complex pdf, you need to:
-	//	A) Store the weights in some array with size M (total of bad samples drawn to turn into weights)
-	//	B) Store the associated directions in some array with size M
-	//	C) Create a reservoir abstraction.
-	//	D) Call storage fn of reservoir, taking the weight, and sample (direction).
-	//	E) Add weight to total weight. Increment the total samples seen.
-	//	E) In fn, flip a weighted coin. If heads, keep the weight and sample. If tails, discard them. 
-	//		 The coin is weighted. The weight of the incoming is heads. The weight of the outgoing is tails.
-	//	F) Return the sample left in the reservoir. Use the direction to init the ray and start transport fn.
-	//	G) 
-
 	// 4. Take the inverse of the sample as a weight and multiply it by the average weight (color) of the bad samples
-	// The bad samples are the samples calculated during step 2 (I think).
 	// To compensate for the weight being more likely to be picked.
-	// (average_weight_of_bad_samples) / (weight_of_good_sample) 
+	float4 total_sample_color = float4(0.0f);
 
-	// Then, you need to compensate for the fact that you're using a uniform pdf to emulate sampling from a complex pdf
-	// You do this by taking the average of the sum of the weights of the bad samples
+	float average_weight_samples = r1.w_sum / r1.m;
+	float r1_norm_weight = average_weight_samples / r1.w;
 
-
-
-	// You build the PDF by assigning a weight, picking a number and returning a color based on that number.
-	// In other words, you need to use reservoir sampling for this.
-
-	//thread float4 sample_colors[samples];
-
-	//for (int i = 0; i < samples; i+=1) {
-	//	float4 sample_color = color;
-	//	x.direction = uniform_pdf(seed) * .7);
-	//	transport(x, structure, intersector, intersection, scene, gid, 3, sample_color, seed);
-	//	
-	// Save the variables set by reference
-	//	sample_colors[i] = sample_color;
-	//	x = r;
-	//}
+	// r1
+	x.direction = r1.y;
+	float4 sample_color = float4(0.0f);
+	transport(x, structure, intersector, intersection, scene, gid, bounces, sample_color, seed, true);
+	x = r;
 	
-	// Calculate light contribution. Ray, intersection, color are set by reference.
-	// transport(r, structure, intersector, intersection, scene, gid, 10, color, seed);
+	total_sample_color += sample_color * r1_norm_weight;
 
-	// Write color to texture.
+	color *= total_sample_color;
 	buffer.write(color, gid);
 }
-	
