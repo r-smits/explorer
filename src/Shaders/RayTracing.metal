@@ -154,7 +154,7 @@ void computeKernel(
 		intersector.assume_geometry_type(raytracing::geometry_type::triangle);
 	
 		// The amount of times we allow for the ray to bounce from object to object.
-		int bounces = 10;
+		int bounces = 2;
 		raytracing::intersection_result<raytracing::instancing, raytracing::triangle_data, raytracing::world_space_data> intersection;
 		
 		for (int i = 1; i <= bounces; i++) {
@@ -162,12 +162,7 @@ void computeKernel(
 			intersection = intersector.intersect(r, structure, 0xFF);
 
 			// If our ray does not hit, we return sky color, e.g. black.
-			if (intersection.type == raytracing::intersection_type::none) {
-				//color *= contribution;
-				color += contribution * float4(.2f, .3f, .4f, 1.0f);
-				break;
-			} 
-
+			if (intersection.type == raytracing::intersection_type::none) { break; } 
 			if (intersection.type == raytracing::intersection_type::triangle) {
 
 				// Look up the data belonging to the intersection in the scene
@@ -214,7 +209,7 @@ void computeKernel(
 				color += submesh.emissive * wo_color * 1;
 			}
 		}
-		
+		color += contribution * float4(.2f, .3f, .4f, 1.0f);
 		buffer.write(color, gid);
 	}
 	
