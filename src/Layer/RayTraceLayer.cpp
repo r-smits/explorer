@@ -51,7 +51,7 @@ void Explorer::RayTraceLayer::buildModels(MTL::Device* device) {
 	);
 
 	f16->move({0.0f, 0.0f, 0.0f});
-	sphere1->setEmissive(true)->setColor({1.0f, 1.0f, 0.0f, 0.0f})->scale(.3f)->move({-.2f, .5f, .3f});
+	sphere1->setEmissive(true)->setColor({10.0f, 10.0f, 0.0f, 0.0f})->scale(.3f)->move({-.2f, .5f, .3f});
 	sphere2->setColor({0.0f, 1.0f, 0.0f, 1.0f})->scale(.3f)->move({-.2f, .5f, -.3f});
 	
 	scene.emplace_back(f16);
