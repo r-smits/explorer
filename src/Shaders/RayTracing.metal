@@ -98,13 +98,20 @@ struct Reservoir {
 };
 
 // Cosine: decrease light intensity based on the angle between the normal and outgoing light direction (wi).
-// Inverse square: light intensity inverse proportional to distance.
-float wi_dot_n_inverse_square(
+float cos(
+	thread float3& wi,
+	thread float3& normal
+) {
+	return max(0.001, saturate(dot(wi, normal)));
+}
+
+// Inverse square: light intensity inversely proportional to distance.
+float cos_inverse_square(
 	thread float& distance, 
 	thread float3& wi, 
 	thread float3& normal
 ) {
-	float cosine = max(0.001, saturate(dot(wi, normal)));
+	float cosine = cos(wi, normal);
 	float result = cosine / abs(distance * distance);
 	return result;
 }
@@ -115,7 +122,9 @@ float visibility_check() {
 }
 
 // Calculate the intensity of a vector based on its constituent components excluding the w term
-float intensity(thread float4& vector) {
+float intensity(
+	thread float4& vector
+) {
 	return (vector.x + vector.y + vector.z) / 3;
 }
 
@@ -149,26 +158,35 @@ raytracing::ray build_ray(
 void transport(
 	thread raytracing::ray& r,
 	thread raytracing::instance_acceleration_structure& structure,
-	thread raytracing::intersector<raytracing::instancing, raytracing::triangle_data, raytracing::world_space_data>& intersector,
-	thread raytracing::intersection_result<raytracing::instancing, raytracing::triangle_data, raytracing::world_space_data>& intersection, 
 	constant Scene* scene,
 	uint2 gid,
 	thread int bounces,
 	thread float4& color,
 	thread uint32_t& seed,
-	thread bool unshadowed_light_contribution
+	thread bool unshadowed_light_contribution,
+	thread float3& normal,
+	thread bool& terminate_flag,
+	thread bool inverse_square
 ) {
+	
+	raytracing::intersector<raytracing::instancing, raytracing::triangle_data, raytracing::world_space_data> intersector;	
+	intersector.assume_geometry_type(raytracing::geometry_type::triangle);
+	raytracing::intersection_result<raytracing::instancing, raytracing::triangle_data, raytracing::world_space_data> intersection;
 
 	// Contribution is set to 1 and will decrease over time, with the amount of bounces
 	float4 contribution = float4(1.0f, 1.0f, 1.0f, 1.0f);
-	float4 sky_color = float4(.2f, .3f, .4f, 1.0f);
+	float4 sky_color = float4(.4f, .5f, .6f, 1.0f);
 
 	for (int i = 1; i <= bounces; i++) {
 		// Verify if ray has intersected the geometry
 		intersection = intersector.intersect(r, structure, 0xFF);
 
 		// If our ray does not hit, terminate early.
-		if (intersection.type == raytracing::intersection_type::none) { break; } 
+		if (intersection.type == raytracing::intersection_type::none) { 
+			color += contribution * sky_color;
+			terminate_flag = (i == 1);
+			return; 
+		} 
 		if (intersection.type == raytracing::intersection_type::triangle) {
 
 			// Look up the data belonging to the intersection in the scene
@@ -193,23 +211,23 @@ void transport(
 			// We assume for now that the surface is perfectly reflective.
 			// You can chance this for materials and so forth
 			// Called: BSDF: bi-directional scattering distribution function.
-			float3 normal = (attr_1.normal * bary_3d.x) + (attr_2.normal * bary_3d.y) + (attr_3.normal * bary_3d.z);
+			normal = (attr_1.normal * bary_3d.x) + (attr_2.normal * bary_3d.y) + (attr_3.normal * bary_3d.z);
 			normal = normalize((intersection.object_to_world_transform * float4(normal, 0.0f)).xyz);
 				
-			seed = gid.x * (tri_index_1 * bary_2d.x * i) + gid.y * (tri_index_3 * bary_2d.y * (bounces - i));
+			seed = intensity(contribution) + gid.x * (tri_index_1 * bary_2d.x * i) + gid.y * (tri_index_3 * bary_2d.y);
 			r.origin = r.origin + r.direction * intersection.distance; 
-			// normal = normalize(normal + uniform_pdf(seed) * .0);
-			r.direction = reflect(r.direction, normal);
+			float3 jittered_normal = normalize(normal + uniform_pdf(seed) * .2);
+			r.direction = reflect(r.direction, jittered_normal);
 
 			float3 wi = normalize(r.direction);
-			float wi_dot_n = wi_dot_n_inverse_square(intersection.distance, wi, normal);
+			float wi_dot_n = (inverse_square) ? cos_inverse_square(intersection.distance, wi, normal) : cos(wi, normal);
 
-			// Calculate all color contributions; use texture / emission if there is one
+			// Calculate all color contributions; use texture, emission if there is one
 			float2 tx_point = (attr_1.texture * bary_3d.x) + (attr_2.texture * bary_3d.y) + (attr_3.texture * bary_3d.z);
 			float4 wo_color = (submesh.textured) ? texture.sample(sampler2d, tx_point) : attr_1.color;
-				
+			
 			contribution *= wo_color * wi_dot_n;
-			color *= (unshadowed_light_contribution) ? 1 : visibility_check();
+			// color *= (unshadowed_light_contribution) ? 1 : visibility_check();
 			color += submesh.emissive * wo_color;
 		}
 	}
@@ -227,11 +245,12 @@ void computeKernel(
 	uint2 gid																							[[ thread_position_in_grid	]] 
 ) {
 	
-		// Initialize default parameters
+	// Initialize default parameters
 	float4 color = float4(0.0f, 0.0f, 0.0f, 1.0f);
 	float4 contribution = float4(1.0f, 1.0f, 1.0f, 1.0f);
 	thread uint32_t seed = 0;
 	thread int bounces = 3;
+	thread float3 normal = float3(0.0f);
 
 	// Check if instance acceleration structure was built succesfully
 	if (is_null_instance_acceleration_structure(structure)) {
@@ -241,76 +260,57 @@ void computeKernel(
 
 	// Initialize ReSTIR variables (later to reconsider the memory scope)
 	// N good samples defined in constant address space, maybe there is a better way of doing things
-	thread int m = 4;									// Number of bad samples
-	thread int n = 8;										// Number of good samples
+	thread int m = 8;									// Number of bad samples
+	thread int n = 1;									// Number of good samples
 	
 	// In the future we need to pass it in as an argument to the kernel shader
 	// Otherwise you have to instantiate them here
-	// This particular technique is.. very slow, probably doing something wrong
 	Reservoir r1;
 
 	// Build ray. Ray shoots out from point (gid). Camera is a grid, point is a coordinate on the grid. 
 	raytracing::ray r = build_ray(resolution, transform, gid);
 	raytracing::ray x;
 	
-	// Build intersector. This object is responsible to check if the loaded instances were intersected.
-	thread raytracing::intersector<raytracing::instancing, raytracing::triangle_data, raytracing::world_space_data> intersector;	
-	intersector.assume_geometry_type(raytracing::geometry_type::triangle);
-	raytracing::intersection_result<raytracing::instancing, raytracing::triangle_data, raytracing::world_space_data> intersection;
-
 	// Shoot initial ray from the camera into the scene. 
-	// This will set the ray, color and seed by reference. 
-	transport(r, structure, intersector, intersection, scene, gid, bounces, color, seed, true);
+	// This will set the ray, color and seed by reference.
+	bool terminate_flag = false;
+	transport(r, structure, scene, gid, bounces, color, seed, true, normal, terminate_flag, false);
+	if (terminate_flag) {
+		buffer.write(color, gid);
+		return;
+	}
 	x = r;
 	
 	// ReSTIR GI implementation
 	for (int i = 0; i < m; i += 1) {
+
 		// 1. Calculate the samples from the uniform pdf.
 		// All samples in a uniform have equal weights, so we don't have to calculate them. The sum of weights would be 1.
-		float3 pdf_sample = uniform_pdf(seed);
-		
-		/**
-		if (m == 8 && i == 0 && seed == 2145236065) {
-			buffer.write(float4(0.0f, 1.0f, 0.0f, 1.0f), gid);
-			return;
-		} else {
-
-			float3 denorm_sample = (pdf_sample + 1) / 2;
-			buffer.write(float4(denorm_sample, 1.0f), gid); 
-			return;
-		}
-		**/
-
+		//float3 pdf_sample = normalize(normal + uniform_pdf(seed) * 1); 
+		float3 pdf_sample = uniform_pdf(seed);	
 		// 2. Calculate the weights of the complex pdf through the unshadowed light contribution.
 		// For the complex pdf, we take the color contribution as the weights, required for the re-sample. 
-		float4 sample_color = float4(0.0f, 0.0f, 0.0f, 1.0f);
+		float4 sample_color = float4(0.0f, 0.0f, 0.0f, 0.0f);
 		x.direction = pdf_sample;
-		transport(x, structure, intersector, intersection, scene, gid, bounces, sample_color, seed, true);
-		
+		x.origin = r.origin;
+		transport(x, structure, scene, gid, 2, sample_color, seed, true, normal, terminate_flag, true);
 		float pdf_weight = intensity(sample_color);
-		x = r;
-		
-		// 3. Build the complex pdf to re-sample the samples from a complex pdf.
-		// Sample color intensity are weights for the complex pdf. They need to be re-sampled.
-		r1.update(pdf_sample, pdf_weight, seed);
 
-		/**
-		buffer.write(sample_color, gid);
-		return;
-		**/
+		// 3. Build the complex pdf to re-sample the samples from.
+		// Sample color intensity are weights for the complex pdf.
+		r1.update(pdf_sample, pdf_weight, seed);
 	}
 
 	// 4. Take the inverse of the sample as a weight and multiply it by the average weight (color) of the bad samples
 	// To compensate for the weight being more likely to be picked.
 	float4 total_sample_color = float4(0.0f);
-
 	float average_weight_samples = r1.w_sum / r1.m;
 	float r1_norm_weight = average_weight_samples / r1.w;
 
 	// r1
 	x.direction = r1.y;
 	float4 sample_color = float4(0.0f);
-	transport(x, structure, intersector, intersection, scene, gid, bounces, sample_color, seed, true);
+	transport(x, structure, scene, gid, bounces, sample_color, seed, true, normal, terminate_flag, true);
 	x = r;
 	
 	total_sample_color += sample_color * r1_norm_weight;
