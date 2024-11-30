@@ -7,17 +7,11 @@
 
 Explorer::ViewDelegate::ViewDelegate(MTK::View* view, AppProperties* config) : MTK::ViewDelegate() {
   DEBUG("Initializing ViewDelegate ...");
-  this->queue = view->device()->newCommandQueue();
 
   // Set up Keyboard IO eventing from MTK::View
   ViewAdapter* viewAdapter = ViewAdapter::sharedInstance();
   auto callback = [this](Event& event) { this->onEvent(event); };
   viewAdapter->setHandler(callback);
-
-  // Initialize layers & renderer (will be a layer in the future)
-  //this->layerStack.pushLayer(new BaseLayer(view->device(), config));
-  // this->layerStack.pushOverlay(new ImGuiLayer(view, config));
-
 	this->layerStack.pushLayer(new RayTraceLayer(view->device(), config));
 }
 
