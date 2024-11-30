@@ -113,17 +113,12 @@ buildSubmesh(
 	MDLSubmesh* mdlSubmesh
 ) {
   Renderer::Material material = [TextureRepository readMaterial:device material:mdlSubmesh.material];
-
   std::vector<MTL::Texture*> textures;
-	MTL::Texture* texture = [TextureRepository read2:device material:mdlSubmesh.material semantic:MDLMaterialSemanticBaseColor];
+	MTL::Texture* texture = [TextureRepository read:device material:mdlSubmesh.material];
 	textures.emplace_back(texture);
 
 	material.useColor = (!texture) ? false : true;
 	material.useLight = false;
-
-	DEBUG("Material texture: " + std::to_string(material.useColor));
-	DEBUG("Material emissive: " + std::to_string(material.useLight));
-
   Explorer::Submesh* submesh = new Explorer::Submesh(
       material,
       textures,
@@ -197,13 +192,11 @@ buildMeshes(
 ) {
   std::vector<Explorer::Mesh*> meshes;
   if ([object isKindOfClass:[MDLMesh class]]) {
-    DEBUG("Found MDLMesh class. Building mesh...");
     Explorer::Mesh* mesh = buildMesh(device, (MDLMesh*)object, vertexDescriptor);
     meshes.emplace_back(mesh);
   }
 
   for (MDLObject* child in object.children) {
-    DEBUG("Found MDLObject class. Recursing...");
     std::vector<Explorer::Mesh*> meshes = buildMeshes(device, child, vertexDescriptor);
     meshes.insert(meshes.end(), meshes.begin(), meshes.end());
   }
@@ -218,8 +211,6 @@ Explorer::Model* Repository::Meshes::read2(
   DEBUG("Reading mesh...");
   NSURL* url = (__bridge NSURL*)Explorer::nsUrl(path + ".obj");
   MTKMeshBufferAllocator* bufferAllocator = [[MTKMeshBufferAllocator alloc] initWithDevice:(__bridge id<MTLDevice>)device];
-
-  DEBUG("Reading asset...");
   MDLAsset* mdlAsset = [[MDLAsset alloc] initWithURL:url vertexDescriptor:nil bufferAllocator:bufferAllocator];
 
   std::vector<Explorer::Mesh*> allMeshes;

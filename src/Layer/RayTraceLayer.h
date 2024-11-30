@@ -1,5 +1,6 @@
 #pragma once
 #include "Metal/MTLAccelerationStructure.hpp"
+#include "Metal/MTLComputePipeline.hpp"
 #include "Metal/MTLVertexDescriptor.hpp"
 #include <Layer/Layer.h>
 #include <Model/Camera.h>
@@ -30,6 +31,7 @@ private: // Initialization
 private:
   MTL::Device* device;
 	MTL::Function* _kernelFn;
+	MTL::ComputePipelineState* _normalBuffer;
   MTL::ComputePipelineState* _raytrace;
   MTL::RenderPipelineState* _render;
 
@@ -51,6 +53,7 @@ private:
 
 private:
 	MTL::Event* _buildEvent;
+	MTL::Event* _dispatchEvent;
   MTL::Heap* _heap;
 	std::vector<MTL::PrimitiveAccelerationStructureDescriptor*> _primitiveDescriptors;
 	std::vector<MTL::AccelerationStructure*> _primitiveAccStructures;

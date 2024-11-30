@@ -1,4 +1,7 @@
 #include "Math/Transformation.h"
+#include "Metal/MTLCommandBuffer.hpp"
+#include "Metal/MTLComputePass.hpp"
+#include "Metal/MTLTexture.hpp"
 #include <DB/Repository.hpp>
 #include <Events/IOState.h>
 #include <Layer/RayTraceLayer.h>
@@ -6,11 +9,15 @@
 
 Explorer::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* config)
     : Layer(device->retain(), config), queue(device->newCommandQueue()) {
-
-  MTL::Library* library =
-      Repository::Shaders::readLibrary(device, config->shaderPath + "Raytracing");
 	
+	MTL::Library* gBufferLib = Repository::Shaders::readLibrary(device, config->shaderPath + "GBuffer");
+  MTL::Library* library = Repository::Shaders::readLibrary(device, config->shaderPath + "Raytracing");
+
+	
+	MTL::Function* normalFn = gBufferLib->newFunction(Explorer::nsString("compute_normal_buffer"));	
 	this->_kernelFn = library->newFunction(Explorer::nsString("computeKernel"));
+
+	this->_normalBuffer = Renderer::State::Compute(device, normalFn);
   this->_raytrace = Renderer::State::Compute(device, _kernelFn);
 
   this->_vertexDescriptor = Renderer::Descriptor::vertex(device, Renderer::Layouts::vertexNIP);
@@ -22,15 +29,22 @@ Explorer::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* confi
   this->_resolution = {(float)_gridSize.width, (float)_gridSize.height, (float)_gridSize.depth};
 
   this->_threadGroupSize = calcGridsize();
-
+	
   buildModels(device);
   buildAccelerationStructures(device);
   buildBindlessScene(device, scene);
+
+
+	MTL::TextureDescriptor* textureDescriptor = MTL::TextureDescriptor::texture2DDescriptor(
+			MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB, 
+			2000, 
+			1400, 
+			false
+	);
+	device->newTexture(textureDescriptor);
 }
 
 void Explorer::RayTraceLayer::buildModels(MTL::Device* device) {
-  // Setting up objects
-  _lightDir = {0.0f, -1.0f, -1.0f};
 
   Model* f16 = Repository::Meshes::read2(
 			device, 
@@ -62,10 +76,12 @@ void Explorer::RayTraceLayer::buildModels(MTL::Device* device) {
 MTL::Size Explorer::RayTraceLayer::calcGridsize() {
   auto threadGroupWidth = _raytrace->threadExecutionWidth();
   auto threadGroupHeight = _raytrace->maxTotalThreadsPerThreadgroup() / threadGroupWidth;
+	DEBUG("Thread group width x height: " + std::to_string(threadGroupWidth) + " x " + std::to_string(threadGroupHeight));
   return MTL::Size::Make(threadGroupWidth, threadGroupHeight, 1);
 }
 
 void Explorer::RayTraceLayer::buildAccelerationStructures(MTL::Device* device) {
+	_dispatchEvent = device->newEvent();	
 	_buildEvent = device->newEvent();
   _primitiveDescriptors = Renderer::Descriptor::primitives(
 			scene, 
@@ -140,18 +156,29 @@ void Explorer::RayTraceLayer::buildBindlessScene(MTL::Device* device, const std:
 }
 
 void Explorer::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* notUsed) {
-  
-	MTL::CommandBuffer* buffer = queue->commandBuffer();
-  MTL::ComputeCommandEncoder* encoder = buffer->computeCommandEncoder();
+	
+	// Render pass 1 
+  MTL::CommandBuffer* normalBuffer = queue->commandBuffer();
+	MTL::ComputePassDescriptor* computePassDescriptor1 = MTL::ComputePassDescriptor::alloc()->init();
+	MTL::ComputeCommandEncoder* normalEncoder = normalBuffer->computeCommandEncoder(computePassDescriptor1);
+	normalEncoder->setComputePipelineState(this->_normalBuffer);
+	normalEncoder->dispatchThreads(_gridSize, _threadGroupSize);
+	normalEncoder->endEncoding();
+	normalBuffer->encodeSignalEvent(_dispatchEvent, 1);
+	normalBuffer->commit();
+	
+	// Render pass 2
+	CA::MetalDrawable* drawable = view->currentDrawable();
+  MTL::Texture* texture = drawable->texture();
 
+	MTL::CommandBuffer* buffer = queue->commandBuffer();
+	MTL::ComputePassDescriptor* computePassDescriptor2 = MTL::ComputePassDescriptor::alloc()->init();
+	MTL::ComputeCommandEncoder* encoder = buffer->computeCommandEncoder(computePassDescriptor2);
   encoder->setComputePipelineState(_raytrace);
 
-  CA::MetalDrawable* drawable = view->currentDrawable();
-  MTL::Texture* texture = drawable->texture();
   encoder->setTexture(texture, 0);
 
   encoder->setBytes(&_resolution, sizeof(_resolution), 0);
-  encoder->setBytes(&_lightDir, sizeof(_lightDir), 1);
 
   Renderer::RTTransform transform = _camera.update();
   encoder->setBytes(&transform, sizeof(transform), 2);
@@ -166,7 +193,7 @@ void Explorer::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncode
 	
 	encoder->useHeap(_heap);
   encoder->setAccelerationStructure(_instanceAccStructure, 3);
-  
+	
   for (auto resource : _resources) {
 		encoder->useResource(resource, MTL::ResourceUsageRead);
   }
