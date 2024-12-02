@@ -3,7 +3,7 @@
 #include <sstream>
 #include <string>
 
-namespace Explorer {
+namespace EXP {
 
 class KeyEvent : public Event {
 
@@ -50,4 +50,4 @@ public:
   EVENT_CLASS_TYPE(KeyReleased)
 };
 
-} // namespace Explorer
+} // namespace EXP

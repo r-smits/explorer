@@ -1,24 +1,24 @@
 #include <Control/AppDelegate.h>
 #include <sstream>
 
-Explorer::AppDelegate::AppDelegate(Explorer::AppProperties* properties) {
+EXP::AppDelegate::AppDelegate(EXP::AppProperties* properties) {
   this->properties = properties;
-  ViewAdapter* viewAdapter = ViewAdapter::sharedInstance();
+	EXP::ViewAdapter* viewAdapter = ViewAdapter::sharedInstance();
   this->mtkView = ViewAdapter::initView(properties->cgRect);
 }
 
-Explorer::AppDelegate::~AppDelegate() {
+EXP::AppDelegate::~AppDelegate() {
   mtkView->release();
   window->release();
   device->release();
   delete viewDelegate;
 }
 
-double Explorer::AppDelegate::getWidth() { return properties->cgRect.size.width; }
+double EXP::AppDelegate::getWidth() { return properties->cgRect.size.width; }
 
-double Explorer::AppDelegate::getHeight() { return properties->cgRect.size.height; }
+double EXP::AppDelegate::getHeight() { return properties->cgRect.size.height; }
 
-void Explorer::AppDelegate::printDebug() {
+void EXP::AppDelegate::printDebug() {
   std::stringstream ss;
   ss << "Initialized view (" << this->getWidth() << "x" << this->getHeight() << ")";
   DEBUG(ss.str());
@@ -28,12 +28,12 @@ void Explorer::AppDelegate::printDebug() {
   ss.clear();
 }
 
-void Explorer::AppDelegate::applicationWillFinishLaunching(NS::Notification* msg) {
+void EXP::AppDelegate::applicationWillFinishLaunching(NS::Notification* msg) {
   NS::Application* app = reinterpret_cast<NS::Application*>(msg->object());
   app->setActivationPolicy(NS::ActivationPolicy::ActivationPolicyRegular);
 }
 
-void Explorer::AppDelegate::applicationDidFinishLaunching(NS::Notification* msg) {
+void EXP::AppDelegate::applicationDidFinishLaunching(NS::Notification* msg) {
   this->window = NS::Window::alloc()->init(
       properties->cgRect,
       NS::WindowStyleMaskClosable | NS::WindowStyleMaskTitled,
@@ -57,7 +57,7 @@ void Explorer::AppDelegate::applicationDidFinishLaunching(NS::Notification* msg)
 	mtkView->setDevice(this->device);
 
 	// Set object to be the MTK::View event handler
-  this->viewDelegate = new ViewDelegate(this->mtkView, this->properties);
+  this->viewDelegate = new EXP::ViewDelegate(this->mtkView, this->properties);
   this->mtkView->setDelegate(this->viewDelegate);
 
   // Set NS::Window defaults
@@ -69,7 +69,7 @@ void Explorer::AppDelegate::applicationDidFinishLaunching(NS::Notification* msg)
   app->activateIgnoringOtherApps(true);
 }
 
-bool Explorer::AppDelegate::applicationShouldTerminateAfterLastWindowClosed(NS::Application* sender
+bool EXP::AppDelegate::applicationShouldTerminateAfterLastWindowClosed(NS::Application* sender
 ) {
   return true;
 }

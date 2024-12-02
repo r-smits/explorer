@@ -1,35 +1,35 @@
 #include <util.h>
 
-NS::String* Explorer::nsString(std::string str) {
+NS::String* EXP::nsString(std::string str) {
   return NS::String::string(str.c_str(), NS::StringEncoding::UTF8StringEncoding);
 }
 
-NS::URL* Explorer::nsUrl(std::string path) {
+NS::URL* EXP::nsUrl(std::string path) {
   return NS::URL::alloc()->initFileURLWithPath(nsString(path));
 }
 
-void Explorer::printError(NS::Error* error) {
+void EXP::printError(NS::Error* error) {
   ERROR(error->debugDescription()->utf8String());
 }
 
-void Explorer::print(simd::float2 n) {
+void EXP::print(simd::float2 n) {
   std::stringstream ss;
   ss << "[" << n.x << ", " << n.y << "]";
   DEBUG(ss.str());
 }
 
-void Explorer::print(simd::float3 n) {
+void EXP::print(simd::float3 n) {
   std::stringstream ss;
   ss << "[" << n.x << ", " << n.y << ", " << n.z << "]";
   DEBUG(ss.str());
 }
-void Explorer::print(simd::float4 n) {
+void EXP::print(simd::float4 n) {
   std::stringstream ss;
   ss << "[" << n.x << ", " << n.y << ", " << n.z << ", " << n.w << "]";
   DEBUG(ss.str());
 }
 
-void Explorer::print(simd::float4x4 m) {
+void EXP::print(simd::float4x4 m) {
 
   simd::float4 r1 = simd::float4(0.0f);
   simd::float4 r2 = simd::float4(0.0f);
@@ -63,18 +63,18 @@ void Explorer::print(simd::float4x4 m) {
   print(r4);
 }
 
-void Explorer::print(simd::quatf q) {
+void EXP::print(simd::quatf q) {
 	std::stringstream ss;
 	ss << "(" << q.vector.w << ", " << q.vector.x << ", " << q.vector.y << ", " << q.vector.z << ")";
 	DEBUG("--simd::quatf");
 	DEBUG(ss.str());
 }
 
-std::string Explorer::simd2str(const simd::float3 &vec3) {
+std::string EXP::simd2str(const simd::float3 &vec3) {
 	return "[x:" + std::to_string(vec3.x) + ", y: " + std::to_string(vec3.y) + ", z: " + std::to_string(vec3.z) + "]";
 }
 
-std::string Explorer::simd2str(const simd::float4 &vec4) {
+std::string EXP::simd2str(const simd::float4 &vec4) {
 	return "[x:" + std::to_string(vec4.x) + ", y: " + std::to_string(vec4.y) + ", z: " + std::to_string(vec4.z) + ", w: " + std::to_string(vec4.w) + "]";
 }
 

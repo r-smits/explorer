@@ -11,7 +11,7 @@
 int main() {
   NS::AutoreleasePool* autoreleasePool = NS::AutoreleasePool::alloc()->init();
 
-  Explorer::AppProperties properties = Explorer::AppProperties(
+  EXP::AppProperties properties = EXP::AppProperties(
       1000.0f,
       700.0f,
       "/Users/ramonsmits/Code/cpp/graphics/Explorer/src/Shaders/",
@@ -19,7 +19,7 @@ int main() {
 			"/Users/ramonsmits/Code/cpp/graphics/Explorer/src/Assets/Meshes/"
   );
 
-  Explorer::AppDelegate appDelegate = Explorer::AppDelegate(&properties);
+  EXP::AppDelegate appDelegate = EXP::AppDelegate(&properties);
   NS::Application* app = NS::Application::sharedApplication();
 
   app->setDelegate(&appDelegate);

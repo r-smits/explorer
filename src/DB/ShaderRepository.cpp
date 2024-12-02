@@ -17,7 +17,7 @@ MTL::Library* Repository::Shaders::readLibrary(MTL::Device* device, std::string 
   MTL::CompileOptions* options = nullptr;
   if (!device) WARN("No device found!");
   MTL::Library* library = device->newLibrary(open(path + ".metal"), options, &error);
-  if (!library) Explorer::printError(error);
+  if (!library) EXP::printError(error);
   error->release();
   options->release();
   return library;
@@ -27,7 +27,7 @@ MTL::BinaryArchive* Repository::Shaders::createBinaryArchive(MTL::Device* device
   NS::Error* error = nullptr;
   MTL::BinaryArchiveDescriptor* descriptor = MTL::BinaryArchiveDescriptor::alloc()->init();
   MTL::BinaryArchive* archive = device->newBinaryArchive(descriptor, &error);
-  if (error) Explorer::printError(error);
+  if (error) EXP::printError(error);
   error->release();
   return archive;
 }
@@ -39,15 +39,15 @@ bool Repository::Shaders::write(MTL::Device* device,
   NS::Error* error = nullptr;
   MTL::BinaryArchiveDescriptor* descriptor = MTL::BinaryArchiveDescriptor::alloc()->init();
   MTL::BinaryArchive* archive = device->newBinaryArchive(descriptor, &error);
-  archive->setLabel(Explorer::nsString("General shader lib"));
+  archive->setLabel(EXP::nsString("General shader lib"));
 
   pipelineDescriptor->setSupportAddingVertexBinaryFunctions(true);
   pipelineDescriptor->setSupportAddingFragmentBinaryFunctions(true);
   archive->addRenderPipelineFunctions(pipelineDescriptor, &error);
-  if (error) Explorer::printError(error);
+  if (error) EXP::printError(error);
 
-  bool result = archive->serializeToURL(Explorer::nsUrl(path + ".metallib"), &error);
-  if (error) Explorer::printError(error);
+  bool result = archive->serializeToURL(EXP::nsUrl(path + ".metallib"), &error);
+  if (error) EXP::printError(error);
 
   error->release();
   archive->release();
@@ -59,10 +59,10 @@ MTL::RenderPipelineDescriptor* Repository::Shaders::read(MTL::Device* device, st
   NS::Error* error = nullptr;
   MTL::BinaryArchiveDescriptor* archiveDescriptor = MTL::BinaryArchiveDescriptor::alloc()->init();
   archiveDescriptor->setUrl(
-      NS::URL::alloc()->initFileURLWithPath(Explorer::nsString(path + ".metallib"))
+      NS::URL::alloc()->initFileURLWithPath(EXP::nsString(path + ".metallib"))
   );
   MTL::BinaryArchive* archive = device->newBinaryArchive(archiveDescriptor, &error);
-  if (error) Explorer::printError(error);
+  if (error) EXP::printError(error);
 
   std::stringstream ss0;
   ss0 << archiveDescriptor->debugDescription()->utf8String();

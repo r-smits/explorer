@@ -5,7 +5,7 @@
 
 // ViewDelegate with extensions from objc
 
-namespace Explorer {
+namespace EXP {
 
 class ViewDelegate : public MTK::ViewDelegate {
 
@@ -22,4 +22,4 @@ private:
   MTL::CommandQueue* queue;
   LayerStack layerStack;
 };
-} // namespace Explorer
+} // namespace EXP

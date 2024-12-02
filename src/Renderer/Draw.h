@@ -11,9 +11,9 @@ public:
   ~Draw();
 
   static void
-  light(MTL::RenderCommandEncoder* encoder, Explorer::Camera camera, Explorer::Light* light);
+  light(MTL::RenderCommandEncoder* encoder, EXP::Camera camera, EXP::Light* light);
   static void
-  model(MTL::RenderCommandEncoder* encoder, Explorer::Camera camera, Explorer::Model* model);
+  model(MTL::RenderCommandEncoder* encoder, EXP::Camera camera, EXP::Model* model);
 };
 
 }; // namespace Renderer

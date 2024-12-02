@@ -7,7 +7,7 @@
 #include <Model/MeshFactory.h>
 #include <pch.h>
 
-namespace Explorer {
+namespace EXP {
 
 class RayTraceLayer : public Layer {
 
@@ -21,7 +21,7 @@ public: // Setting up layer
 public: // Event
   void buildModels(MTL::Device* device);
   void buildAccelerationStructures(MTL::Device* device);
-	void rebuildAccelerationStructures(MTL::Device* device);
+	void rebuildAccelerationStructures(MTK::View* device);
 	void buildBindlessScene(MTL::Device* device, const std::vector<Model*>& scene);
 	MTL::Size calcGridsize();
 
@@ -48,8 +48,8 @@ private:
   simd::float3 _lightDir;
   Renderer::Sphere _spheres[3];
   Renderer::RTMaterial _materials[3];
-  std::vector<Explorer::Model*> scene;
-  Explorer::Model* _modelsarr[1];
+  std::vector<EXP::Model*> scene;
+  EXP::Model* _modelsarr[1];
 
 private:
 	MTL::Event* _buildEvent;
@@ -67,4 +67,4 @@ private:
 
 
 };
-}; // namespace Explorer
+}; // namespace EXP

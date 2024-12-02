@@ -1,7 +1,7 @@
 #pragma once
 #include <pch.h>
 
-namespace Explorer {
+namespace EXP {
 
 class MouseMoveEvent : public Event {
 public:
@@ -62,4 +62,4 @@ public:
   EVENT_CLASS_TYPE(MouseButtonReleased)
 };
 
-}; // namespace Explorer
+}; // namespace EXP

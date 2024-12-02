@@ -5,7 +5,7 @@
 #include <pch.h>
 #include <simd/simd.h>
 
-namespace Explorer {
+namespace EXP {
 
 struct Object {
 public:
@@ -119,42 +119,42 @@ public:
       add(mesh);
   }
 
-	Explorer::Model* rotate(const simd::float4x4& rotation) {
+	EXP::Model* rotate(const simd::float4x4& rotation) {
 		for (Mesh* mesh : meshes) {
 			mesh->rotate(rotation * mesh->rotation);
 		}
 		return this;
 	}
 
-	Explorer::Model* scale(const float& scalar) {
+	EXP::Model* scale(const float& scalar) {
 		for (Mesh* mesh: meshes) {
 			mesh->scale(scalar);	
 		}
 		return this;
 	}
 
-	Explorer::Model* move(const simd::float3& vec) {
+	EXP::Model* move(const simd::float3& vec) {
 		for (Mesh* mesh: meshes) {
 			mesh->translate(vec);
 		}
 		return this;
 	}
 
-	Explorer::Model* f4x4() {	
+	EXP::Model* f4x4() {	
 		for (Mesh* mesh: meshes) {
 			mesh->f4x4();
 		}
 		return this;
 	}
 	
-	Explorer::Model* setColor(const simd::float4& color) {
+	EXP::Model* setColor(const simd::float4& color) {
 		for (Mesh* mesh : this->meshes) {
 			mesh->setColor(color);
 		}
 		return this;
 	}
 
-	Explorer::Model* setEmissive(const bool& emissive) {
+	EXP::Model* setEmissive(const bool& emissive) {
 		for (Mesh* mesh : this->meshes) {
 			for (Submesh* submesh : mesh->submeshes()) {
 				submesh->material.useLight = emissive;
@@ -234,4 +234,4 @@ public:
   static Light* light(MTL::Device* device);
 };
 
-} // namespace Explorer
+} // namespace EXP

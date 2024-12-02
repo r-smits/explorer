@@ -9,12 +9,10 @@ struct RTMaterial {
 	float3 metallic;
 };
 
-struct RTTransform {
-	float4x4 mProjection;
-	float4x4 mView;
-  float4x4 mInverseProjection;
-  float4x4 mInverseView;
-	float3 rayOrigin;
+struct VCamera {
+	float4x4 orientation;
+	float3 vecOrigin;
+	float3 resolution;
 };
 
 struct VertexAttributes {

@@ -38,7 +38,7 @@
 
   NSError* error = nil;
   id<MTLTexture> mtlTexture = [loader newTextureWithMDLTexture:texture options:options error:&error];
-  if (error) Explorer::printError((__bridge NS::Error*)error);
+  if (error) EXP::printError((__bridge NS::Error*)error);
   return (__bridge MTL::Texture*)mtlTexture;
 }
 
@@ -66,7 +66,7 @@
 			MDLTexture* texture = [property textureSamplerValue].texture;
 			id<MTLTexture> mtlTexture = [loader newTextureWithMDLTexture:texture options:options error:&err];
 
-			if (err) Explorer::printError((__bridge NS::Error*)err);
+			if (err) EXP::printError((__bridge NS::Error*)err);
 			return (__bridge MTL::Texture*)mtlTexture;
 		}
 	}
@@ -79,7 +79,7 @@
 MTL::Texture* Repository::Textures::read(MTL::Device* device, std::string path) {
   NSError* error = nil;
   MTKTextureLoader* loader = [[MTKTextureLoader alloc] initWithDevice:(__bridge id<MTLDevice>)device];
-  NSURL* fullPath = (__bridge NSURL*)Explorer::nsUrl(path);
+  NSURL* fullPath = (__bridge NSURL*)EXP::nsUrl(path);
   NSDictionary* options = @{MTKTextureLoaderOptionOrigin : MTKTextureLoaderOriginBottomLeft};
   id<MTLTexture> texture = [loader newTextureWithContentsOfURL:fullPath options:options error:&error];
   return (__bridge MTL::Texture*)texture;

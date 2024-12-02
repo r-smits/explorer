@@ -1,16 +1,17 @@
 #include <metal_stdlib>
 #include <metal_raytracing>
 using namespace metal;
+using namespace raytracing;
 
 #import "../src/Shaders/ShaderTypes.h"
 #import "../src/Shaders/RTUtils.h"
 
 // Object constants
-constexpr sampler sampler2d(address::clamp_to_edge, filter::linear); 
+constexpr sampler sampler2d(address::clamp_to_edge, filter::linear);
 
 void transport(
-	thread raytracing::ray& r,
-	thread raytracing::instance_acceleration_structure& structure,
+	thread ray& r,
+	thread instance_acceleration_structure& structure,
 	constant Scene* scene,
 	uint2 gid,
 	thread int bounces,
@@ -22,9 +23,9 @@ void transport(
 	thread bool inverse_square
 ) {
 	
-	raytracing::intersector<raytracing::instancing, raytracing::triangle_data, raytracing::world_space_data> intersector;	
-	intersector.assume_geometry_type(raytracing::geometry_type::triangle);
-	raytracing::intersection_result<raytracing::instancing, raytracing::triangle_data, raytracing::world_space_data> intersection;
+	intersector<instancing, triangle_data, world_space_data> intersector;	
+	intersector.assume_geometry_type(geometry_type::triangle);
+	intersection_result<instancing, triangle_data, world_space_data> intersection;
 
 	// Contribution is set to 1 and will decrease over time, with the amount of bounces
 	float4 contribution = float4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -35,12 +36,12 @@ void transport(
 		intersection = intersector.intersect(r, structure, 0xFF);
 
 		// If our ray does not hit, terminate early.
-		if (intersection.type == raytracing::intersection_type::none) { 
+		if (intersection.type == intersection_type::none) { 
 			color += contribution * sky_color;
 			terminate_flag = (i == 1);
 			return; 
 		} 
-		if (intersection.type == raytracing::intersection_type::triangle) {
+		if (intersection.type == intersection_type::triangle) {
 
 			// Look up the data belonging to the intersection in the scene
 			// This requires a bindless setup				
@@ -96,28 +97,27 @@ void transport(
 [[kernel]]
 void computeKernel(
 	texture2d<float, access::write> buffer								[[ texture(0) ]],
-	constant float3& resolution														[[ buffer(0)	]],
-	constant RTTransform& transform												[[ buffer(2)	]],
-	raytracing::instance_acceleration_structure structure	[[ buffer(3)	]],
-	constant Scene* scene																	[[ buffer(4)	]],
+	constant VCamera& vcamera															[[ buffer(1)	]],
+	instance_acceleration_structure structure							[[ buffer(2)	]],
+	constant Scene* scene																	[[ buffer(3)	]],
 	uint2 gid																							[[ thread_position_in_grid	]] 
 ) {
 	
-	// Initialize default parameters
+	// Check if instance acceleration structure was built succesfully
 	float4 color = float4(0.0f, 0.0f, 0.0f, 1.0f);
+		if (is_null_instance_acceleration_structure(structure)) {
+		buffer.write(color, gid);
+		return;
+	}
+	
+	// Initialize default parameters
 	thread uint32_t seed = 0;
 	thread int bounces = 3;
 	thread float3 normal = float3(0.0f);
 
-	// Check if instance acceleration structure was built succesfully
-	if (is_null_instance_acceleration_structure(structure)) {
-		buffer.write(color, gid);
-		return;
-	}
-
 	// Initialize ReSTIR variables (later to reconsider the memory scope)
 	// N good samples defined in constant address space, maybe there is a better way of doing things
-	thread int m = 8;									// Number of bad samples
+	thread int m = 8;										// Number of bad samples
 	//thread int n = 1;									// Number of good samples
 	
 	// In the future we need to pass it in as an argument to the kernel shader
@@ -125,9 +125,10 @@ void computeKernel(
 	Reservoir r1;
 
 	// Build ray. Ray shoots out from point (gid). Camera is a grid, point is a coordinate on the grid. 
-	raytracing::ray r = build_ray(resolution, transform, gid);
-	raytracing::ray x;
-	
+	ray r;
+	ray x;
+	build_ray(r, vcamera, gid);
+		
 	// Shoot initial ray from the camera into the scene. 
 	// This will set the ray, color and seed by reference.
 	bool terminate_flag = false;

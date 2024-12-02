@@ -5,7 +5,7 @@
  * 2) Objc event method calls C++ Handler. (Obj-C -> C++)
  **/
 
-namespace Explorer {
+namespace EXP {
 class ViewAdapter {
 public:
   static ViewAdapter *sharedInstance();
@@ -20,4 +20,4 @@ private:
   std::function<void(Event &)> handler;
 };
 
-}; // namespace Explorer
+}; // namespace EXP

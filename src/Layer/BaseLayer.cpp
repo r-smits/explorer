@@ -5,7 +5,7 @@
 #include <Math/Transformation.h>
 #include <Renderer/Renderer.h>
 
-Explorer::BaseLayer::BaseLayer(MTL::Device* device, AppProperties* config)
+EXP::BaseLayer::BaseLayer(MTL::Device* device, AppProperties* config)
     : Layer(device->retain(), config) {
 
   _vertexDescriptor = Renderer::Descriptor::vertex(device, Renderer::Layouts::vertexNIP);
@@ -14,7 +14,7 @@ Explorer::BaseLayer::BaseLayer(MTL::Device* device, AppProperties* config)
   DEBUG("BaseLayer :: Initialization done.");
 }
 
-Explorer::BaseLayer::~BaseLayer() {
+EXP::BaseLayer::~BaseLayer() {
   this->device->release();
   this->generalPipelineState->release();
   this->depthStencilState->release();
@@ -28,7 +28,7 @@ Explorer::BaseLayer::~BaseLayer() {
   delete cube;
 }
 
-void Explorer::BaseLayer::onEvent(Event& event) {
+void EXP::BaseLayer::onEvent(Event& event) {
   EventDispatcher dispatcher = EventDispatcher(event);
   dispatcher.dispatch<KeyPressedEvent>(BIND_EVENT(BaseLayer::onKeyPressed));
   dispatcher.dispatch<KeyReleasedEvent>(BIND_EVENT(BaseLayer::onKeyReleased));
@@ -37,21 +37,21 @@ void Explorer::BaseLayer::onEvent(Event& event) {
   dispatcher.dispatch<MouseMoveEvent>(BIND_EVENT(BaseLayer::onMouseMove));
 }
 
-bool Explorer::BaseLayer::onKeyPressed(KeyPressedEvent& event) { return false; }
+bool EXP::BaseLayer::onKeyPressed(KeyPressedEvent& event) { return false; }
 
-bool Explorer::BaseLayer::onKeyReleased(KeyReleasedEvent& event) { return true; }
+bool EXP::BaseLayer::onKeyReleased(KeyReleasedEvent& event) { return true; }
 
-bool Explorer::BaseLayer::onMouseButtonPressed(MouseButtonPressedEvent& event) { return true; }
+bool EXP::BaseLayer::onMouseButtonPressed(MouseButtonPressedEvent& event) { return true; }
 
-bool Explorer::BaseLayer::onMouseButtonReleased(MouseButtonReleasedEvent& event) { return true; }
+bool EXP::BaseLayer::onMouseButtonReleased(MouseButtonReleasedEvent& event) { return true; }
 
-bool Explorer::BaseLayer::onMouseMove(MouseMoveEvent& event) {
+bool EXP::BaseLayer::onMouseMove(MouseMoveEvent& event) {
   mouseX = event.getX();
   mouseY = event.getY();
   return true;
 }
 
-void Explorer::BaseLayer::buildPipeline() {
+void EXP::BaseLayer::buildPipeline() {
   auto descriptor =
       Renderer::Descriptor::render(device, _vertexDescriptor, config->shaderPath + "General");
   if (false) Repository::Shaders::write(device, descriptor, config->shaderPath + "General");
@@ -60,13 +60,13 @@ void Explorer::BaseLayer::buildPipeline() {
 
   camera = OrthographicCamera(); // Transformations specific to the view
   camera.rotate(
-      Transformation::translation({0.0f, 0.0f, -2.5f}) * Transformation::xRotation(-30.0f) *
-      Transformation::yRotation(-45.0f) * Transformation::translation({0.0f, 0.0f, 2.5f})
+      EXP::MATH::translation({0.0f, 0.0f, -2.5f}) * EXP::MATH::xRotation(-30.0f) *
+      EXP::MATH::yRotation(-45.0f) * EXP::MATH::translation({0.0f, 0.0f, 2.5f})
   );
   camera.project();
 }
 
-void Explorer::BaseLayer::buildMeshes() {
+void EXP::BaseLayer::buildMeshes() {
 
   // pyramid = MeshFactory::pyramid(this->device, config->texturePath +
   // "island.jpg"); pyramid->scale = 0.25f; pyramid->position = {-0.5f, 0.0f,
@@ -96,56 +96,56 @@ void Explorer::BaseLayer::buildMeshes() {
   cruiser = Repository::Meshes::read(device, _vertexDescriptor, config->meshPath + "cruiser/cruiser");
   cruiser->move({0.0f, 0.0f, -2.5f})->scale(0.5f)->f4x4();
 
-  light = MeshFactory::light(this->device);
+  light = EXP::MeshFactory::light(this->device);
   light->translate({0.0f, 0.5f, -2.5f});
 }
 
-void Explorer::BaseLayer::checkIO() {
+void EXP::BaseLayer::checkIO() {
 
   // light->translate({mouseX, mouseY, 0.0f});
   // light->f4x4();
 
-  if (Explorer::IO::isPressed(KEY_D)) {
-    camera.rotation = Transformation::translation({0.0f, 0.0f, -2.5f}) *
-                      Transformation::yRotation(-camera.rotateSpeed) *
-                      Transformation::translation({0.0f, 0.0f, 2.5f}) * camera.rotation;
+  if (EXP::IO::isPressed(KEY_D)) {
+    camera.rotation = EXP::MATH::translation({0.0f, 0.0f, -2.5f}) *
+                      EXP::MATH::yRotation(-camera.rotateSpeed) *
+                      EXP::MATH::translation({0.0f, 0.0f, 2.5f}) * camera.rotation;
   }
 
-  if (Explorer::IO::isPressed(KEY_A)) {
-    camera.rotation = Transformation::translation({0.0f, 0.0f, -2.5f}) *
-                      Transformation::yRotation(camera.rotateSpeed) *
-                      Transformation::translation({0.0f, 0.0f, 2.5f}) * camera.rotation;
+  if (EXP::IO::isPressed(KEY_A)) {
+    camera.rotation = EXP::MATH::translation({0.0f, 0.0f, -2.5f}) *
+                      EXP::MATH::yRotation(camera.rotateSpeed) *
+                      EXP::MATH::translation({0.0f, 0.0f, 2.5f}) * camera.rotation;
   }
 
   if (IO::isPressed(KEY_W)) {
-    camera.rotation = Transformation::translation({0.0f, 0.0f, -2.5f}) *
-                      Transformation::xRotation(camera.rotateSpeed) *
-                      Transformation::translation({0.0f, 0.0f, 2.5f}) * camera.rotation;
+    camera.rotation = EXP::MATH::translation({0.0f, 0.0f, -2.5f}) *
+                      EXP::MATH::xRotation(camera.rotateSpeed) *
+                      EXP::MATH::translation({0.0f, 0.0f, 2.5f}) * camera.rotation;
   }
 
   if (IO::isPressed(KEY_S)) {
-    camera.rotation = Transformation::translation({0.0f, 0.0f, -2.5f}) *
-                      Transformation::xRotation(-camera.rotateSpeed) *
-                      Transformation::translation({0.0f, 0.0f, 2.5f}) * camera.rotation;
+    camera.rotation = EXP::MATH::translation({0.0f, 0.0f, -2.5f}) *
+                      EXP::MATH::xRotation(-camera.rotateSpeed) *
+                      EXP::MATH::translation({0.0f, 0.0f, 2.5f}) * camera.rotation;
   }
   camera.f4x4();
 
   if (IO::isPressed(ARROW_UP)) {
-    f16->rotate(Transformation::xRotation(camera.rotateSpeed));
+    f16->rotate(EXP::MATH::xRotation(camera.rotateSpeed));
   }
   if (IO::isPressed(ARROW_DOWN)) {
-    f16->rotate(Transformation::xRotation(-camera.rotateSpeed));
+    f16->rotate(EXP::MATH::xRotation(-camera.rotateSpeed));
   }
   if (IO::isPressed(ARROW_LEFT)) {
-    f16->rotate(Transformation::yRotation(camera.rotateSpeed));
+    f16->rotate(EXP::MATH::yRotation(camera.rotateSpeed));
   }
   if (IO::isPressed(ARROW_RIGHT)) {
-    f16->rotate(Transformation::yRotation(-camera.rotateSpeed));
+    f16->rotate(EXP::MATH::yRotation(-camera.rotateSpeed));
   }
   f16->f4x4();
 }
 
-void Explorer::BaseLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* encoder) {
+void EXP::BaseLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* encoder) {
   t += 1.0f;
   if (t > 360) t -= 360.0f;
 

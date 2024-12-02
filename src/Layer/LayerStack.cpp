@@ -3,21 +3,21 @@
 #include <Layer/LayerStack.h>
 #include <View/ViewAdapter.hpp>
 
-Explorer::LayerStack::LayerStack() {
+EXP::LayerStack::LayerStack() {
   DEBUG("Initializing LayerStack ...");
   this->insert = layers.begin();
 }
 
-Explorer::LayerStack::~LayerStack() {
+EXP::LayerStack::~LayerStack() {
   for (Layer* layer : layers)
     delete layer;
 }
 
-void Explorer::LayerStack::pushLayer(Layer* layer) { this->layers.emplace(this->insert, layer); }
+void EXP::LayerStack::pushLayer(Layer* layer) { this->layers.emplace(this->insert, layer); }
 
-void Explorer::LayerStack::pushOverlay(Layer* overlay) { this->layers.emplace_back(overlay); }
+void EXP::LayerStack::pushOverlay(Layer* overlay) { this->layers.emplace_back(overlay); }
 
-void Explorer::LayerStack::popLayer(Layer* layer) {
+void EXP::LayerStack::popLayer(Layer* layer) {
   std::vector<Layer*>::iterator position = std::find(layers.begin(), layers.end(), layer);
   if (position != layers.end()) {
     layers.erase(position);
@@ -25,7 +25,7 @@ void Explorer::LayerStack::popLayer(Layer* layer) {
   }
 }
 
-void Explorer::LayerStack::popOverlay(Layer* overlay) {
+void EXP::LayerStack::popOverlay(Layer* overlay) {
 
   std::vector<Layer*>::iterator position = std::find(layers.begin(), layers.end(), overlay);
   if (position != layers.end()) {

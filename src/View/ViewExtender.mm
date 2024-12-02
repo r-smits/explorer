@@ -6,45 +6,45 @@
 #include <pch.h>
 
 ViewExtender *extender;
-Explorer::ViewAdapter *adapter;
+EXP::ViewAdapter *adapter;
 
-Explorer::ViewAdapter *Explorer::ViewAdapter::sharedInstance() {
+EXP::ViewAdapter *EXP::ViewAdapter::sharedInstance() {
   if (!adapter) {
     DEBUG("Initializing new viewAdapter ...");
-    adapter = new Explorer::ViewAdapter();
+    adapter = new EXP::ViewAdapter();
   }
   return adapter;
 }
 
-MTK::View *Explorer::ViewAdapter::initView(CGRect frame) {
+MTK::View *EXP::ViewAdapter::initView(CGRect frame) {
   [ViewExtender load:frame];
   return (__bridge MTK::View *)[ViewExtender get];
 }
 
-MTK::View *Explorer::ViewAdapter::getView() {
+MTK::View *EXP::ViewAdapter::getView() {
   if (!extender) {
     WARN("Atempted to retrieve MTK::View but not initialized!");
   }
   return (__bridge MTK::View *)[ViewExtender get];
 }
 
-CGRect Explorer::ViewAdapter::bounds() {
+CGRect EXP::ViewAdapter::bounds() {
 if (!extender) {
 	WARN("Attemtped to retrieve MTK::View bounds, but not initialized!");
 }
 	return (CGRect) [ViewExtender get].bounds;
 }
 
-void Explorer::ViewAdapter::printDebug() const {
+void EXP::ViewAdapter::printDebug() const {
   ViewExtender *ref = [ViewExtender get];
   [ref printDebug];
 }
 
-void Explorer::ViewAdapter::setHandler(const std::function<void(Explorer::Event &)> &func) {
+void EXP::ViewAdapter::setHandler(const std::function<void(EXP::Event &)> &func) {
   this->handler = func;
 }
 
-void Explorer::ViewAdapter::onEvent(Explorer::Event &event) {
+void EXP::ViewAdapter::onEvent(EXP::Event &event) {
   if (!handler) {
     WARN("No handler was set to handle events.");
     return;
@@ -96,9 +96,9 @@ void Explorer::ViewAdapter::onEvent(Explorer::Event &event) {
 
 - (void)mouseUp:(NSEvent *)event {
   if ([event type] == NSEventType::NSEventTypeLeftMouseUp || NSEventType::NSEventTypeRightMouseUp) {
-    Explorer::MouseButtonReleasedEvent released =
-        Explorer::MouseButtonReleasedEvent([event buttonNumber]);
-    Explorer::ViewAdapter::sharedInstance()->onEvent((Explorer::Event &)released);
+    EXP::MouseButtonReleasedEvent released =
+        EXP::MouseButtonReleasedEvent([event buttonNumber]);
+    EXP::ViewAdapter::sharedInstance()->onEvent((EXP::Event &)released);
   } else {
     NSLog(@"MouseUp :: Unknown event: %lu", [event type]);
   }
@@ -107,9 +107,8 @@ void Explorer::ViewAdapter::onEvent(Explorer::Event &event) {
 - (void)mouseDown:(NSEvent *)event {
   if ([event type] == NSEventType::NSEventTypeLeftMouseDown ||
       NSEventType::NSEventTypeRightMouseDown) {
-    Explorer::MouseButtonPressedEvent pressed =
-        Explorer::MouseButtonPressedEvent([event buttonNumber]);
-    Explorer::ViewAdapter::sharedInstance()->onEvent((Explorer::Event &)pressed);
+    EXP::MouseButtonPressedEvent pressed = EXP::MouseButtonPressedEvent([event buttonNumber]);
+    EXP::ViewAdapter::sharedInstance()->onEvent((EXP::Event &)pressed);
   } else {
     NSLog(@"MouseDown :: Unknown event: %lu", [event type]);
   }
@@ -122,8 +121,8 @@ void Explorer::ViewAdapter::onEvent(Explorer::Event &event) {
 		
 			
     mousePoint = NSMakePoint(mousePoint.x*2, (self.bounds.size.height - mousePoint.y)*2);
-    Explorer::MouseMoveEvent moved = Explorer::MouseMoveEvent(mousePoint.x, mousePoint.y);
-    Explorer::ViewAdapter::sharedInstance()->onEvent((Explorer::Event &)moved);
+    EXP::MouseMoveEvent moved = EXP::MouseMoveEvent(mousePoint.x, mousePoint.y);
+    EXP::ViewAdapter::sharedInstance()->onEvent((EXP::Event &)moved);
   } else {
     NSLog(@"MouseMoved :: Unknown event: %lu", [event type]);
   }
@@ -135,8 +134,8 @@ void Explorer::ViewAdapter::onEvent(Explorer::Event &event) {
     NSPoint mousePoint = event.locationInWindow;
     mousePoint = [self convertPoint:mousePoint fromView:nil];
     mousePoint = NSMakePoint(mousePoint.x, self.bounds.size.height - mousePoint.y);
-    Explorer::MouseMoveEvent moved = Explorer::MouseMoveEvent(mousePoint.x, mousePoint.y);
-    Explorer::ViewAdapter::sharedInstance()->onEvent((Explorer::Event &)moved);
+    EXP::MouseMoveEvent moved = EXP::MouseMoveEvent(mousePoint.x, mousePoint.y);
+    EXP::ViewAdapter::sharedInstance()->onEvent((EXP::Event &)moved);
 
   } else {
     NSLog(@"MouseDragged :: Unknown event: %lu", [event type]);
@@ -160,9 +159,8 @@ void Explorer::ViewAdapter::onEvent(Explorer::Event &event) {
 - (void)keyDown:(NSEvent *)event {
 
   if ([event type] == NSEventTypeKeyDown) {
-    const Explorer::KeyPressedEvent pressed =
-        Explorer::KeyPressedEvent([event keyCode], [event isARepeat]);
-    Explorer::ViewAdapter::sharedInstance()->onEvent((Explorer::Event &)pressed);
+    const EXP::KeyPressedEvent pressed = EXP::KeyPressedEvent([event keyCode], [event isARepeat]);
+    EXP::ViewAdapter::sharedInstance()->onEvent((EXP::Event &)pressed);
   } else {
     NSLog(@"KeyDown :: Unknown event: %lu", [event type]);
   }
@@ -170,8 +168,8 @@ void Explorer::ViewAdapter::onEvent(Explorer::Event &event) {
 
 - (void)keyUp:(NSEvent *)event {
   if ([event type] == NSEventTypeKeyUp) {
-    const Explorer::KeyReleasedEvent pressed = Explorer::KeyReleasedEvent([event keyCode]);
-    Explorer::ViewAdapter::sharedInstance()->onEvent((Explorer::Event &)pressed);
+    const EXP::KeyReleasedEvent pressed = EXP::KeyReleasedEvent([event keyCode]);
+    EXP::ViewAdapter::sharedInstance()->onEvent((EXP::Event &)pressed);
   } else {
     NSLog(@"KeyUp :: Unknown event: %lu", [event type]);
   }

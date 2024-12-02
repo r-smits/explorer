@@ -3,7 +3,7 @@
 #include <pch.h>
 #include <simd/simd.h>
 
-namespace Explorer {
+namespace EXP {
 
 class IO {
 
@@ -24,4 +24,4 @@ public: // Event
   static bool onMouseReleased(MouseButtonReleasedEvent& event);
 };
 
-}; // namespace Explorer
+}; // namespace EXP

@@ -16,4 +16,4 @@ public:
   static MTL::Buffer* create(MTL::Device* device, Light* light);
 };
 
-}; // namespace Explorer
+}; // namespace EXP

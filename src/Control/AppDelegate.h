@@ -5,12 +5,12 @@
 #include <View/ViewDelegate.h>
 #include <pch.h>
 
-namespace Explorer {
+namespace EXP {
 
 class AppDelegate : public NS::ApplicationDelegate {
 
 public:
-  AppDelegate(Explorer::AppProperties *properties);
+  AppDelegate(EXP::AppProperties *properties);
   ~AppDelegate();
 
   virtual void applicationWillFinishLaunching(NS::Notification *msg) override;
@@ -24,8 +24,8 @@ private:
   NS::Window *window;
   MTK::View *mtkView;
   MTL::Device *device;
-  AppProperties *properties;
-  ViewDelegate *viewDelegate = nullptr;
+	EXP::AppProperties *properties;
+	EXP::ViewDelegate *viewDelegate = nullptr;
 };
 
-} // namespace Explorer
+} // namespace EXP

@@ -5,7 +5,7 @@
 #include <pch.h>
 #include <simd/simd.h>
 
-namespace Explorer {
+namespace EXP {
 
 class Camera : public Object {
 public:
@@ -24,27 +24,34 @@ public:
 };
 
 class VCamera {
+		
+		simd::float2 speed;
+		simd::float2 lastMousePos;
+		simd::float2 resolution;
+		
+		simd::float3 vecForward;
+		simd::float3 vecUp;
+		simd::float3 vecRight;
+					
+		simd::quatf quatPosY;
+		simd::quatf quatNegY;
+		
+		simd::float4x4 view;
+		simd::float4x4 projection;
+
+		Renderer::VCamera transforms;
 
 	public:
 		VCamera();
 		~VCamera() {};
 
 	public:
-		simd::float3 vRight();
-		const void setSpeed(float speed);
-		void updateView();
-		Renderer::RTTransform update();
-		void Iso();
-
-	private:
-		Renderer::RTTransform rTransform;
-		simd::float3 vForward;
-		simd::float3 vUp;
-		simd::float2 speed;
-		simd::float2 lastMousePos;
-		simd::float2 resolution;
-		simd::quatf rotationY;
-		simd::quatf nRotationY;
+		const void setSpeed(const float& speed);
+		const void updateView();
+		const void setIsometric();
+		const simd::float3& getVRight();
+		const Renderer::VCamera& update();
+		
 };
 
 class DefaultCamera : public Camera {
@@ -93,4 +100,4 @@ private:
 	float farZ;
 };
 
-}; // namespace Explorer
+}; // namespace EXP

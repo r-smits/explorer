@@ -11,23 +11,32 @@
  *
  * You need to use compiler intrinsics
  *
-**/
-namespace Transformation {
+ **/
+
+namespace EXP {
+namespace MATH {
 
 simd::float4x4 identity();
-simd::float4x4 translation(simd::float3);
-simd::float4x4 zRotation(float theta);
-simd::float4x4 xRotation(float theta);
-simd::float4x4 yRotation(float theta);
-simd::float4x4 rotate(simd::float3 axis);
-simd::float4x4 scale(float factor);
-simd::float4x4 perspective(float fov, float aspectRatio, float nearZ, float farZ);
-simd::float4x4
-orthographic(float left, float right, float bottom, float top, float nearZ, float farZ);
-simd::float4x4 lookat(simd::float3 eye, simd::float3 ref, simd::float3 up);
-simd::float4x4 lookat2(simd::float3 eye, simd::float3 center, simd::float3 up);
-simd::float4x4 rotate(float angle, simd::float3 axis);
-simd::quatf cross(simd::quatf a, simd::quatf b);
-
+simd::float4x4 translation(const simd::float3& pos);
+simd::float4x4 zRotation(const float& theta);
+simd::float4x4 xRotation(const float& theta);
+simd::float4x4 yRotation(const float& theta);
+simd::float4x4 rotate(const simd::float3& axis);
+simd::float4x4 scale(const float& factor);
+simd::float4x4 perspective(const float& fov, const float& aspectRatio, const float& nearZ, const float& farZ);
+simd::float4x4 orthographic(
+    const float& left,
+    const float& right,
+    const float& bottom,
+    const float& top,
+    const float& nearZ,
+    const float& farZ
+);
+simd::float4x4 lookat(const simd::float3& eye, const simd::float3& ref, const simd::float3& up);
+simd::float4x4 lookat2(const simd::float3& eye, const simd::float3& center, const simd::float3& up);
+simd::float4x4 rotate(const float& angle, const simd::float3& axis);
+simd::quatf cross(const simd::quatf& a, const simd::quatf& b);
 MTL::PackedFloat4x3 pack(const simd::float4x4& m4x4);
-} // namespace Transformation
+} // namespace MATH
+
+} // namespace EXP
