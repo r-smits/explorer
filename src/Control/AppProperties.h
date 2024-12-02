@@ -1,7 +1,7 @@
 #pragma once
 #include <pch.h>
 
-namespace Explorer {
+namespace EXP {
 
 class AppProperties {
 
@@ -36,4 +36,4 @@ public:
   std::string vertexFnName;
   std::string fragmentFnName;
 };
-}; // namespace Explorer
+}; // namespace EXP

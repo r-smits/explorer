@@ -81,31 +81,26 @@ struct Reservoir {
 	}
 };
 
-// How do we get a function with this return type in the header?
-raytracing::ray build_ray(
-	constant float3& resolution,
-	constant RTTransform &transform,
-	uint2 gid
-) {
+void build_ray(thread ray& r, constant VCamera& vcamera, uint2 gid) {
+	
 	// Camera point needs to be within world space:
 	// -1 >= x >= 1 :: Normalized
 	// -1 >= y >= 1 :: We want to scale y in opposite direction for viewport coordinates
 	// -1 >= z >= 0 :: The camera is pointed towards -z axis, as we use right handed
 	float3 pixel = float3(float2(gid), 1.0f);
-	pixel = pixel / resolution * 2 - 1;
 	pixel *= float3(1, -1, 1);
+	// ??? Somehow works without this line
+	// pixel = pixel / resolution * 2 - 1;
 
 	// Projection transformations
-	float4 projTransform = transform.mInverseProjection * float4(pixel, 1);
-	//float4 projTransformN = float4(normalize(projTransform.xyz / projTransform.w), 0.0f);
-	float3 rayDirection = normalize(transform.mView * projTransform).xyz;
-
-	raytracing::ray r;
-	r.origin = transform.rayOrigin;
-	r.direction = rayDirection;
+	// orientation = matView * matProjection
+	float3 vecRayDir = (orientation * float4(pixel, 1.0f)).xyz;
+	
+	// Ray is modified by reference
+	r.origin = vecOrigin;
+	r.direction = vecRayDir;
 	r.min_distance = 0.2f;						// Set to avoid self-occlusion
 	r.max_distance = FLT_MAX;
-	return r;
 }
 
 #endif

@@ -1,31 +1,29 @@
 #include <DB/Repository.hpp>
 #include <Renderer/State.h>
 
-MTL::RenderPipelineState*
-Renderer::State::render(MTL::Device* device, MTL::RenderPipelineDescriptor* descriptor) {
+MTL::RenderPipelineState* Renderer::State::render(MTL::Device* device, MTL::RenderPipelineDescriptor* descriptor) {
   NS::Error* error = nullptr;
   MTL::RenderPipelineState* state = device->newRenderPipelineState(descriptor, &error);
-  if (!state) Explorer::printError(error);
+  if (!state) EXP::printError(error);
   error->release();
   descriptor->release();
   DEBUG("Generated pipeline state.");
   return state;
 }
 
-MTL::ComputePipelineState*
-Renderer::State::compute(MTL::Device* device, std::string path) {
+MTL::ComputePipelineState* Renderer::State::compute(MTL::Device* device, std::string path) {
   MTL::Library* library = Repository::Shaders::readLibrary(device, path);
-  MTL::Function* kernel = library->newFunction(Explorer::nsString("computeKernel"));
+  MTL::Function* kernel = library->newFunction(EXP::nsString("computeKernel"));
   NS::Error* error = nullptr;
 	MTL::ComputePipelineState* state = device->newComputePipelineState(kernel, &error);
-  if (!state) Explorer::printError(error);
+  if (!state) EXP::printError(error);
 	return state;
 }
 
 MTL::ComputePipelineState* Renderer::State::Compute(MTL::Device* device, MTL::Function* fn) {
   NS::Error* error = nullptr;
 	MTL::ComputePipelineState* state = device->newComputePipelineState(fn, &error);
-  if (!state) Explorer::printError(error);
+  if (!state) EXP::printError(error);
 	return state;
 }
 

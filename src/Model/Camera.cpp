@@ -1,79 +1,90 @@
-#include "Math/Transformation.h"
 #include <Events/IOState.h>
 #include <Model/Camera.h>
 #include <Model/MeshFactory.h>
 
-namespace Explorer {
+namespace EXP {
 
 VCamera::VCamera() {
+	
+	CGRect frame = ViewAdapter::bounds();
+	simd::float3 resolution = {(float)frame.size.width * 2, (float)frame.size.height * 2, 1.0f};
 
+	this->speed = {.05, .05 * .25};
+  this->lastMousePos = IO::getMouse() / resolution.xy * 2 - 1;
 
-	speed = {.05, .05 * .25};
-  vUp = {0.0f, 1.0f, 0.0f};
-  vForward = {0.0f, 0.0f, -1.0f};
-	rotationY = simd::quatf(speed.y, vUp);
-	nRotationY = simd::quatf(-speed.y, vUp);
+	simd::float3 vecOrigin = {0.0f, 0.0f, 2.0f};
+	this->vecUp = {0.0f, 1.0f, 0.0f};
+  this->vecForward = {0.0f, 0.0f, -1.0f};
+	
+	this->quatPosY = simd::quatf(this->speed.y, this->vecUp);
+	this->quatNegY = simd::quatf(-this->speed.y, this->vecUp);
 
-  CGRect frame = ViewAdapter::bounds();
-  resolution = {(float)frame.size.width * 2, (float)frame.size.height * 2};
-  float fov = frame.size.width / frame.size.height;
-  lastMousePos = IO::getMouse() / resolution * 2 - 1;
+	//simd::float4x4 mProjection = EXP::MATH::orthographic(-1, 1, -1, 1, 1, -1);
+	this->projection = simd::inverse(EXP::MATH::perspective(45.0f, frame.size.width / frame.size.height, 0.1f, 100.0f));
+	this->view = EXP::MATH::lookat(vecOrigin, vecOrigin + this->vecForward, this->vecUp);
 
-  simd::float3 vOrigin = {0.0f, 0.0f, 2.0f};
-
-	//simd::float4x4 mProjection = Transformation::orthographic(-1, 1, -1, 1, 1, -1);
-	simd::float4x4 mProjection = Transformation::perspective(45.0f, fov, 0.1f, 100.0f);
-  
-	simd::float4x4 mInverseProjection = simd::inverse(mProjection);
-  simd::float4x4 mView = Transformation::lookat(vOrigin, vOrigin + vForward, vUp);
-  simd::float4x4 mInverseView = simd::inverse(mView);
-  
-	rTransform = {mProjection, mView, mInverseProjection, mInverseView, vOrigin};
+	this->transforms = {this->view * this->projection, vecOrigin, resolution};
 };
 
-simd::float3 VCamera::vRight() { return simd::cross(vForward, vUp); }
-
-const void VCamera::setSpeed(float speed) { this->speed = speed; }
-
-void VCamera::Iso() {
-	simd::quatf rotX = simd::quatf(-45.0f * M_PI/180, vRight());
-	simd::quatf rotY = simd::quatf(-45.0f * M_PI/180, vUp);
-	simd::quatf angle = simd::normalize(rotX * rotY);
-	vForward = simd_act(angle, vForward);
-	rTransform.rayOrigin = simd_act(angle, rTransform.rayOrigin);
+const simd::float3& VCamera::getVRight() { 
+	this->vecRight = simd::cross(this->vecForward, this->vecUp);
+	return this->vecRight; 
 }
 
-Renderer::RTTransform VCamera::update() {
+const void VCamera::setSpeed(const float& speed) { 
+	this->speed = speed; 
+}
 
-  if (IO::isPressed(KEY_W)) rTransform.rayOrigin += vForward * speed.x;
-  if (IO::isPressed(KEY_S)) rTransform.rayOrigin -= vForward * speed.x;
-  if (IO::isPressed(KEY_A)) rTransform.rayOrigin -= vRight() * speed.x;
-  if (IO::isPressed(KEY_D)) rTransform.rayOrigin += vRight() * speed.x;
-  if (IO::isPressed(KEY_Q)) rTransform.rayOrigin -= vUp * speed.x;
-  if (IO::isPressed(KEY_E)) rTransform.rayOrigin += vUp * speed.x;
+const void VCamera::setIsometric() {
+	simd::quatf rotX = simd::quatf(-45.0f * M_PI/180, this->getVRight());
+	simd::quatf rotY = simd::quatf(-45.0f * M_PI/180, this->vecUp);
+	simd::quatf angle = simd::normalize(rotX * rotY);
+	
+	this->vecForward = simd_act(angle, this->vecForward);
+	this->transforms.vecOrigin = simd_act(angle, this->transforms.vecOrigin);
+}
+
+const Renderer::VCamera& VCamera::update() {
+
+  if (IO::isPressed(KEY_W)) this->transforms.vecOrigin += this->vecForward * this->speed.x;
+  if (IO::isPressed(KEY_S)) this->transforms.vecOrigin -= this->vecForward * this->speed.x;
+  if (IO::isPressed(KEY_A)) this->transforms.vecOrigin -= this->getVRight() * this->speed.x;
+  if (IO::isPressed(KEY_D)) this->transforms.vecOrigin += this->getVRight() * this->speed.x;
+  if (IO::isPressed(KEY_Q)) this->transforms.vecOrigin -= this->vecUp * this->speed.x;
+  if (IO::isPressed(KEY_E)) this->transforms.vecOrigin += this->vecUp * this->speed.x;
 	
 	if (IO::isPressed(KEY_J)) {
-		vForward = simd_act(rotationY, vForward);
-		rTransform.rayOrigin = simd_act(rotationY, rTransform.rayOrigin);
+		this->vecForward = simd_act(this->quatPosY, this->vecForward);
+		this->transforms.vecOrigin = simd_act(this->quatPosY, this->transforms.vecOrigin);
 	}
 
 	if (IO::isPressed(KEY_K)) {
-		vForward = simd_act(nRotationY, vForward);
-		rTransform.rayOrigin = simd_act(nRotationY, rTransform.rayOrigin);
+		this->vecForward = simd_act(this->quatNegY, this->vecForward);
+		this->transforms.vecOrigin = simd_act(this->quatNegY, this->transforms.vecOrigin);
 	}
 
-  if (IO::isPressed(ARROW_LEFT)) vForward = simd_act(rotationY, vForward);
-  if (IO::isPressed(ARROW_RIGHT)) vForward = simd_act(nRotationY, vForward);
+  if (IO::isPressed(ARROW_LEFT)) this->vecForward = simd_act(this->quatPosY, this->vecForward);
+  if (IO::isPressed(ARROW_RIGHT)) this->vecForward = simd_act(this->quatNegY, this->vecForward);
+	
+  simd::float3 center = this->transforms.vecOrigin + this->vecForward;
+  this->view = EXP::MATH::lookat(this->transforms.vecOrigin, center, this->vecUp);
 
-  simd::float3 center = rTransform.rayOrigin + vForward;
-  rTransform.mView = Transformation::lookat(rTransform.rayOrigin, center, vUp);
-  rTransform.mInverseView = simd::inverse(rTransform.mView);
-  return rTransform;
+	this->transforms.orientation = this->view * this->projection;
+  return transforms;
 }
 
-void VCamera::updateView() {}
+const void VCamera::updateView() {}
 
-Camera::Camera() : rotateSpeed(1.0f){};
+/**
+const simd::float4x4& VCamera::getOrientation() {
+	this->update();	
+	this->orientation = this->rTransform.mView * this->rTransform.mProjection;
+	//this->orientation = this->rTransform.mInverseProjection * this->rTransform.mView;
+	return this->orientation;
+}
+**/
+
+Camera::Camera() : rotateSpeed(1.0f) {};
 
 Camera* Camera::project() {
   mProjection = simd::float4x4(1);
@@ -81,8 +92,7 @@ Camera* Camera::project() {
 }
 
 Camera* Camera::f4x4() {
-  orientation = mProjection * Transformation::translation(position) * rotation *
-                Transformation::scale(factor);
+  this->orientation = mProjection * EXP::MATH::translation(position) * rotation * EXP::MATH::scale(factor);
   return this;
 }
 
@@ -92,7 +102,7 @@ DefaultCamera::DefaultCamera() : fov(45.0f), nearZ(0.1f), farZ(1000.0f) {
 }
 
 DefaultCamera* DefaultCamera::project() {
-  mProjection = Transformation::perspective(fov, aspectRatio, nearZ, farZ);
+  this->mProjection = EXP::MATH::perspective(fov, aspectRatio, nearZ, farZ);
   return this;
 }
 
@@ -111,7 +121,7 @@ OrthographicCamera::OrthographicCamera()
 }
 
 OrthographicCamera* OrthographicCamera::project() {
-  mProjection = Transformation::orthographic(left, right, bottom, top, nearZ, farZ);
+  this->mProjection = EXP::MATH::orthographic(left, right, bottom, top, nearZ, farZ);
   return this;
 }
 
@@ -119,5 +129,5 @@ void OrthographicCamera::setLeft(float left) { this->left = left; }
 void OrthographicCamera::setRight(float right) { this->right = right; }
 void OrthographicCamera::setTop(float top) { this->top = top; }
 void OrthographicCamera::setBottom(float bottom) { this->bottom = bottom; }
-} // namespace Explorer
+} // namespace EXP
 

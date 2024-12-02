@@ -2,7 +2,7 @@
 #include <Layer/Layer.h>
 #include <pch.h>
 
-namespace Explorer {
+namespace EXP {
 
 class LayerStack {
 
@@ -22,4 +22,4 @@ private:
   std::vector<Layer *> layers;
   std::vector<Layer *>::iterator insert;
 };
-} // namespace Explorer
+} // namespace EXP

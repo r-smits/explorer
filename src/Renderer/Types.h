@@ -12,12 +12,10 @@ struct Projection {
 
 namespace Renderer {
 
-struct RTTransform {
-  simd::float4x4 mProjection;
-  simd::float4x4 mView;
-  simd::float4x4 mInverseProjection;
-  simd::float4x4 mInverseView;
-  simd::float3 rayOrigin;
+struct VCamera {
+  simd::float4x4 orientation;
+  simd::float3 vecOrigin;
+	simd::float3 resolution;
 };
 
 struct RTMaterial {

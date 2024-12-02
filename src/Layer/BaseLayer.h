@@ -8,7 +8,7 @@
 #include <Renderer/Buffer.h>
 #include <pch.h>
 
-namespace Explorer {
+namespace EXP {
 class BaseLayer : public Layer {
 
 public: // Setting up layer
@@ -53,4 +53,4 @@ private: // States
 	Model* sphere;
   float t;
 };
-}; // namespace Explorer
+}; // namespace EXP

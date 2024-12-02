@@ -2,7 +2,7 @@
 #include <pch.h>
 #include <spdlog/spdlog.h>
 
-namespace Explorer {
+namespace EXP {
 
 class Logger {
 public:
@@ -18,7 +18,7 @@ private:
 };
 } // namespace Explorer
 
-#define DEBUG(...) ::Explorer::Logger::debug(__VA_ARGS__)
-#define INFO(...) ::Explorer::Logger::info(__VA_ARGS__)
-#define WARN(...) ::Explorer::Logger::warn(__VA_ARGS__)
-#define ERROR(...) ::Explorer::Logger::error(__VA_ARGS__)
+#define DEBUG(...) ::EXP::Logger::debug(__VA_ARGS__)
+#define INFO(...) ::EXP::Logger::info(__VA_ARGS__)
+#define WARN(...) ::EXP::Logger::warn(__VA_ARGS__)
+#define ERROR(...) ::EXP::Logger::error(__VA_ARGS__)
