@@ -60,7 +60,8 @@ add_executable(EXPLORER
 	${CMAKE_CURRENT_SOURCE_DIR}/src/DB/MeshRepository.mm
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Model/Camera.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Model/Camera.cpp
-	#${CMAKE_CURRENT_SOURCE_DIR}/src/Shaders/RTUtils.h
+	${CMAKE_CURRENT_SOURCE_DIR}/src/Model/ResourceManager.h
+	${CMAKE_CURRENT_SOURCE_DIR}/src/Model/ResourceManager.cpp
 )
 
 # Configure compilation variables

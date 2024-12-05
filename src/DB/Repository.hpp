@@ -4,6 +4,11 @@
 
 namespace Repository {
 
+struct TextureWithName {
+	MTL::Texture* texture;
+	std::string name;
+};
+
 class Shaders {
 public:
   Shaders(){};
@@ -26,7 +31,6 @@ public:
   ~Textures(){};
 
 public:
-  // Another exists but only with objective-c types.
 	static MTL::Texture* read(MTL::Device* device, std::string path);
 };
 
@@ -34,7 +38,7 @@ class Meshes {
 public:
   Meshes(){};
   ~Meshes(){};
-  static EXP::Model* read(MTL::Device* device, MTL::VertexDescriptor* vertexDescriptor, std::string path, bool useTexture = true, bool useLight = true);
-	static EXP::Model* read2(MTL::Device* device, MTL::VertexDescriptor* vertexDescriptor, std::string path);
+  //static EXP::Model* read(MTL::Device* device, MTL::VertexDescriptor* vertexDescriptor, std::string path, bool useTexture = true, bool useLight = true);
+	static EXP::Model* read(MTL::Device* device, MTL::VertexDescriptor* vertexDescriptor, const std::string& relativePath);
 };
 }; // namespace Repository

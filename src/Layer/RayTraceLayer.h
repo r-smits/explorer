@@ -5,6 +5,7 @@
 #include <Layer/Layer.h>
 #include <Model/Camera.h>
 #include <Model/MeshFactory.h>
+#include <Model/ResourceManager.h>
 #include <pch.h>
 
 namespace EXP {
