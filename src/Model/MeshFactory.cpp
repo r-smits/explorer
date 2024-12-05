@@ -29,7 +29,7 @@ EXP::Object* EXP::Object::rotate(const simd::float4x4& rotation) {
   return this;
 }
 
-EXP::Mesh::Mesh(Submesh* submesh, std::string name, int vertexCount)
+EXP::Mesh::Mesh(Submesh* submesh, const std::string& name, const int& vertexCount)
     : name(name), vertexCount(vertexCount) {
   vSubmeshes.emplace_back(submesh);
   if (!count) count = 0;
@@ -37,8 +37,8 @@ EXP::Mesh::Mesh(Submesh* submesh, std::string name, int vertexCount)
 }
 
 EXP::Mesh::Mesh(
-    std::vector<MTL::Buffer*> buffers,
-    std::vector<int> offsets,
+    const std::vector<MTL::Buffer*>& buffers,
+    const std::vector<int>& offsets,
     const int& bufferCount,
     const std::string& name,
     const int& vertexCount
@@ -72,7 +72,8 @@ EXP::Model* EXP::MeshFactory::pyramid(MTL::Device* device, std::string texture) 
       12,
       MTL::IndexType::IndexTypeUInt16,
       Renderer::Buffer::create(device, indices, 12),
-      0
+      0,
+			0
   );
 
   std::vector<MTL::Buffer*> buffers;
@@ -116,7 +117,8 @@ EXP::Model* EXP::MeshFactory::cube(MTL::Device* device, std::string texture) {
       36,
       MTL::IndexType::IndexTypeUInt16,
       Renderer::Buffer::create(device, indices, 36),
-      0
+      0,
+			0
   );
 
   std::vector<MTL::Buffer*> buffers;
@@ -155,7 +157,8 @@ EXP::Model* EXP::MeshFactory::quad(MTL::Device* device, std::string texture) {
       6,
       MTL::IndexType::IndexTypeUInt16,
       Renderer::Buffer::create(device, indices, 6),
-      0
+      0,
+			0
   );
 
   std::vector<MTL::Buffer*> buffers;

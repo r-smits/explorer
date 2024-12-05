@@ -6,6 +6,7 @@
 #include <ModelIO/MDLAssetResolver.h>
 #include <ModelIO/MDLMaterial.h>
 #include <ModelIO/ModelIO.h>
+#include <Model/ResourceManager.h>
 
 @implementation TextureRepository
 
@@ -42,7 +43,7 @@
   return (__bridge MTL::Texture*)mtlTexture;
 }
 
-+ (MTL::Texture*)read:(MTL::Device*)device material:(MDLMaterial*)material {
++ (Repository::TextureWithName)read:(MTL::Device*)device material:(MDLMaterial*)material {
 	
 	id<MDLAssetResolver> assetResolver = nullptr;
 	[material loadTexturesUsingResolver:assetResolver];
@@ -59,19 +60,21 @@
 	NSError* err = nil;
   for (MDLMaterialProperty* property : properties) {
 		if (property.type == MDLMaterialPropertyTypeTexture) {
-			std::string propertyURL = [[property.URLValue absoluteString] UTF8String];
-			DEBUG("Found texture at: " + propertyURL);
-				
+			
+			std::string filename = [[property.URLValue relativeString] UTF8String];
+			filename = filename.substr(filename.find_last_of("/")+1);
+			
 			MDLTextureSampler* sampler = [property textureSamplerValue];
 			MDLTexture* texture = [property textureSamplerValue].texture;
 			id<MTLTexture> mtlTexture = [loader newTextureWithMDLTexture:texture options:options error:&err];
 
 			if (err) EXP::printError((__bridge NS::Error*)err);
-			return (__bridge MTL::Texture*)mtlTexture;
+			MTL::Texture* resultTexture = (__bridge MTL::Texture*)mtlTexture;
+			return {resultTexture, filename};
 		}
 	}
   WARN("No texture found.");
-  return nullptr;
+  return {nullptr, "default"};
 }
 
 @end

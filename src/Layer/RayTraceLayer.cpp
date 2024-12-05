@@ -7,6 +7,7 @@
 #include <Layer/RayTraceLayer.h>
 #include <Renderer/Renderer.h>
 
+
 EXP::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* config)
     : Layer(device->retain(), config), queue(device->newCommandQueue()) {
 	
@@ -45,20 +46,24 @@ EXP::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* config)
 }
 
 void EXP::RayTraceLayer::buildModels(MTL::Device* device) {
+	
+	EXP::SCENE::addModel(device, _vertexDescriptor, config->meshPath + "f16/f16", "f16");
+	EXP::SCENE::addModel(device, _vertexDescriptor, config->meshPath + "sphere/sphere", "sphere1");
+	EXP::SCENE::addModel(device, _vertexDescriptor, config->meshPath + "sphere/sphere", "sphere2");
 
-  Model* f16 = Repository::Meshes::read2(
+	Model* f16 = Repository::Meshes::read(
 			device, 
 			_vertexDescriptor, 
 			config->meshPath + "f16/f16"
 	);
 
-	Model* sphere1 = Repository::Meshes::read2(
+	Model* sphere1 = Repository::Meshes::read(
 			device, 
 			_vertexDescriptor, 
 			config->meshPath + "sphere/sphere"
 	);
 
-	Model* sphere2 = Repository::Meshes::read2(
+	Model* sphere2 = Repository::Meshes::read(
 			device,
 			_vertexDescriptor,
 			config->meshPath + "sphere/sphere"

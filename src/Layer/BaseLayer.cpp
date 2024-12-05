@@ -87,10 +87,10 @@ void EXP::BaseLayer::buildMeshes() {
   // bugatti = Repository::Meshes::read(device, config->meshPath +
   // "bugatti/bugatti"); bugatti->position.z -= 80;
 
-  sphere = Repository::Meshes::read(device, _vertexDescriptor, config->meshPath + "sphere/sphere", false, false);
+  sphere = Repository::Meshes::read(device, _vertexDescriptor, config->meshPath + "sphere/sphere");
   sphere->move({0.0f, 0.30f, -2.5f})->scale(0.1)->f4x4();
 
-  f16 = Repository::Meshes::read2(device, _vertexDescriptor, config->meshPath + "f16/f16");
+  f16 = Repository::Meshes::read(device, _vertexDescriptor, config->meshPath + "f16/f16");
   f16->move({0.0f, 0.0f, -2.5f});
 
   cruiser = Repository::Meshes::read(device, _vertexDescriptor, config->meshPath + "cruiser/cruiser");

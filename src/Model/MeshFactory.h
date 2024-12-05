@@ -37,18 +37,20 @@ public:
   MTL::IndexType indexType;
   MTL::Buffer* indexBuffer;
   NS::UInteger offset;
+	NS::UInteger texindex;
 
   Submesh(
-      Renderer::Material material,
-      std::vector<MTL::Texture*> textures,
-      MTL::PrimitiveType primitiveType,
-      int indexCount,
-      MTL::IndexType indexType,
+      const Renderer::Material& material,
+      const std::vector<MTL::Texture*>& textures,
+      const MTL::PrimitiveType& primitiveType,
+      const int& indexCount,
+      const MTL::IndexType& indexType,
       MTL::Buffer* indexBuffer,
-      int offset
+      const int& offset,
+			const int& texindex
   )
       : material(material), textures(textures), primitiveType(primitiveType),
-        indexCount(indexCount), indexType(indexType), indexBuffer(indexBuffer), offset(offset) {}
+        indexCount(indexCount), indexType(indexType), indexBuffer(indexBuffer), offset(offset), texindex(texindex) {}
   ~Submesh() {
     indexBuffer->release();
     for (auto texture : textures)
@@ -63,27 +65,26 @@ public:
   int bufferCount;
   int count;
 	
-private:
   std::vector<Submesh*> vSubmeshes;
   std::string name;
   int vertexCount;
 
 public:
   Mesh(
-      std::vector<MTL::Buffer*> buffers,
-      std::vector<int> offsets,
+      const std::vector<MTL::Buffer*>& buffers,
+      const std::vector<int>& offsets,
       const int& bufferCount,
       const std::string& name = "Mesh",
       const int& vertexCount = -1
   );
-  Mesh(Submesh* submesh, std::string name = "Mesh", int vertexCount = -1);
+  Mesh(Submesh* submesh, const std::string& name = "Mesh", const int& vertexCount = -1);
   ~Mesh() {
     for (Submesh* subMesh : vSubmeshes) { delete subMesh; }
     for (MTL::Buffer* buffer : buffers) { buffer->release(); }
   };
 
 public:
-  void add_all(std::vector<Submesh*> submeshes) {
+  void add_all(const std::vector<Submesh*>& submeshes) {
     for (Submesh* submesh : submeshes)
       add(submesh);
   }
@@ -98,12 +99,12 @@ public:
 		}
 	}
 
-  std::vector<Submesh*> submeshes() { return vSubmeshes; }
+  const std::vector<Submesh*>& submeshes() { return this->vSubmeshes; }
 };
 
 struct Model {
 public:
-  Model(const std::vector<Mesh*>& meshes, std::string name = "Model", int vertexCount = -1)
+  Model(const std::vector<Mesh*>& meshes, const std::string& name = "Model", const int& vertexCount = -1)
       : name(name), vertexCount(vertexCount) {
     add(meshes);
   }
@@ -180,7 +181,7 @@ public:
     return ss.str();
   }
 
-private:
+public:
   std::string name;
   int vertexCount;
 
