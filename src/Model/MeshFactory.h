@@ -4,6 +4,7 @@
 #include <View/ViewAdapter.hpp>
 #include <pch.h>
 #include <simd/simd.h>
+#include <Model/Submesh.h>
 
 namespace EXP {
 
@@ -28,44 +29,14 @@ public:
   float factor;
 };
 
-struct Submesh {
-public:
-  Renderer::Material material;
-  std::vector<MTL::Texture*> textures;
-  MTL::PrimitiveType primitiveType;
-  NS::UInteger indexCount;
-  MTL::IndexType indexType;
-  MTL::Buffer* indexBuffer;
-  NS::UInteger offset;
-	NS::UInteger texindex;
-
-  Submesh(
-      const Renderer::Material& material,
-      const std::vector<MTL::Texture*>& textures,
-      const MTL::PrimitiveType& primitiveType,
-      const int& indexCount,
-      const MTL::IndexType& indexType,
-      MTL::Buffer* indexBuffer,
-      const int& offset,
-			const int& texindex
-  )
-      : material(material), textures(textures), primitiveType(primitiveType),
-        indexCount(indexCount), indexType(indexType), indexBuffer(indexBuffer), offset(offset), texindex(texindex) {}
-  ~Submesh() {
-    indexBuffer->release();
-    for (auto texture : textures)
-      texture->release();
-  }
-};
-
 struct Mesh : public Object {
 public:
   std::vector<MTL::Buffer*> buffers;
   std::vector<int> offsets;
   int bufferCount;
   int count;
-	
-  std::vector<Submesh*> vSubmeshes;
+
+  std::vector<EXP::MDL::Submesh*> vSubmeshes;
   std::string name;
   int vertexCount;
 
@@ -77,34 +48,41 @@ public:
       const std::string& name = "Mesh",
       const int& vertexCount = -1
   );
-  Mesh(Submesh* submesh, const std::string& name = "Mesh", const int& vertexCount = -1);
+  Mesh(EXP::MDL::Submesh* submesh, const std::string& name = "Mesh", const int& vertexCount = -1);
   ~Mesh() {
-    for (Submesh* subMesh : vSubmeshes) { delete subMesh; }
-    for (MTL::Buffer* buffer : buffers) { buffer->release(); }
+    for (EXP::MDL::Submesh* subMesh : vSubmeshes) {
+      delete subMesh;
+    }
+    for (MTL::Buffer* buffer : buffers) {
+      buffer->release();
+    }
   };
 
 public:
-  void add_all(const std::vector<Submesh*>& submeshes) {
-    for (Submesh* submesh : submeshes)
+  void add_all(const std::vector<EXP::MDL::Submesh*>& submeshes) {
+    for (EXP::MDL::Submesh* submesh : submeshes)
       add(submesh);
   }
-  void add(Submesh* submesh) {
+  void add(EXP::MDL::Submesh* submesh) {
     vSubmeshes.emplace_back(submesh);
     count += 1;
   }
-	void setColor(const simd::float4& color) {
-		for (int i = 0; i < this->vertexCount; i += 1) {
-			Renderer::VertexAttributes* attributes = (Renderer::VertexAttributes*) buffers[1]->contents() + i;
-			attributes->color = color;
+  void setColor(const simd::float4& color) {
+		for (EXP::MDL::Submesh* submesh: vSubmeshes) {
+			submesh->setColor(color);
 		}
 	}
 
-  const std::vector<Submesh*>& submeshes() { return this->vSubmeshes; }
+  const std::vector<EXP::MDL::Submesh*>& submeshes() { return this->vSubmeshes; }
 };
 
 struct Model {
 public:
-  Model(const std::vector<Mesh*>& meshes, const std::string& name = "Model", const int& vertexCount = -1)
+  Model(
+      const std::vector<Mesh*>& meshes,
+      const std::string& name = "Model",
+      const int& vertexCount = -1
+  )
       : name(name), vertexCount(vertexCount) {
     add(meshes);
   }
@@ -120,53 +98,51 @@ public:
       add(mesh);
   }
 
-	EXP::Model* rotate(const simd::float4x4& rotation) {
-		for (Mesh* mesh : meshes) {
-			mesh->rotate(rotation * mesh->rotation);
-		}
-		return this;
-	}
+  EXP::Model* rotate(const simd::float4x4& rotation) {
+    for (Mesh* mesh : meshes) {
+      mesh->rotate(rotation * mesh->rotation);
+    }
+    return this;
+  }
 
-	EXP::Model* scale(const float& scalar) {
-		for (Mesh* mesh: meshes) {
-			mesh->scale(scalar);	
-		}
-		return this;
-	}
+  EXP::Model* scale(const float& scalar) {
+    for (Mesh* mesh : meshes) {
+      mesh->scale(scalar);
+    }
+    return this;
+  }
 
-	EXP::Model* move(const simd::float3& vec) {
-		for (Mesh* mesh: meshes) {
-			mesh->translate(vec);
-		}
-		return this;
-	}
+  EXP::Model* move(const simd::float3& vec) {
+    for (Mesh* mesh : meshes) {
+      mesh->translate(vec);
+    }
+    return this;
+  }
 
-	EXP::Model* f4x4() {	
-		for (Mesh* mesh: meshes) {
-			mesh->f4x4();
-		}
-		return this;
-	}
-	
-	EXP::Model* setColor(const simd::float4& color) {
-		for (Mesh* mesh : this->meshes) {
-			mesh->setColor(color);
-		}
-		return this;
-	}
+  EXP::Model* f4x4() {
+    for (Mesh* mesh : meshes) {
+      mesh->f4x4();
+    }
+    return this;
+  }
 
-	EXP::Model* setEmissive(const bool& emissive) {
-		for (Mesh* mesh : this->meshes) {
-			for (Submesh* submesh : mesh->submeshes()) {
-				submesh->material.useLight = emissive;
-			}
-		}
-		return this;
-	}
+  EXP::Model* setColor(const simd::float4& color) {
+    for (Mesh* mesh : this->meshes) {
+      mesh->setColor(color);
+    }
+    return this;
+  }
 
-	const simd::float4x4& get() {
-		return this->meshes[0]->get();
-	}
+  EXP::Model* setEmissive(const bool& emissive) {
+    for (Mesh* mesh : this->meshes) {
+      for (EXP::MDL::Submesh* submesh : mesh->submeshes()) {
+        submesh->material.useLight = emissive;
+      }
+    }
+    return this;
+  }
+
+  const simd::float4x4& get() { return this->meshes[0]->get(); }
 
   ~Model() {
     for (Mesh* mesh : meshes) {

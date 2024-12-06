@@ -51,29 +51,27 @@ void transport(
 			float2 bary_2d = intersection.triangle_barycentric_coord;
 			float3 bary_3d = float3(1.0 - bary_2d.x - bary_2d.y, bary_2d.x, bary_2d.y);
 
-			uint32_t tri_index_1 = submesh.indices[intersection.primitive_id * 3 + 0];
-			uint32_t tri_index_2 = submesh.indices[intersection.primitive_id * 3 + 1];
-			uint32_t tri_index_3 = submesh.indices[intersection.primitive_id * 3 + 2];
+			// uint32_t tri_index_1 = submesh.indices[intersection.primitive_id * 3 + 0];
+			// uint32_t tri_index_2 = submesh.indices[intersection.primitive_id * 3 + 1];
+			// uint32_t tri_index_3 = submesh.indices[intersection.primitive_id * 3 + 2];
 
-			VertexAttributes attr_1 = mesh.attributes[tri_index_1];
-			VertexAttributes attr_2 = mesh.attributes[tri_index_2];
-			VertexAttributes attr_3 = mesh.attributes[tri_index_3];
+			// VertexAttributes attr_1 = mesh.attributes[tri_index_1];
+			// VertexAttributes attr_2 = mesh.attributes[tri_index_2];
+			// VertexAttributes attr_3 = mesh.attributes[tri_index_3];
 
-			// You need primitive data in your gbuffer
-			// You need can do:
-			// Normals texture
-			// Colors texture (that is already a texture though
-			// You will still need to calculate the point (or can I just use the hit directly?)
-			//const device VertexAttributes* attr = (const device VertexAttributes*) intersection.primitive_data;
+			const device PrimitiveAttributes* prim = (const device PrimitiveAttributes*) intersection.primitive_data;
 
 			// Calculate variables needed to solve the rendering equation
 			// We assume for now that the surface is perfectly reflective.
 			// You can chance this for materials and so forth
 			// Called: BSDF: bi-directional scattering distribution function.
-			normal = (attr_1.normal * bary_3d.x) + (attr_2.normal * bary_3d.y) + (attr_3.normal * bary_3d.z);
+			// normal = (attr_1.normal * bary_3d.x) + (attr_2.normal * bary_3d.y) + (attr_3.normal * bary_3d.z);
+
+			normal = (prim->normal[0] * bary_3d.x) + (prim->normal[1] * bary_3d.y) + (prim->normal[2] * bary_3d.z);
 			normal = normalize((intersection.object_to_world_transform * float4(normal, 0.0f)).xyz);
 				
-			seed = gid.x * (tri_index_1 * bary_3d.z * i) + gid.y * (tri_index_3 * bary_2d.y);
+			seed = gid.x * (intersection.primitive_id * bary_3d.z * i) + gid.y * (intersection.primitive_id * bary_2d.y);
+			
 			r.origin = r.origin + r.direction * intersection.distance; 
 			float3 jittered_normal = normalize(normal + uniform_pdf(seed) * .2);
 			r.direction = reflect(r.direction, jittered_normal);
@@ -82,9 +80,9 @@ void transport(
 			float wi_dot_n = (inverse_square) ? cos_inverse_square(intersection.distance, wi, normal) : cos(wi, normal);
 
 			// Calculate all color contributions; use texture, emission if there is one
-			float2 tx_point = (attr_1.texture * bary_3d.x) + (attr_2.texture * bary_3d.y) + (attr_3.texture * bary_3d.z);
+			float2 tx_point = (prim->txcoord[0] * bary_3d.x) + (prim->txcoord[1] * bary_3d.y) + (prim->txcoord[2] * bary_3d.z);
 			
-			float4 wo_color = (submesh.textured) ? submesh.texture.sample(sampler2d, tx_point) : attr_1.color;
+			float4 wo_color = (submesh.textured) ? submesh.texture.sample(sampler2d, tx_point) : prim->color[0];
 			
 			contribution *= wo_color * wi_dot_n;
 			// color *= (unshadowed_light_contribution) ? 1 : visibility_check();

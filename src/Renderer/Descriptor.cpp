@@ -1,4 +1,3 @@
-#include "Metal/MTLAccelerationStructure.hpp"
 #include <DB/Repository.hpp>
 #include <Renderer/Descriptor.h>
 
@@ -85,12 +84,12 @@ MTL::PrimitiveAccelerationStructureDescriptor*
 Renderer::Descriptor::primitive(EXP::Mesh* mesh, const int& vStride, const int& pStride) {
 
   std::vector<MTL::AccelerationStructureTriangleGeometryDescriptor*> geometryDescriptors;
-  std::vector<EXP::Submesh*> submeshes = mesh->submeshes();
+  std::vector<EXP::MDL::Submesh*> submeshes = mesh->submeshes();
 
   for (int i = 0; i < mesh->count; i++) {
     MTL::AccelerationStructureTriangleGeometryDescriptor* geometryDescriptor =
         MTL::AccelerationStructureTriangleGeometryDescriptor::descriptor();
-    EXP::Submesh* submesh = submeshes[i];
+    EXP::MDL::Submesh* submesh = submeshes[i];
 
     // A: Using a packed float, set to 3float in buffer
     // Using non-interleaved vertex buffer
@@ -99,10 +98,10 @@ Renderer::Descriptor::primitive(EXP::Mesh* mesh, const int& vStride, const int& 
     geometryDescriptor->setVertexStride(vStride);
 
     // You should be able to set the primitive data buffer here
-    // geometryDescriptor->setPrimitiveDataBuffer(mesh->buffers[1]);
-    // geometryDescriptor->setPrimitiveDataBufferOffset(mesh->offsets[1]);
-    // geometryDescriptor->setPrimitiveDataElementSize(pStride);
-    // geometryDescriptor->setPrimitiveDataStride(pStride);
+    geometryDescriptor->setPrimitiveDataBuffer(submesh->primitiveBuffer);
+    geometryDescriptor->setPrimitiveDataBufferOffset(submesh->offset);
+    geometryDescriptor->setPrimitiveDataElementSize(sizeof(Renderer::PrimitiveAttributes));
+    geometryDescriptor->setPrimitiveDataStride(sizeof(Renderer::PrimitiveAttributes));
 
     geometryDescriptor->setIndexBuffer(submesh->indexBuffer);
     geometryDescriptor->setIndexType(submesh->indexType);

@@ -15,6 +15,13 @@ struct VCamera {
 	float3 resolution;
 };
 
+struct PrimitiveAttributes {
+	float4 color[3];
+	float2 txcoord[3];
+	float3 normal[3];
+	float txindex;
+};
+
 struct VertexAttributes {
 	float4 color;															// {r, g, b, w}
 	float2 texture;														// {x, y}
