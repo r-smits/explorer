@@ -29,7 +29,7 @@ EXP::Object* EXP::Object::rotate(const simd::float4x4& rotation) {
   return this;
 }
 
-EXP::Mesh::Mesh(Submesh* submesh, const std::string& name, const int& vertexCount)
+EXP::Mesh::Mesh(EXP::MDL::Submesh* submesh, const std::string& name, const int& vertexCount)
     : name(name), vertexCount(vertexCount) {
   vSubmeshes.emplace_back(submesh);
   if (!count) count = 0;
@@ -62,7 +62,7 @@ EXP::Model* EXP::MeshFactory::pyramid(MTL::Device* device, std::string texture) 
 	MTL::Texture* tex = Repository::Textures::read(device, texture);
 	textures.emplace_back(tex);
 
-  Submesh* submesh = new Submesh(
+	EXP::MDL::Submesh* submesh = new EXP::MDL::Submesh(
       {
           {1.0f, 1.0f, 1.0f, 1.0f},
           true
@@ -72,8 +72,8 @@ EXP::Model* EXP::MeshFactory::pyramid(MTL::Device* device, std::string texture) 
       12,
       MTL::IndexType::IndexTypeUInt16,
       Renderer::Buffer::create(device, indices, 12),
-      0,
-			0
+			nullptr,
+      0
   );
 
   std::vector<MTL::Buffer*> buffers;
@@ -107,7 +107,7 @@ EXP::Model* EXP::MeshFactory::cube(MTL::Device* device, std::string texture) {
 	MTL::Texture* tex = Repository::Textures::read(device, texture);
 	textures.emplace_back(tex);
 
-  Submesh* submesh = new Submesh(
+	EXP::MDL::Submesh* submesh = new EXP::MDL::Submesh(
       {
           {1.0f, 1.0f, 1.0f, 1.0f},
           true
@@ -117,8 +117,8 @@ EXP::Model* EXP::MeshFactory::cube(MTL::Device* device, std::string texture) {
       36,
       MTL::IndexType::IndexTypeUInt16,
       Renderer::Buffer::create(device, indices, 36),
-      0,
-			0
+			nullptr,
+      0
   );
 
   std::vector<MTL::Buffer*> buffers;
@@ -147,7 +147,7 @@ EXP::Model* EXP::MeshFactory::quad(MTL::Device* device, std::string texture) {
 	MTL::Texture* tex = Repository::Textures::read(device, texture);
 	textures.emplace_back(tex);
 
-  Submesh* submesh = new Submesh(
+	EXP::MDL::Submesh* submesh = new EXP::MDL::Submesh(
       {
           {1.0f, 1.0f, 1.0f, 1.0f},
           true
@@ -157,8 +157,8 @@ EXP::Model* EXP::MeshFactory::quad(MTL::Device* device, std::string texture) {
       6,
       MTL::IndexType::IndexTypeUInt16,
       Renderer::Buffer::create(device, indices, 6),
-      0,
-			0
+			nullptr,
+      0
   );
 
   std::vector<MTL::Buffer*> buffers;

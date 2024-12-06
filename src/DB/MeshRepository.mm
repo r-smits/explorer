@@ -2,25 +2,40 @@
 #include <DB/Repository.hpp>
 
 
-EXP::Submesh* buildSubmesh(MTL::Device* device, MTKSubmesh* mtkSubmesh, MDLSubmesh* mdlSubmesh) {
-  Renderer::Material material = [TextureRepository readMaterial:device material:mdlSubmesh.material];
+EXP::MDL::Submesh* buildSubmesh(
+	MTL::Device* device, 
+	MTKSubmesh* mtkSubmesh, 
+	MDLSubmesh* mdlSubmesh, 
+	MTL::Buffer* vertexAttribBuffer
+) {
+  
+	Renderer::Material material = [TextureRepository readMaterial:device material:mdlSubmesh.material];
   std::vector<MTL::Texture*> textures;
 	Repository::TextureWithName textureWithName = [TextureRepository read:device material:mdlSubmesh.material];
 	
 	const int& texindex = EXP::SCENE::addTexture(textureWithName);
 	textures.emplace_back(textureWithName.texture);
+	
+	MTL::Buffer* indexBuffer = (__bridge MTL::Buffer*)mtkSubmesh.indexBuffer.buffer;
+	MTL::Buffer* primitiveAttribBuffer = Renderer::Buffer::perPrimitive(
+		device, 
+		vertexAttribBuffer, 
+		indexBuffer,
+		mtkSubmesh.indexCount,
+		texindex
+	);
 
 	material.useColor = (!textureWithName.texture) ? false : true;
 	material.useLight = false;
-  EXP::Submesh* submesh = new EXP::Submesh(
+  EXP::MDL::Submesh* submesh = new EXP::MDL::Submesh(
       material,
       textures,
       (__bridge MTL::PrimitiveType)mtkSubmesh.primitiveType,
       mtkSubmesh.indexCount,
       (__bridge MTL::IndexType)mtkSubmesh.indexType,
-      (__bridge MTL::Buffer*)mtkSubmesh.indexBuffer.buffer,
-      mtkSubmesh.indexBuffer.offset,
-			texindex
+      indexBuffer,
+			primitiveAttribBuffer,	
+      mtkSubmesh.indexBuffer.offset
   );
   return submesh;
 }
@@ -49,6 +64,8 @@ EXP::Mesh* buildMesh(MTL::Device* device, MDLMesh* mdlMesh, MTL::VertexDescripto
 
   std::vector<MTL::Buffer*> buffers;
   std::vector<int> offsets;
+
+	// Both buffers use the same amount of vertices -> buf[0] the points, buf[1] the attribs. So safe to use.
   for (int i = 0; i < mtkMesh.vertexBuffers.count; i++) {
 		MTL::Buffer* buffer = (__bridge MTL::Buffer*)[mtkMesh.vertexBuffers objectAtIndex:i].buffer;
     int offset = [mtkMesh.vertexBuffers objectAtIndex:i].offset;
@@ -70,7 +87,8 @@ EXP::Mesh* buildMesh(MTL::Device* device, MDLMesh* mdlMesh, MTL::VertexDescripto
 			buildSubmesh(
 				device, 
 				mtkMesh.submeshes[i], 
-				mdlMesh.submeshes[i]
+				mdlMesh.submeshes[i],
+				buffers[1]
 			)
 		);
   }

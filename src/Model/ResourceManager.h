@@ -10,6 +10,7 @@ class SCENE {
 	
 	static inline std::vector<EXP::Model*> models = {};
 	static inline std::unordered_map<std::string, int> modnames = {};
+	static inline MTL::Buffer* sceneBuffer = nullptr;
 
 	static inline std::vector<MTL::Resource*> resources = {};
 	static inline std::unordered_map<std::string, int> resnames = {};
@@ -34,14 +35,13 @@ public:
 	);
 	static void addModel(EXP::Model* model);
 	static EXP::Model* getModel(const std::string& name);
-	static EXP::Model* getModel(const int& index);
 
 	static const int& addTexture(const Repository::TextureWithName& textureWithName);
 	static MTL::Texture* getTexture(const std::string& name);
 	static MTL::Texture* getTexture(const int& index);
 
-	static const void buildBindlessScene(MTK::View* view); 
-	static MTL::Buffer* getBindlessScene(MTK::View* view); 
+	static const void buildBindlessScene(MTL::Device* device); 
+	static MTL::Buffer* getBindlessScene(); 
 
 };
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include <Model/MeshFactory.h>
+#include <Renderer/Buffer.h>
 #include <pch.h>
 
 namespace Repository {

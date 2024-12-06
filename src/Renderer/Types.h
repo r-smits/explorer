@@ -59,6 +59,13 @@ struct Projection {
   simd::float3 cameraPosition;
 };
 
+struct PrimitiveAttributes {
+	simd::float4 color[3];
+	simd::float2 txcoord[3];
+	simd::float3 normal[3];
+	simd::float1 txindex;
+};
+
 struct VertexAttributes {
   simd::float4 color;   // [[ id(0) ]]; // {r, g, b, w}
   simd::float2 texture; // [[ id(1) ]]; // {x, y}

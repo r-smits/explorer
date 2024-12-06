@@ -37,7 +37,7 @@ void Renderer::Draw::model(
       );
     }
 
-    for (EXP::Submesh* submesh : mesh->submeshes()) {
+    for (EXP::MDL::Submesh* submesh : mesh->submeshes()) {
       encoder->setFragmentBytes(&submesh->material, sizeof(Renderer::Material), 2);
       encoder->setFragmentTexture(submesh->textures[0],
                                   0); // Setting texture to buffer(0)

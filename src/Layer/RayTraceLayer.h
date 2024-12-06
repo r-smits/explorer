@@ -23,7 +23,6 @@ public: // Event
   void buildModels(MTL::Device* device);
   void buildAccelerationStructures(MTL::Device* device);
 	void rebuildAccelerationStructures(MTK::View* device);
-	void buildBindlessScene(MTL::Device* device, const std::vector<Model*>& scene);
 	MTL::Size calcGridsize();
 
 private: // Initialization
@@ -60,8 +59,6 @@ private:
 	std::vector<MTL::AccelerationStructure*> _primitiveAccStructures;
 	MTL::InstanceAccelerationStructureDescriptor* _instanceDescriptor;
   MTL::AccelerationStructure* _instanceAccStructure;
-	MTL::Buffer* _sceneBuffer;
-	std::vector<MTL::Resource*> _resources;
 
 private:
 	int t = 0;

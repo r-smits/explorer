@@ -88,16 +88,15 @@ void build_ray(thread ray& r, constant VCamera& vcamera, uint2 gid) {
 	// -1 >= y >= 1 :: We want to scale y in opposite direction for viewport coordinates
 	// -1 >= z >= 0 :: The camera is pointed towards -z axis, as we use right handed
 	float3 pixel = float3(float2(gid), 1.0f);
+	pixel = pixel / vcamera.resolution * 2 - 1;
 	pixel *= float3(1, -1, 1);
-	// ??? Somehow works without this line
-	// pixel = pixel / resolution * 2 - 1;
 
 	// Projection transformations
 	// orientation = matView * matProjection
-	float3 vecRayDir = (orientation * float4(pixel, 1.0f)).xyz;
+	float3 vecRayDir = (vcamera.orientation * float4(pixel, 1.0f)).xyz;
 	
 	// Ray is modified by reference
-	r.origin = vecOrigin;
+	r.origin = vcamera.vecOrigin;
 	r.direction = vecRayDir;
 	r.min_distance = 0.2f;						// Set to avoid self-occlusion
 	r.max_distance = FLT_MAX;
