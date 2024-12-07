@@ -1,5 +1,6 @@
 #include <DB/Repository.h>
 #include <DB/Repository.hpp>
+#include <ModelIO/ModelIO.h>
 
 
 EXP::MDL::Submesh* buildSubmesh(
@@ -44,7 +45,7 @@ buildMDLVertexDescriptor(MTL::Device* device, MTL::VertexDescriptor* vertexDescr
   return mdlVertexDescriptor;
 }
 
-EXP::Mesh* buildMesh(MTL::Device* device, MDLMesh* mdlMesh, MTL::VertexDescriptor* vertexDescriptor) {
+EXP::MDL::Mesh* buildMesh(MTL::Device* device, MDLMesh* mdlMesh, MTL::VertexDescriptor* vertexDescriptor) {
   id<MTLDevice> objcppDevice = (__bridge id<MTLDevice>)device;
 	
 	//[mdlMesh addNormalsWithAttributeNamed:MDLVertexAttributeNormal creaseThreshold:0.7];
@@ -57,7 +58,8 @@ EXP::Mesh* buildMesh(MTL::Device* device, MDLMesh* mdlMesh, MTL::VertexDescripto
 
   std::vector<MTL::Buffer*> buffers;
   std::vector<int> offsets;
-
+	
+	// MDLMeshBufferTypeVertex 
 	// Both buffers use the same amount of vertices -> buf[0] the points, buf[1] the attribs. So safe to use.
   for (int i = 0; i < mtkMesh.vertexBuffers.count; i++) {
 		MTL::Buffer* buffer = (__bridge MTL::Buffer*)[mtkMesh.vertexBuffers objectAtIndex:i].buffer;
@@ -66,7 +68,7 @@ EXP::Mesh* buildMesh(MTL::Device* device, MDLMesh* mdlMesh, MTL::VertexDescripto
     offsets.emplace_back(offset);
   }
 	
-	EXP::Mesh* mesh = new EXP::Mesh(
+	EXP::MDL::Mesh* mesh = new EXP::MDL::Mesh(
       buffers,
       offsets,
       mtkMesh.vertexBuffers.count,
@@ -76,7 +78,7 @@ EXP::Mesh* buildMesh(MTL::Device* device, MDLMesh* mdlMesh, MTL::VertexDescripto
 	
 	DEBUG("Submeshes: " + std::to_string(mtkMesh.submeshes.count));
   for (int i = 0; i < mtkMesh.submeshes.count; i++) {
-    mesh->add(
+    mesh->addSubmesh(
 			buildSubmesh(
 				device, 
 				mtkMesh.submeshes[i], 
@@ -85,18 +87,19 @@ EXP::Mesh* buildMesh(MTL::Device* device, MDLMesh* mdlMesh, MTL::VertexDescripto
 			)
 		);
   }
+	// buffers[1]->release();
   return mesh;
 }
 
-std::vector<EXP::Mesh*> buildMeshes(MTL::Device* device, MDLObject* object, MTL::VertexDescriptor* vertexDescriptor) {
-  std::vector<EXP::Mesh*> meshes;
+std::vector<EXP::MDL::Mesh*> buildMeshes(MTL::Device* device, MDLObject* object, MTL::VertexDescriptor* vertexDescriptor) {
+  std::vector<EXP::MDL::Mesh*> meshes;
   if ([object isKindOfClass:[MDLMesh class]]) {
-    EXP::Mesh* mesh = buildMesh(device, (MDLMesh*)object, vertexDescriptor);
+    EXP::MDL::Mesh* mesh = buildMesh(device, (MDLMesh*)object, vertexDescriptor);
     meshes.emplace_back(mesh);
   }
 
   for (MDLObject* child in object.children) {
-    std::vector<EXP::Mesh*> meshes = buildMeshes(device, child, vertexDescriptor);
+    std::vector<EXP::MDL::Mesh*> meshes = buildMeshes(device, child, vertexDescriptor);
     meshes.insert(meshes.end(), meshes.begin(), meshes.end());
   }
   return meshes;
@@ -108,10 +111,10 @@ EXP::Model* Repository::Meshes::read(MTL::Device* cppDevice, MTL::VertexDescript
   MTKMeshBufferAllocator* bufferAllocator = [[MTKMeshBufferAllocator alloc] initWithDevice: device];
   MDLAsset* mdlAsset = [[MDLAsset alloc] initWithURL:url vertexDescriptor:nil bufferAllocator:bufferAllocator];
 
-  std::vector<EXP::Mesh*> allMeshes;
+  std::vector<EXP::MDL::Mesh*> allMeshes;
   for (MDLObject* mdlObject : mdlAsset) {
-    std::vector<EXP::Mesh*> meshes = buildMeshes(cppDevice, mdlObject, vertexDescriptor);
-		for (EXP::Mesh* mesh : meshes) { allMeshes.emplace_back(mesh); }
+    std::vector<EXP::MDL::Mesh*> meshes = buildMeshes(cppDevice, mdlObject, vertexDescriptor);
+		for (EXP::MDL::Mesh* mesh : meshes) { allMeshes.emplace_back(mesh); }
   }
 
   EXP::Model* model = new EXP::Model(allMeshes, allMeshes[0]->name, -1);

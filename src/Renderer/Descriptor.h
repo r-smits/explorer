@@ -28,7 +28,7 @@ struct Descriptor {
 	);
 
   static MTL::PrimitiveAccelerationStructureDescriptor* primitive(
-			EXP::Mesh* mesh, 
+			EXP::MDL::Mesh* mesh, 
 			const int& vStride, 
 			const int& pStride
 	);

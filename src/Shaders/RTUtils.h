@@ -1,5 +1,6 @@
 #pragma once
 
+#include <simd/conversion.h>
 #ifndef RTUtils_h
 #define RTUtils_h
 

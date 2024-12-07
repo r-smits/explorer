@@ -4,6 +4,7 @@
 #include <View/ViewAdapter.hpp>
 #include <pch.h>
 #include <simd/simd.h>
+#include <Model/Object.h>
 
 namespace EXP {
 

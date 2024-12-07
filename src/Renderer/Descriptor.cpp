@@ -67,13 +67,13 @@ Renderer::Descriptor::compute(MTL::Device* device, const std::string& path) {
 std::vector<MTL::PrimitiveAccelerationStructureDescriptor*> Renderer::Descriptor::primitives(
     const std::vector<EXP::Model*>& scene, const int& vStride, const int& pStride
 ) {
-  std::vector<EXP::Mesh*> meshes;
+  std::vector<EXP::MDL::Mesh*> meshes;
   for (EXP::Model* model : scene) {
-    for (EXP::Mesh* mesh : model->meshes)
+    for (EXP::MDL::Mesh* mesh : model->meshes)
       meshes.emplace_back(mesh);
   }
   std::vector<MTL::PrimitiveAccelerationStructureDescriptor*> descriptors;
-  for (EXP::Mesh* mesh : meshes)
+  for (EXP::MDL::Mesh* mesh : meshes)
     descriptors.emplace_back(Descriptor::primitive(mesh, vStride, pStride));
   return descriptors;
 }
@@ -81,10 +81,10 @@ std::vector<MTL::PrimitiveAccelerationStructureDescriptor*> Renderer::Descriptor
 // For every mesh :: 1 PrimitiveAccelerationStructure, 1 instance
 // For every submesh :: 1 Geometry
 MTL::PrimitiveAccelerationStructureDescriptor*
-Renderer::Descriptor::primitive(EXP::Mesh* mesh, const int& vStride, const int& pStride) {
+Renderer::Descriptor::primitive(EXP::MDL::Mesh* mesh, const int& vStride, const int& pStride) {
 
   std::vector<MTL::AccelerationStructureTriangleGeometryDescriptor*> geometryDescriptors;
-  std::vector<EXP::MDL::Submesh*> submeshes = mesh->submeshes();
+  std::vector<EXP::MDL::Submesh*> submeshes = mesh->getSubmeshes();
 
   for (int i = 0; i < mesh->count; i++) {
     MTL::AccelerationStructureTriangleGeometryDescriptor* geometryDescriptor =
@@ -97,7 +97,6 @@ Renderer::Descriptor::primitive(EXP::Mesh* mesh, const int& vStride, const int& 
     geometryDescriptor->setVertexBufferOffset(mesh->offsets[0]);
     geometryDescriptor->setVertexStride(vStride);
 
-    // You should be able to set the primitive data buffer here
     geometryDescriptor->setPrimitiveDataBuffer(submesh->primitiveBuffer);
     geometryDescriptor->setPrimitiveDataBufferOffset(submesh->offset);
     geometryDescriptor->setPrimitiveDataElementSize(sizeof(Renderer::PrimitiveAttributes));
@@ -106,6 +105,7 @@ Renderer::Descriptor::primitive(EXP::Mesh* mesh, const int& vStride, const int& 
     geometryDescriptor->setIndexBuffer(submesh->indexBuffer);
     geometryDescriptor->setIndexType(submesh->indexType);
     geometryDescriptor->setIndexBufferOffset(submesh->offset);
+		
     geometryDescriptor->setTriangleCount(submesh->indexCount / 3);
     geometryDescriptors.emplace_back(geometryDescriptor);
   }
@@ -126,11 +126,11 @@ MTL::InstanceAccelerationStructureDescriptor* Renderer::Descriptor::instance(
   int count = 0;
   for (EXP::Model* model : scene)
     count += model->meshCount;
-  EXP::Mesh* meshes[count];
+  EXP::MDL::Mesh* meshes[count];
 
   int currentCount = 0;
   for (EXP::Model* model : scene) {
-    for (EXP::Mesh* mesh : model->meshes) {
+    for (EXP::MDL::Mesh* mesh : model->meshes) {
       meshes[currentCount] = mesh;
       currentCount += 1;
     }
@@ -171,10 +171,10 @@ MTL::InstanceAccelerationStructureDescriptor* Renderer::Descriptor::updateTransf
   for (EXP::Model* model : scene)
     count += model->meshCount;
 
-  EXP::Mesh* meshes[count];
+  EXP::MDL::Mesh* meshes[count];
   int currentCount = 0;
   for (EXP::Model* model : scene) {
-    for (EXP::Mesh* mesh : model->meshes) {
+    for (EXP::MDL::Mesh* mesh : model->meshes) {
       meshes[currentCount] = mesh;
       currentCount += 1;
     }

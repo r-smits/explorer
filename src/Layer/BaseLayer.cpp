@@ -156,7 +156,7 @@ void EXP::BaseLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* encode
   (t < 90 || t > 270) ? sphere->move({1.0 / 180, 0.0f, 0.0f})->f4x4()
                       : sphere->move({-1.0 / 180, 0.0f, -0.0f})->f4x4();
 
-  light->data.position = sphere->meshes[0]->position;
+  light->data.position = sphere->meshes[0]->getPosition();
 
   Renderer::Draw::light(encoder, camera, light);
   Renderer::Draw::model(encoder, camera, sphere);
