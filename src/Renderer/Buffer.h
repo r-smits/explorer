@@ -21,7 +21,7 @@ public:
 			MTL::Buffer* vertexAttribBuffer,
 			MTL::Buffer* indices,
 			const int& indexCount,
-			const uint8_t& texindex
+			const int& texindex
 	);
 
 };

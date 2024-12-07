@@ -1,6 +1,7 @@
 #pragma once
 #include "Metal/MTLTypes.hpp"
 #include <Renderer/Layout.h>
+#include <cstdint>
 #include <pch.h>
 #include <simd/simd.h>
 #include <simd/vector_types.h>
@@ -63,7 +64,7 @@ struct PrimitiveAttributes {
 	simd::float4 color[3];
 	simd::float2 txcoord[3];
 	simd::float3 normal[3];
-	simd::float1 txindex;
+	simd::uint2 flags;
 };
 
 struct VertexAttributes {
@@ -85,12 +86,12 @@ struct Mesh {
   uint64_t submeshes;						// Submeshes related to the mesh
 };
 
-//struct Model {
-//  uint64_t meshes; // Meshes related to model
-//};
+struct Text2D {
+	MTL::ResourceID value;
+};
 
 struct Scene {
-  uint64_t meshes; // All models in the scene
+	uint64_t textures;
 };
 
 }; // namespace Renderer

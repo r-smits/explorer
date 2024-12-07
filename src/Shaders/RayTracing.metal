@@ -43,50 +43,33 @@ void transport(
 		} 
 		if (intersection.type == intersection_type::triangle) {
 
-			// Look up the data belonging to the intersection in the scene
-			// This requires a bindless setup				
-			Mesh mesh = scene->meshes[intersection.instance_id];
-			Submesh submesh = mesh.submeshes[intersection.geometry_id];
-
 			float2 bary_2d = intersection.triangle_barycentric_coord;
 			float3 bary_3d = float3(1.0 - bary_2d.x - bary_2d.y, bary_2d.x, bary_2d.y);
-
-			// uint32_t tri_index_1 = submesh.indices[intersection.primitive_id * 3 + 0];
-			// uint32_t tri_index_2 = submesh.indices[intersection.primitive_id * 3 + 1];
-			// uint32_t tri_index_3 = submesh.indices[intersection.primitive_id * 3 + 2];
-
-			// VertexAttributes attr_1 = mesh.attributes[tri_index_1];
-			// VertexAttributes attr_2 = mesh.attributes[tri_index_2];
-			// VertexAttributes attr_3 = mesh.attributes[tri_index_3];
 
 			const device PrimitiveAttributes* prim = (const device PrimitiveAttributes*) intersection.primitive_data;
 
 			// Calculate variables needed to solve the rendering equation
+			normal = (prim->normal[0] * bary_3d.x) + (prim->normal[1] * bary_3d.y) + (prim->normal[2] * bary_3d.z);
+			normal = normalize((intersection.object_to_world_transform * float4(normal, 0.0f)).xyz);
+			seed = gid.x * (intersection.primitive_id * bary_3d.z * i) + gid.y * (intersection.primitive_id * bary_2d.y);
+			
 			// We assume for now that the surface is perfectly reflective.
 			// You can chance this for materials and so forth
 			// Called: BSDF: bi-directional scattering distribution function.
-			// normal = (attr_1.normal * bary_3d.x) + (attr_2.normal * bary_3d.y) + (attr_3.normal * bary_3d.z);
-
-			normal = (prim->normal[0] * bary_3d.x) + (prim->normal[1] * bary_3d.y) + (prim->normal[2] * bary_3d.z);
-			normal = normalize((intersection.object_to_world_transform * float4(normal, 0.0f)).xyz);
-				
-			seed = gid.x * (intersection.primitive_id * bary_3d.z * i) + gid.y * (intersection.primitive_id * bary_2d.y);
-			
 			r.origin = r.origin + r.direction * intersection.distance; 
 			float3 jittered_normal = normalize(normal + uniform_pdf(seed) * .2);
 			r.direction = reflect(r.direction, jittered_normal);
 
 			float3 wi = normalize(r.direction);
 			float wi_dot_n = (inverse_square) ? cos_inverse_square(intersection.distance, wi, normal) : cos(wi, normal);
-
-			// Calculate all color contributions; use texture, emission if there is one
-			float2 tx_point = (prim->txcoord[0] * bary_3d.x) + (prim->txcoord[1] * bary_3d.y) + (prim->txcoord[2] * bary_3d.z);
 			
-			float4 wo_color = (submesh.textured) ? submesh.texture.sample(sampler2d, tx_point) : prim->color[0];
+			// Calculate all color contributions; use texture, emission if there is one
+			float2 txcoord = (prim->txcoord[0] * bary_3d.x) + (prim->txcoord[1] * bary_3d.y) + (prim->txcoord[2] * bary_3d.z);
+			float4 wo_color = scene->textures[prim->flags[0]].value.sample(sampler2d, txcoord) + prim->color[0];
 			
 			contribution *= wo_color * wi_dot_n;
 			// color *= (unshadowed_light_contribution) ? 1 : visibility_check();
-			color += submesh.emissive * wo_color;
+			color += prim->flags[1] * wo_color;
 		}
 	}
 	color += contribution * sky_color;

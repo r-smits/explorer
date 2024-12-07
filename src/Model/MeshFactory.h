@@ -136,7 +136,7 @@ public:
   EXP::Model* setEmissive(const bool& emissive) {
     for (Mesh* mesh : this->meshes) {
       for (EXP::MDL::Submesh* submesh : mesh->submeshes()) {
-        submesh->material.useLight = emissive;
+				submesh->setEmissive(true);
       }
     }
     return this;
