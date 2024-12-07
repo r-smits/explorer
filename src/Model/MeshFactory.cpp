@@ -5,49 +5,6 @@
 #include <Renderer/Types.h>
 #include <View/ViewAdapter.hpp>
 
-EXP::Object::Object()
-    : orientation(simd::float4x4(1)), position(simd::float3(0)), rotation(simd::float4x4(1)),
-      factor(1) {}
-
-// Computation of matrices are down right -> left.
-// Meaning you first need to translate, then rotate, then scale
-EXP::Object* EXP::Object::f4x4() {
-  orientation = EXP::MATH::translation(position) * rotation * EXP::MATH::scale(factor);
-  return this;
-}
-EXP::Object* EXP::Object::translate(const simd::float3& position) {
-  this->position += position;
-  return this;
-}
-
-EXP::Object* EXP::Object::scale(const float& factor) {
-  this->factor = factor;
-  return this;
-}
-EXP::Object* EXP::Object::rotate(const simd::float4x4& rotation) {
-  this->rotation = rotation;
-  return this;
-}
-
-EXP::Mesh::Mesh(EXP::MDL::Submesh* submesh, const std::string& name, const int& vertexCount)
-    : name(name), vertexCount(vertexCount) {
-  vSubmeshes.emplace_back(submesh);
-  if (!count) count = 0;
-  count += 1;
-}
-
-EXP::Mesh::Mesh(
-    const std::vector<MTL::Buffer*>& buffers,
-    const std::vector<int>& offsets,
-    const int& bufferCount,
-    const std::string& name,
-    const int& vertexCount
-)
-    : buffers(buffers), bufferCount(bufferCount), offsets(offsets), name(name),
-      vertexCount(vertexCount), count(0) {
-				DEBUG("Mesh: '" + this->name + "', vertex count: " + std::to_string(this->vertexCount));
-}
-
 EXP::Model* EXP::MeshFactory::pyramid(MTL::Device* device, std::string texture) {
   Renderer::Vertex vertices[4] = {
       {  {0.0f, 1.0f, -1.0f}, {1.0f, 0.0f, 0.0f}},
@@ -78,8 +35,8 @@ EXP::Model* EXP::MeshFactory::pyramid(MTL::Device* device, std::string texture) 
   buffers.emplace_back(vertexBuffer);
   offsets.emplace_back(0);
 
-  Mesh* pyramid = new Mesh(buffers, offsets, 1, "Pyramid", 4);
-  pyramid->add(submesh);
+	EXP::MDL::Mesh* pyramid = new EXP::MDL::Mesh(buffers, offsets, 1, "Pyramid", 4);
+  pyramid->addSubmesh(submesh);
   return new Model(pyramid);
 };
 
@@ -118,8 +75,8 @@ EXP::Model* EXP::MeshFactory::cube(MTL::Device* device, std::string texture) {
   buffers.emplace_back(vertexBuffer);
   offsets.emplace_back(0);
 
-  Mesh* cube = new Mesh(buffers, offsets, 1, "Cube", 8);
-  cube->add(submesh);
+	EXP::MDL::Mesh* cube = new EXP::MDL::Mesh(buffers, offsets, 1, "Cube", 8);
+  cube->addSubmesh(submesh);
   return new Model(cube);
 }
 
@@ -154,8 +111,8 @@ EXP::Model* EXP::MeshFactory::quad(MTL::Device* device, std::string texture) {
   buffers.emplace_back(vertexBuffer);
   offsets.emplace_back(0);
 
-  Mesh* quad = new Mesh(buffers, offsets, 1, "Quad", 4);
-  quad->add(submesh);
+	EXP::MDL::Mesh* quad = new EXP::MDL::Mesh(buffers, offsets, 1, "Quad", 4);
+  quad->addSubmesh(submesh);
   return new Model(quad);
 }
 

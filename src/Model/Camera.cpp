@@ -75,14 +75,6 @@ const Renderer::VCamera& VCamera::update() {
 
 const void VCamera::updateView() {}
 
-/**
-const simd::float4x4& VCamera::getOrientation() {
-	this->update();	
-	this->orientation = this->rTransform.mView * this->rTransform.mProjection;
-	//this->orientation = this->rTransform.mInverseProjection * this->rTransform.mView;
-	return this->orientation;
-}
-**/
 
 Camera::Camera() : rotateSpeed(1.0f) {};
 
