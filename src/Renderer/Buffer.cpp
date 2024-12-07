@@ -31,7 +31,7 @@ MTL::Buffer* Renderer::Buffer::perPrimitive(
 		MTL::Buffer* vertexAttribBuffer,
 		MTL::Buffer* indices,
 		const int& indexCount,
-		const uint8_t& txindex
+		const int& txindex
 ) {
 	
 	int perPrimitiveBufferSize = sizeof(Renderer::PrimitiveAttributes) * indexCount / 3;
@@ -65,7 +65,7 @@ MTL::Buffer* Renderer::Buffer::perPrimitive(
 		primAttrib->txcoord[1] = vertAttrib2->texture;
 		primAttrib->txcoord[2] = vertAttrib3->texture;
 		
-		primAttrib->txindex = txindex;
+		primAttrib->flags = {(uint8_t)txindex, 0};
 	}
 	return perPrimitiveBuffer;
 };

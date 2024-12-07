@@ -10,11 +10,8 @@ EXP::MDL::Submesh* buildSubmesh(
 ) {
   
 	Renderer::Material material = [TextureRepository readMaterial:device material:mdlSubmesh.material];
-  std::vector<MTL::Texture*> textures;
 	Repository::TextureWithName textureWithName = [TextureRepository read:device material:mdlSubmesh.material];
-	
 	const int& texindex = EXP::SCENE::addTexture(textureWithName);
-	textures.emplace_back(textureWithName.texture);
 	
 	MTL::Buffer* indexBuffer = (__bridge MTL::Buffer*)mtkSubmesh.indexBuffer.buffer;
 	MTL::Buffer* primitiveAttribBuffer = Renderer::Buffer::perPrimitive(
@@ -25,16 +22,12 @@ EXP::MDL::Submesh* buildSubmesh(
 		texindex
 	);
 
-	material.useColor = (!textureWithName.texture) ? false : true;
-	material.useLight = false;
   EXP::MDL::Submesh* submesh = new EXP::MDL::Submesh(
-      material,
-      textures,
-      (__bridge MTL::PrimitiveType)mtkSubmesh.primitiveType,
-      mtkSubmesh.indexCount,
-      (__bridge MTL::IndexType)mtkSubmesh.indexType,
       indexBuffer,
 			primitiveAttribBuffer,	
+			(__bridge MTL::PrimitiveType)mtkSubmesh.primitiveType,
+      (__bridge MTL::IndexType)mtkSubmesh.indexType,
+			mtkSubmesh.indexCount,
       mtkSubmesh.indexBuffer.offset
   );
   return submesh;

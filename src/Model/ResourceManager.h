@@ -17,7 +17,7 @@ class SCENE {
 
 	static inline std::vector<MTL::Texture*> textures = {};
 	static inline std::unordered_map<std::string, int> texnames = {};
-	static inline int texcounter = 0;
+	static inline int texcounter = -1;
 
 public:
 	SCENE(){};
@@ -41,7 +41,11 @@ public:
 	static MTL::Texture* getTexture(const int& index);
 
 	static const void buildBindlessScene(MTL::Device* device); 
-	static MTL::Buffer* getBindlessScene(); 
+	static MTL::Buffer* getBindlessScene();
+
+	static MTL::Buffer* buildTextureBuffer(MTL::Device* device);
+
+
 
 };
 }

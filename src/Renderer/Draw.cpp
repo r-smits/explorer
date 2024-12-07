@@ -24,7 +24,8 @@ void Renderer::Draw::model(
   //    sizeof(Renderer::Projection), // The size of data set in GPU
   //    20                             // The location of data: [[buffer(20)]]
   //);
-
+	
+	/**
   // For all meshes set vertex buffer, for all submeshes, index buffer and
   // materials
   for (EXP::Mesh* mesh : model->meshes) {
@@ -52,4 +53,5 @@ void Renderer::Draw::model(
       );
     }
   }
+	**/
 }

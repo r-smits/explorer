@@ -30,14 +30,15 @@ void SCENE::addModel(
 
 const int& SCENE::addTexture(const Repository::TextureWithName& textureWithName) {
   const std::string& name = textureWithName.name;
-  if (EXP::SCENE::texnames.find(name) == EXP::SCENE::texnames.end()) {
-          EXP::SCENE::texcounter += 1;
-          EXP::SCENE::texnames.insert({name, (int)EXP::SCENE::texcounter});
-          EXP::SCENE::textures.emplace_back(textureWithName.texture);
-          DEBUG("Texture stored. Index: " +
-  std::to_string(EXP::SCENE::texcounter) + ", name: " + name); } else {
-          DEBUG("Texture already stored. Index: " +
-  std::to_string(EXP::SCENE::texnames[name]) + ", name: " + name);
+  if (texnames.find(name) == texnames.end()) {
+		texcounter += 1;
+    texnames.insert({name, texcounter});
+    textures.emplace_back(textureWithName.texture);
+    DEBUG("Texture stored. Index: " +
+		std::to_string(EXP::SCENE::texcounter) + ", name: " + name); 
+	} else {
+    DEBUG("Texture already stored. Index: " +
+		std::to_string(EXP::SCENE::texnames[name]) + ", name: " + name);
   }
   return EXP::SCENE::texnames[name];
 }
@@ -49,55 +50,28 @@ inline MTL::Texture* SCENE::getTexture(const std::string& name) {
 
 inline MTL::Texture* SCENE::getTexture(const int& index) { return textures[index]; }
 
-const void SCENE::buildBindlessScene(MTL::Device* device) {
-	
-	int totalMeshCount = 0;
-	std::vector<Mesh*> allMeshes;
-	
-	for (EXP::Model* model : models) {
-			totalMeshCount += model->meshCount;
-		for (Mesh* mesh : model->meshes) allMeshes.emplace_back(mesh);
+
+MTL::Buffer* SCENE::buildTextureBuffer(MTL::Device* device) {
+	MTL::Buffer* textureBuffer = device->newBuffer(sizeof(Renderer::Text2D) * textures.size(), MTL::ResourceStorageModeShared);
+	resources.emplace_back(textureBuffer);
+	Renderer::Text2D* textureBufferPtr = (Renderer::Text2D*)textureBuffer->contents();
+	for (int t = 0; t < textures.size(); t += 1) {
+		if (t == texnames["default"]) {
+			DEBUG("Default nullptr texture is skipped.");
+			continue;
+		}
+		(textureBufferPtr + t)->value = textures[t]->gpuResourceID();
+		resources.emplace_back(textures[t]);
 	}
-	
-  int meshBufferSize = sizeof(Renderer::Mesh) * totalMeshCount;
-  MTL::Buffer* meshBuffer = device->newBuffer(meshBufferSize, MTL::ResourceStorageModeShared);
-  resources.emplace_back(meshBuffer);
+	return textureBuffer;
+};
 
-  for (int j = 0; j < totalMeshCount; j++) {
-    Renderer::Mesh* gpuMesh = ((Renderer::Mesh*)meshBuffer->contents()) + j;
-    EXP::Mesh* cpuMesh = allMeshes[j];
-
-    gpuMesh->vertices = cpuMesh->buffers[0]->gpuAddress() + cpuMesh->offsets[0];
-    gpuMesh->attributes = cpuMesh->buffers[1]->gpuAddress() + cpuMesh->offsets[1];
-
-    resources.emplace_back(cpuMesh->buffers[0]);
-    resources.emplace_back(cpuMesh->buffers[1]);
-
-    int submeshBufferSize = sizeof(Renderer::Submesh) * cpuMesh->count;
-    MTL::Buffer* submeshBuffer = device->newBuffer(submeshBufferSize, MTL::ResourceStorageModeShared);
-    resources.emplace_back(submeshBuffer);
-
-    for (int k = 0; k < cpuMesh->count; k++) {
-      Renderer::Submesh* gpuSubmesh = ((Renderer::Submesh*)submeshBuffer->contents()) + k;
-			EXP::MDL::Submesh* cpuSubmesh = cpuMesh->submeshes()[k];
-
-      gpuSubmesh->indices = cpuSubmesh->indexBuffer->gpuAddress() + cpuSubmesh->offset;
-      gpuSubmesh->texture = cpuSubmesh->textures[0]->gpuResourceID();
-			gpuSubmesh->textured = cpuSubmesh->material.useColor;
-			gpuSubmesh->emissive = cpuSubmesh->material.useLight;
-
-      resources.emplace_back(cpuSubmesh->indexBuffer);
-      resources.emplace_back(cpuSubmesh->textures[0]);
-    }
-
-    gpuMesh->submeshes = submeshBuffer->gpuAddress();
-  }
-
+const void SCENE::buildBindlessScene(MTL::Device* device) {
 	sceneBuffer = device->newBuffer(sizeof(Renderer::Scene), MTL::ResourceStorageModeShared);
   resources.emplace_back(sceneBuffer);
-
   Renderer::Scene* gpuScene = ((Renderer::Scene*)sceneBuffer->contents());
-  gpuScene->meshes = meshBuffer->gpuAddress();
+	gpuScene->textures = SCENE::buildTextureBuffer(device)->gpuAddress();
 };
+
 
 

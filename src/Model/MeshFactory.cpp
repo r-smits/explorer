@@ -63,17 +63,12 @@ EXP::Model* EXP::MeshFactory::pyramid(MTL::Device* device, std::string texture) 
 	textures.emplace_back(tex);
 
 	EXP::MDL::Submesh* submesh = new EXP::MDL::Submesh(
-      {
-          {1.0f, 1.0f, 1.0f, 1.0f},
-          true
-  },
-      textures,
-      MTL::PrimitiveType::PrimitiveTypeTriangle,
-      12,
-      MTL::IndexType::IndexTypeUInt16,
       Renderer::Buffer::create(device, indices, 12),
 			nullptr,
-      0
+			MTL::PrimitiveType::PrimitiveTypeTriangle,
+			MTL::IndexType::IndexTypeUInt16,
+      12,
+			0	
   );
 
   std::vector<MTL::Buffer*> buffers;
@@ -108,16 +103,11 @@ EXP::Model* EXP::MeshFactory::cube(MTL::Device* device, std::string texture) {
 	textures.emplace_back(tex);
 
 	EXP::MDL::Submesh* submesh = new EXP::MDL::Submesh(
-      {
-          {1.0f, 1.0f, 1.0f, 1.0f},
-          true
-  },
-      textures,
-      MTL::PrimitiveType::PrimitiveTypeTriangle,
-      36,
-      MTL::IndexType::IndexTypeUInt16,
       Renderer::Buffer::create(device, indices, 36),
 			nullptr,
+			MTL::PrimitiveType::PrimitiveTypeTriangle,
+			MTL::IndexType::IndexTypeUInt16,
+      36,
       0
   );
 
@@ -148,17 +138,12 @@ EXP::Model* EXP::MeshFactory::quad(MTL::Device* device, std::string texture) {
 	textures.emplace_back(tex);
 
 	EXP::MDL::Submesh* submesh = new EXP::MDL::Submesh(
-      {
-          {1.0f, 1.0f, 1.0f, 1.0f},
-          true
-  },
-      textures,
-      MTL::PrimitiveType::PrimitiveTypeTriangle,
-      6,
-      MTL::IndexType::IndexTypeUInt16,
       Renderer::Buffer::create(device, indices, 6),
 			nullptr,
-      0
+			MTL::PrimitiveType::PrimitiveTypeTriangle,
+      MTL::IndexType::IndexTypeUInt16,
+      6,
+			0
   );
 
   std::vector<MTL::Buffer*> buffers;

@@ -1,5 +1,6 @@
 #pragma once
 
+
 #ifndef ShaderTypes_h
 #define ShaderTypes_h
 
@@ -19,7 +20,7 @@ struct PrimitiveAttributes {
 	float4 color[3];
 	float2 txcoord[3];
 	float3 normal[3];
-	float txindex;
+	uint2 flags;
 };
 
 struct VertexAttributes {
@@ -43,9 +44,13 @@ struct Mesh
 	constant Submesh* submeshes;							// Submeshes related to the mesh
 };
 
+struct Text2D {
+	texture2d<float, access::sample> value;
+};
+
 struct Scene
 {
-	constant Mesh* meshes;										// All meshes related to all models
+	constant Text2D* textures;
 };
 
 #endif

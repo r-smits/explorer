@@ -8,35 +8,29 @@ namespace MDL {
 
 struct Submesh {
 
-  Renderer::Material material;
-  std::vector<MTL::Texture*> textures;
-  MTL::PrimitiveType primitiveType;
-  NS::UInteger indexCount;
-  MTL::IndexType indexType;
   MTL::Buffer* indexBuffer;
   MTL::Buffer* primitiveBuffer;
+
+  MTL::PrimitiveType primitiveType;
+  MTL::IndexType indexType;
+
+  NS::UInteger indexCount;
   NS::UInteger offset;
-  NS::UInteger texindex;
 
   Submesh(
-      const Renderer::Material& material,
-      const std::vector<MTL::Texture*>& textures,
-      const MTL::PrimitiveType& primitiveType,
-      const int& indexCount,
-      const MTL::IndexType& indexType,
-      MTL::Buffer* indexBuffer,
+			MTL::Buffer* indexBuffer,
       MTL::Buffer* primitiveBuffer,
+      const MTL::PrimitiveType& primitiveType,
+      const MTL::IndexType& indexType,
+			const int& indexCount,
       const int& offset
   )
-      : material(material), textures(textures), primitiveType(primitiveType),
-        indexCount(indexCount), indexType(indexType), indexBuffer(indexBuffer),
-        primitiveBuffer(primitiveBuffer), offset(offset) {}
+      : primitiveType(primitiveType), indexCount(indexCount), indexType(indexType),
+        indexBuffer(indexBuffer), primitiveBuffer(primitiveBuffer), offset(offset) {}
 
   ~Submesh() {
     indexBuffer->release();
     primitiveBuffer->release();
-    for (MTL::Texture* texture : textures)
-      texture->release();
   }
 
   const void setColor(const simd::float4& color) {
@@ -48,6 +42,14 @@ struct Submesh {
       (primAttribPtr + i)->color[2] = color;
     }
   }
+
+  const void setEmissive(const bool& emissive) {
+    Renderer::PrimitiveAttributes* primAttribPtr =
+        (Renderer::PrimitiveAttributes*)primitiveBuffer->contents();
+    for (int i = 0; i < indexCount / 3; i += 1) {
+      (primAttribPtr + i)->flags[1] = emissive;
+    }
+  }
 };
-}; // namespace MOD
+}; // namespace MDL
 }; // namespace EXP
