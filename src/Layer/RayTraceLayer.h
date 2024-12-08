@@ -36,7 +36,6 @@ private:
   MTL::RenderPipelineState* _render;
 
 private:
-  VCamera _camera;
   MTL::CommandQueue* queue;
 
   MTL::Size _threadGroupSize;
@@ -45,11 +44,6 @@ private:
 
 private:
 	MTL::VertexDescriptor* _vertexDescriptor;
-  simd::float3 _lightDir;
-  Renderer::Sphere _spheres[3];
-  Renderer::RTMaterial _materials[3];
-  std::vector<EXP::Model*> scene;
-  EXP::Model* _modelsarr[1];
 
 private:
 	MTL::Event* _buildEvent;

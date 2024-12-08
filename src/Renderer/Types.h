@@ -92,6 +92,7 @@ struct Text2D {
 
 struct Scene {
 	uint64_t textures;
+	uint64_t vcamera;
 };
 
 }; // namespace Renderer

@@ -22,8 +22,6 @@ EXP::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* config)
   this->_raytrace = Renderer::State::Compute(device, _kernelFn);
 
   this->_vertexDescriptor = Renderer::Descriptor::vertex(device, Renderer::Layouts::vertexNIP);
-  this->_camera = VCamera();
-	this->_camera.setIsometric();
 
   CGRect frame = ViewAdapter::bounds();
   this->_gridSize = MTL::Size::Make(frame.size.width * 2, frame.size.height * 2, 1);
@@ -60,6 +58,7 @@ void EXP::RayTraceLayer::buildModels(MTL::Device* device) {
 	sphere2->setColor({0.0f, 1.0f, 0.0f, 1.0f})->scale(.3f)->move({-.2f, .5f, -.3f});
 
 	EXP::SCENE::buildBindlessScene(device);
+	EXP::SCENE::getCamera()->setIsometric();
 }
 
 MTL::Size EXP::RayTraceLayer::calcGridsize() {
@@ -91,6 +90,9 @@ void EXP::RayTraceLayer::rebuildAccelerationStructures(MTK::View* view) {
 
 void EXP::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* notUsed) {
 	
+	// Update camera part of the bindless scene
+	EXP::SCENE::updateBindlessScene(view->device());
+
 	// Scene action
 	if (IO::isPressed(KEY_T)) { 
 		for (Model* model : EXP::SCENE::getModels()) {
@@ -120,16 +122,14 @@ void EXP::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* no
 	encoder->setComputePipelineState(_raytrace);
 
   encoder->setTexture(view->currentDrawable()->texture(), 0);
-  encoder->setBytes(&_camera.update(), sizeof(Renderer::VCamera), 1);
+	
+	encoder->useHeap(_heap);
+  encoder->setAccelerationStructure(_instanceAccStructure, 1);
 	
 	for (MTL::Resource* resource : EXP::SCENE::getResources()) {
 		encoder->useResource(resource, MTL::ResourceUsageRead);
   }
-	encoder->useHeap(_heap);
-  encoder->setAccelerationStructure(_instanceAccStructure, 2);
-	
-	// Bindless 
-	encoder->setBuffer(EXP::SCENE::getBindlessScene(), 0, 3);
+	encoder->setBuffer(EXP::SCENE::getBindlessScene(), 0, 2);
 
   encoder->dispatchThreads(_gridSize, _threadGroupSize);
   encoder->endEncoding();

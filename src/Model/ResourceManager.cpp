@@ -1,3 +1,6 @@
+#include "Log/Logger.h"
+#include "Metal/MTLResource.hpp"
+#include "Model/Camera.h"
 #include <Model/ResourceManager.h>
 
 using namespace EXP;
@@ -51,6 +54,14 @@ inline MTL::Texture* SCENE::getTexture(const std::string& name) {
 inline MTL::Texture* SCENE::getTexture(const int& index) { return textures[index]; }
 
 
+void SCENE::addCamera(EXP::VCamera* camera) {
+	vcamera = camera;
+};
+
+EXP::VCamera* SCENE::getCamera() {
+	return vcamera;
+};
+
 MTL::Buffer* SCENE::buildTextureBuffer(MTL::Device* device) {
 	MTL::Buffer* textureBuffer = device->newBuffer(sizeof(Renderer::Text2D) * textures.size(), MTL::ResourceStorageModeShared);
 	resources.emplace_back(textureBuffer);
@@ -66,12 +77,39 @@ MTL::Buffer* SCENE::buildTextureBuffer(MTL::Device* device) {
 	return textureBuffer;
 };
 
+
+MTL::Buffer* SCENE::buildVCameraBuffer(MTL::Device* device) {
+	vcameraBuffer = device->newBuffer(sizeof(Renderer::VCamera), MTL::ResourceStorageModeShared);
+	resources.emplace_back(vcameraBuffer);
+	Renderer::VCamera* vcameraPtr = (Renderer::VCamera*) vcameraBuffer->contents();
+
+	const Renderer::VCamera& updatedVCamera = vcamera->update();
+	vcameraPtr->vecOrigin = updatedVCamera.vecOrigin;
+	vcameraPtr->resolution = updatedVCamera.resolution;
+	vcameraPtr->orientation = updatedVCamera.orientation;
+	return vcameraBuffer;
+};
+
+
 const void SCENE::buildBindlessScene(MTL::Device* device) {
+	vcamera = new VCamera();
 	sceneBuffer = device->newBuffer(sizeof(Renderer::Scene), MTL::ResourceStorageModeShared);
   resources.emplace_back(sceneBuffer);
-  Renderer::Scene* gpuScene = ((Renderer::Scene*)sceneBuffer->contents());
+  Renderer::Scene* gpuScene = (Renderer::Scene*)sceneBuffer->contents();
 	gpuScene->textures = SCENE::buildTextureBuffer(device)->gpuAddress();
-};
+	gpuScene->vcamera = SCENE::buildVCameraBuffer(device)->gpuAddress();
+	};
+
+
+const void SCENE::updateBindlessScene(MTL::Device* device) {
+	Renderer::VCamera* vcameraPtr = (Renderer::VCamera*)vcameraBuffer->contents();
+	const Renderer::VCamera& updatedVCamera = vcamera->update();
+	vcameraPtr->vecOrigin = updatedVCamera.vecOrigin;
+	vcameraPtr->resolution = updatedVCamera.resolution;
+	vcameraPtr->orientation = updatedVCamera.orientation;
+}
+
+
 
 
 

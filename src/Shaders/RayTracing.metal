@@ -78,9 +78,8 @@ void transport(
 [[kernel]]
 void computeKernel(
 	texture2d<float, access::write> buffer								[[ texture(0) ]],
-	constant VCamera& vcamera															[[ buffer(1)	]],
-	instance_acceleration_structure structure							[[ buffer(2)	]],
-	constant Scene* scene																	[[ buffer(3)	]],
+	instance_acceleration_structure structure							[[ buffer(1)	]],
+	constant Scene* scene																	[[ buffer(2)	]],
 	uint2 gid																							[[ thread_position_in_grid	]] 
 ) {
 	
@@ -108,7 +107,7 @@ void computeKernel(
 	// Build ray. Ray shoots out from point (gid). Camera is a grid, point is a coordinate on the grid. 
 	ray r;
 	ray x;
-	build_ray(r, vcamera, gid);
+	build_ray(r, scene->vcamera, gid);
 		
 	// Shoot initial ray from the camera into the scene. 
 	// This will set the ray, color and seed by reference.
