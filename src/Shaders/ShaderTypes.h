@@ -50,7 +50,8 @@ struct Text2D {
 
 struct Scene
 {
-	constant Text2D* textures;
+		constant Text2D* textures;
+		constant VCamera* vcamera;
 };
 
 #endif
