@@ -1,4 +1,3 @@
-#include "Metal/MTLAccelerationStructure.hpp"
 #include <DB/Repository.hpp>
 #include <Renderer/Descriptor.h>
 
@@ -43,8 +42,8 @@ MTL::RenderPipelineDescriptor* Renderer::Descriptor::render(
   descriptor->setSupportAddingFragmentBinaryFunctions(true);
 
   // Add functions to the pipeline descriptor
-  descriptor->setVertexFunction(library->newFunction(Explorer::nsString("vertexMainGeneral")));
-  descriptor->setFragmentFunction(library->newFunction(Explorer::nsString("fragmentMainGeneral")));
+  descriptor->setVertexFunction(library->newFunction(EXP::nsString("vertexMainGeneral")));
+  descriptor->setFragmentFunction(library->newFunction(EXP::nsString("fragmentMainGeneral")));
 
   descriptor->colorAttachments()->object(0)->setPixelFormat(
       MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB
@@ -60,21 +59,21 @@ Renderer::Descriptor::compute(MTL::Device* device, const std::string& path) {
   MTL::Library* library = Repository::Shaders::readLibrary(device, path);
   MTL::ComputePipelineDescriptor* descriptor = MTL::ComputePipelineDescriptor::alloc()->init();
   descriptor->setSupportAddingBinaryFunctions(true);
-  descriptor->setComputeFunction(library->newFunction(Explorer::nsString("computeKernel")));
+  descriptor->setComputeFunction(library->newFunction(EXP::nsString("computeKernel")));
   library->release();
   return descriptor;
 }
 
 std::vector<MTL::PrimitiveAccelerationStructureDescriptor*> Renderer::Descriptor::primitives(
-    const std::vector<Explorer::Model*>& scene, const int& vStride, const int& pStride
+    const std::vector<EXP::Model*>& scene, const int& vStride, const int& pStride
 ) {
-  std::vector<Explorer::Mesh*> meshes;
-  for (Explorer::Model* model : scene) {
-    for (Explorer::Mesh* mesh : model->meshes)
+  std::vector<EXP::MDL::Mesh*> meshes;
+  for (EXP::Model* model : scene) {
+    for (EXP::MDL::Mesh* mesh : model->meshes)
       meshes.emplace_back(mesh);
   }
   std::vector<MTL::PrimitiveAccelerationStructureDescriptor*> descriptors;
-  for (Explorer::Mesh* mesh : meshes)
+  for (EXP::MDL::Mesh* mesh : meshes)
     descriptors.emplace_back(Descriptor::primitive(mesh, vStride, pStride));
   return descriptors;
 }
@@ -82,15 +81,15 @@ std::vector<MTL::PrimitiveAccelerationStructureDescriptor*> Renderer::Descriptor
 // For every mesh :: 1 PrimitiveAccelerationStructure, 1 instance
 // For every submesh :: 1 Geometry
 MTL::PrimitiveAccelerationStructureDescriptor*
-Renderer::Descriptor::primitive(Explorer::Mesh* mesh, const int& vStride, const int& pStride) {
+Renderer::Descriptor::primitive(EXP::MDL::Mesh* mesh, const int& vStride, const int& pStride) {
 
   std::vector<MTL::AccelerationStructureTriangleGeometryDescriptor*> geometryDescriptors;
-  std::vector<Explorer::Submesh*> submeshes = mesh->submeshes();
+  std::vector<EXP::MDL::Submesh*> submeshes = mesh->getSubmeshes();
 
   for (int i = 0; i < mesh->count; i++) {
     MTL::AccelerationStructureTriangleGeometryDescriptor* geometryDescriptor =
         MTL::AccelerationStructureTriangleGeometryDescriptor::descriptor();
-    Explorer::Submesh* submesh = submeshes[i];
+    EXP::MDL::Submesh* submesh = submeshes[i];
 
     // A: Using a packed float, set to 3float in buffer
     // Using non-interleaved vertex buffer
@@ -98,15 +97,15 @@ Renderer::Descriptor::primitive(Explorer::Mesh* mesh, const int& vStride, const 
     geometryDescriptor->setVertexBufferOffset(mesh->offsets[0]);
     geometryDescriptor->setVertexStride(vStride);
 
-    // You should be able to set the primitive data buffer here
-    // geometryDescriptor->setPrimitiveDataBuffer(mesh->buffers[1]);
-    // geometryDescriptor->setPrimitiveDataBufferOffset(mesh->offsets[1]);
-    // geometryDescriptor->setPrimitiveDataElementSize(pStride);
-    // geometryDescriptor->setPrimitiveDataStride(pStride);
+    geometryDescriptor->setPrimitiveDataBuffer(submesh->primitiveBuffer);
+    geometryDescriptor->setPrimitiveDataBufferOffset(submesh->offset);
+    geometryDescriptor->setPrimitiveDataElementSize(sizeof(Renderer::PrimitiveAttributes));
+    geometryDescriptor->setPrimitiveDataStride(sizeof(Renderer::PrimitiveAttributes));
 
     geometryDescriptor->setIndexBuffer(submesh->indexBuffer);
     geometryDescriptor->setIndexType(submesh->indexType);
     geometryDescriptor->setIndexBufferOffset(submesh->offset);
+		
     geometryDescriptor->setTriangleCount(submesh->indexCount / 3);
     geometryDescriptors.emplace_back(geometryDescriptor);
   }
@@ -122,16 +121,16 @@ Renderer::Descriptor::primitive(Explorer::Mesh* mesh, const int& vStride, const 
 MTL::InstanceAccelerationStructureDescriptor* Renderer::Descriptor::instance(
     MTL::Device* device,
     const std::vector<MTL::AccelerationStructure*>& primitiveStructures,
-    const std::vector<Explorer::Model*>& scene
+    const std::vector<EXP::Model*>& scene
 ) {
   int count = 0;
-  for (Explorer::Model* model : scene)
+  for (EXP::Model* model : scene)
     count += model->meshCount;
-  Explorer::Mesh* meshes[count];
+  EXP::MDL::Mesh* meshes[count];
 
   int currentCount = 0;
-  for (Explorer::Model* model : scene) {
-    for (Explorer::Mesh* mesh : model->meshes) {
+  for (EXP::Model* model : scene) {
+    for (EXP::MDL::Mesh* mesh : model->meshes) {
       meshes[currentCount] = mesh;
       currentCount += 1;
     }
@@ -156,7 +155,7 @@ MTL::InstanceAccelerationStructureDescriptor* Renderer::Descriptor::instance(
     instanceDescriptors[i].intersectionFunctionTableOffset = 0;
     instanceDescriptors[i].mask = 0xFF;
     instanceDescriptors[i].options = MTL::AccelerationStructureInstanceOptionNone;
-    MTL::PackedFloat4x3 modelViewTransform = Transformation::pack(meshes[i]->f4x4()->get());
+    MTL::PackedFloat4x3 modelViewTransform = EXP::MATH::pack(meshes[i]->f4x4()->get());
     instanceDescriptors[i].transformationMatrix = modelViewTransform;
   }
 
@@ -165,17 +164,17 @@ MTL::InstanceAccelerationStructureDescriptor* Renderer::Descriptor::instance(
 }
 
 MTL::InstanceAccelerationStructureDescriptor* Renderer::Descriptor::updateTransformationMatrix(
-    const std::vector<Explorer::Model*>& scene,
+    const std::vector<EXP::Model*>& scene,
     MTL::InstanceAccelerationStructureDescriptor* descriptor
 ) {
   int count = 0;
-  for (Explorer::Model* model : scene)
+  for (EXP::Model* model : scene)
     count += model->meshCount;
 
-  Explorer::Mesh* meshes[count];
+  EXP::MDL::Mesh* meshes[count];
   int currentCount = 0;
-  for (Explorer::Model* model : scene) {
-    for (Explorer::Mesh* mesh : model->meshes) {
+  for (EXP::Model* model : scene) {
+    for (EXP::MDL::Mesh* mesh : model->meshes) {
       meshes[currentCount] = mesh;
       currentCount += 1;
     }
@@ -184,7 +183,7 @@ MTL::InstanceAccelerationStructureDescriptor* Renderer::Descriptor::updateTransf
   MTL::Buffer* descriptorBuffer = descriptor->instanceDescriptorBuffer();
   auto* descriptors = (MTL::AccelerationStructureInstanceDescriptor*)descriptorBuffer->contents();
   for (int i = 0; i < count; i++) {
-    descriptors[i].transformationMatrix = Transformation::pack(meshes[i]->f4x4()->get());
+    descriptors[i].transformationMatrix = EXP::MATH::pack(meshes[i]->f4x4()->get());
   }
   descriptor->setInstanceDescriptorBuffer(descriptorBuffer);
   return descriptor;

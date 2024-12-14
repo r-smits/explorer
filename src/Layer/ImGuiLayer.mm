@@ -8,15 +8,15 @@
 #include <imgui.h>
 #include <imgui_impl_metal.h>
 
-Explorer::ImGuiLayer::ImGuiLayer(MTK::View* view, AppProperties* config)
+EXP::ImGuiLayer::ImGuiLayer(MTK::View* view, EXP::AppProperties* config)
     : Layer(view->device(), config, "ImGuiLayer"), queue(device->newCommandQueue()) {
   this->onAttach(view);
 }
-Explorer::ImGuiLayer::~ImGuiLayer() {}
+EXP::ImGuiLayer::~ImGuiLayer() {}
 
 // Set up IMGUI
 // https://github.com/ocornut/imgui/blob/master/examples/example_apple_metal/main.mm
-void Explorer::ImGuiLayer::onAttach(MTK::View* view) {
+void EXP::ImGuiLayer::onAttach(MTK::View* view) {
   DEBUG("Initializing ImGui ...");
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
@@ -24,15 +24,15 @@ void Explorer::ImGuiLayer::onAttach(MTK::View* view) {
   ImGui_ImplMetal_Init((__bridge id<MTLDevice>)this->device);
 }
 
-void Explorer::ImGuiLayer::onDetach() {
+void EXP::ImGuiLayer::onDetach() {
   ImGui_ImplMetal_Shutdown();
   ImGui::DestroyContext();
 }
 
-void Explorer::ImGuiLayer::onUpdate(MTK::View* pView, MTL::RenderCommandEncoder* encoder) {
+void EXP::ImGuiLayer::onUpdate(MTK::View* pView, MTL::RenderCommandEncoder* encoder) {
 
   ImGuiIO& io = ImGui::GetIO();
-  CGRect frame = ViewAdapter::bounds();
+  CGRect frame = EXP::ViewAdapter::bounds();
 
   io.DisplaySize.x = frame.size.width;
   io.DisplaySize.y = frame.size.height;
@@ -53,7 +53,7 @@ void Explorer::ImGuiLayer::onUpdate(MTK::View* pView, MTL::RenderCommandEncoder*
 
 }
 
-void Explorer::ImGuiLayer::showDebugWindow(bool* open) {
+void EXP::ImGuiLayer::showDebugWindow(bool* open) {
 
   static int location = 0;
   ImGuiIO& io = ImGui::GetIO();
@@ -82,7 +82,7 @@ void Explorer::ImGuiLayer::showDebugWindow(bool* open) {
   ImGui::End();
 }
 
-void Explorer::ImGuiLayer::onEvent(Event& event) {
+void EXP::ImGuiLayer::onEvent(Event& event) {
   EventDispatcher dispatcher = EventDispatcher(event);
   dispatcher.dispatch<MouseButtonReleasedEvent>(BIND_EVENT(ImGuiLayer::onMouseButtonReleased));
   dispatcher.dispatch<MouseButtonPressedEvent>(BIND_EVENT(ImGuiLayer::onMouseButtonPressed));
@@ -91,33 +91,33 @@ void Explorer::ImGuiLayer::onEvent(Event& event) {
   dispatcher.dispatch<KeyReleasedEvent>(BIND_EVENT(ImGuiLayer::onKeyReleased));
 }
 
-bool Explorer::ImGuiLayer::onMouseButtonPressed(MouseButtonPressedEvent& event) {
+bool EXP::ImGuiLayer::onMouseButtonPressed(MouseButtonPressedEvent& event) {
   ImGuiIO& io = ImGui::GetIO();
   io.AddMouseSourceEvent(ImGuiMouseSource_Mouse);
   io.AddMouseButtonEvent(event.getMouseButton(), true);
   return io.WantCaptureMouse;
 }
 
-bool Explorer::ImGuiLayer::onMouseButtonReleased(MouseButtonReleasedEvent& event) {
+bool EXP::ImGuiLayer::onMouseButtonReleased(MouseButtonReleasedEvent& event) {
   ImGuiIO& io = ImGui::GetIO();
   io.AddMouseSourceEvent(ImGuiMouseSource_Mouse);
   io.AddMouseButtonEvent(event.getMouseButton(), false);
   return io.WantCaptureMouse;
 }
 
-bool Explorer::ImGuiLayer::onMouseMove(MouseMoveEvent& event) {
+bool EXP::ImGuiLayer::onMouseMove(MouseMoveEvent& event) {
   ImGuiIO& io = ImGui::GetIO();
   io.AddMouseSourceEvent(ImGuiMouseSource_Mouse);
   io.AddMousePosEvent(event.getX(), event.getY());
   return io.WantCaptureMouse;
 }
 
-bool Explorer::ImGuiLayer::onKeyPressed(KeyPressedEvent& event) {
+bool EXP::ImGuiLayer::onKeyPressed(KeyPressedEvent& event) {
   // Not implemented yet
   return false;
 }
 
-bool Explorer::ImGuiLayer::onKeyReleased(KeyReleasedEvent& event) {
+bool EXP::ImGuiLayer::onKeyReleased(KeyReleasedEvent& event) {
   // Not implemented yet
   return false;
 }

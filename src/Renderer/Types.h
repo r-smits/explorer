@@ -1,6 +1,7 @@
 #pragma once
 #include "Metal/MTLTypes.hpp"
 #include <Renderer/Layout.h>
+#include <cstdint>
 #include <pch.h>
 #include <simd/simd.h>
 #include <simd/vector_types.h>
@@ -12,12 +13,10 @@ struct Projection {
 
 namespace Renderer {
 
-struct RTTransform {
-  simd::float4x4 mProjection;
-  simd::float4x4 mView;
-  simd::float4x4 mInverseProjection;
-  simd::float4x4 mInverseView;
-  simd::float3 rayOrigin;
+struct VCamera {
+  simd::float4x4 orientation;
+  simd::float3 vecOrigin;
+	simd::float3 resolution;
 };
 
 struct RTMaterial {
@@ -61,6 +60,13 @@ struct Projection {
   simd::float3 cameraPosition;
 };
 
+struct PrimitiveAttributes {
+	simd::float4 color[3];
+	simd::float2 txcoord[3];
+	simd::float3 normal[3];
+	simd::uint2 flags;
+};
+
 struct VertexAttributes {
   simd::float4 color;   // [[ id(0) ]]; // {r, g, b, w}
   simd::float2 texture; // [[ id(1) ]]; // {x, y}
@@ -80,12 +86,13 @@ struct Mesh {
   uint64_t submeshes;						// Submeshes related to the mesh
 };
 
-//struct Model {
-//  uint64_t meshes; // Meshes related to model
-//};
+struct Text2D {
+	MTL::ResourceID value;
+};
 
 struct Scene {
-  uint64_t meshes; // All models in the scene
+	uint64_t textures;
+	uint64_t vcamera;
 };
 
 }; // namespace Renderer

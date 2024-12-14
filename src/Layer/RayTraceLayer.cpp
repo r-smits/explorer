@@ -1,180 +1,136 @@
 #include "Math/Transformation.h"
+#include "Metal/MTLCommandBuffer.hpp"
+#include "Metal/MTLComputePass.hpp"
+#include "Metal/MTLTexture.hpp"
 #include <DB/Repository.hpp>
 #include <Events/IOState.h>
 #include <Layer/RayTraceLayer.h>
 #include <Renderer/Renderer.h>
 
-Explorer::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* config)
-    : Layer(device->retain(), config), queue(device->newCommandQueue()) {
 
-  MTL::Library* library =
-      Repository::Shaders::readLibrary(device, config->shaderPath + "Raytracing");
+EXP::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* config)
+    : Layer(device->retain(), config), queue(device->newCommandQueue()) {
 	
-	this->_kernelFn = library->newFunction(Explorer::nsString("computeKernel"));
-  this->_raytrace = Renderer::State::Compute(device, _kernelFn);
+	MTL::Library* gbufferLib = Repository::Shaders::readLibrary(device, config->shaderPath + "GBuffer");
+  MTL::Library* raytraceLib = Repository::Shaders::readLibrary(device, config->shaderPath + "Raytracing");
+
+	MTL::Function* gbufferFn = gbufferLib->newFunction(EXP::nsString("g_buffer"));	
+	this->_kernelFn = raytraceLib->newFunction(EXP::nsString("computeKernel"));
+
+	this->_gbufferState = Renderer::State::Compute(device, gbufferFn);
+  this->_raytraceState = Renderer::State::Compute(device, _kernelFn);
 
   this->_vertexDescriptor = Renderer::Descriptor::vertex(device, Renderer::Layouts::vertexNIP);
-  this->_camera = VCamera();
-	this->_camera.Iso();
 
   CGRect frame = ViewAdapter::bounds();
   this->_gridSize = MTL::Size::Make(frame.size.width * 2, frame.size.height * 2, 1);
   this->_resolution = {(float)_gridSize.width, (float)_gridSize.height, (float)_gridSize.depth};
 
   this->_threadGroupSize = calcGridsize();
-
+	
   buildModels(device);
   buildAccelerationStructures(device);
-  buildBindlessScene(device, scene);
 }
 
-void Explorer::RayTraceLayer::buildModels(MTL::Device* device) {
-  // Setting up objects
-  _lightDir = {0.0f, -1.0f, -1.0f};
+void EXP::RayTraceLayer::buildModels(MTL::Device* device) {
 
-  Model* f16 = Repository::Meshes::read2(
-			device, 
-			_vertexDescriptor, 
-			config->meshPath + "f16/f16"
-	);
-
-	Model* sphere1 = Repository::Meshes::read2(
-			device, 
-			_vertexDescriptor, 
-			config->meshPath + "sphere/sphere"
-	);
-
-	Model* sphere2 = Repository::Meshes::read2(
-			device,
-			_vertexDescriptor,
-			config->meshPath + "sphere/sphere"
-	);
+	EXP::SCENE::addTexture(device, "g_buffer_normals");
+	EXP::SCENE::addTexture(device, "g_buffer_colors");
+	
+	EXP::SCENE::addModel(device, _vertexDescriptor, config->meshPath + "f16/f16", "f16");
+	EXP::SCENE::addModel(device, _vertexDescriptor, config->meshPath + "sphere/sphere", "sphere1");
+	EXP::SCENE::addModel(device, _vertexDescriptor, config->meshPath + "sphere/sphere", "sphere2");
+	
+	EXP::Model* f16 = EXP::SCENE::getModel("f16");
+	EXP::Model* sphere1 = EXP::SCENE::getModel("sphere1");
+	EXP::Model* sphere2 = EXP::SCENE::getModel("sphere2");
 
 	f16->move({0.0f, 0.0f, 0.0f});
-	sphere1->setEmissive(true)->setColor({1.0f, 1.0f, 0.0f, 0.0f})->scale(.3f)->move({-.2f, .5f, .3f});
+	sphere1->setEmissive(true)->setColor({10.0f, 10.0f, 0.0f, 0.0f})->scale(.3f)->move({-.2f, .5f, .3f});
 	sphere2->setColor({0.0f, 1.0f, 0.0f, 1.0f})->scale(.3f)->move({-.2f, .5f, -.3f});
-	
-	scene.emplace_back(f16);
-	scene.emplace_back(sphere1);
-	scene.emplace_back(sphere2);
+
+	EXP::SCENE::buildBindlessScene(device);
+	EXP::SCENE::getCamera()->setIsometric();
 }
 
-MTL::Size Explorer::RayTraceLayer::calcGridsize() {
-  auto threadGroupWidth = _raytrace->threadExecutionWidth();
-  auto threadGroupHeight = _raytrace->maxTotalThreadsPerThreadgroup() / threadGroupWidth;
+MTL::Size EXP::RayTraceLayer::calcGridsize() {
+  auto threadGroupWidth = _raytraceState->threadExecutionWidth();
+  auto threadGroupHeight = _raytraceState->maxTotalThreadsPerThreadgroup() / threadGroupWidth;
+	DEBUG("Thread group width x height: " + std::to_string(threadGroupWidth) + " x " + std::to_string(threadGroupHeight));
   return MTL::Size::Make(threadGroupWidth, threadGroupHeight, 1);
 }
 
-void Explorer::RayTraceLayer::buildAccelerationStructures(MTL::Device* device) {
+void EXP::RayTraceLayer::buildAccelerationStructures(MTL::Device* device) {
+	_dispatchEvent = device->newEvent();	
 	_buildEvent = device->newEvent();
   _primitiveDescriptors = Renderer::Descriptor::primitives(
-			scene, 
+			EXP::SCENE::getModels(), 
 			_vertexDescriptor->layouts()->object(0)->stride(),
 			_vertexDescriptor->layouts()->object(1)->stride()
 	);
   MTL::AccelerationStructureSizes sizes = Renderer::Acceleration::sizes(device, _primitiveDescriptors);
   _heap = Renderer::Heap::primitives(device, sizes);
   _primitiveAccStructures = Renderer::Acceleration::primitives(device, _heap, queue, _primitiveDescriptors, sizes, _buildEvent);
-  _instanceDescriptor = Renderer::Descriptor::instance(device, _primitiveAccStructures, scene);
+  _instanceDescriptor = Renderer::Descriptor::instance(device, _primitiveAccStructures, EXP::SCENE::getModels());
   _instanceAccStructure = Renderer::Acceleration::instance(device, queue, _instanceDescriptor, _buildEvent);
 }
 
-void Explorer::RayTraceLayer::rebuildAccelerationStructures(MTL::Device* device) {
-  _instanceDescriptor = Renderer::Descriptor::instance(device, _primitiveAccStructures, scene);
-	_instanceAccStructure = Renderer::Acceleration::instance(device, queue, _instanceDescriptor, _buildEvent);
+void EXP::RayTraceLayer::rebuildAccelerationStructures(MTK::View* view) {
+  _instanceDescriptor = Renderer::Descriptor::instance(view->device(), _primitiveAccStructures, EXP::SCENE::getModels());
+	_instanceAccStructure = Renderer::Acceleration::instance(view->device(), queue, _instanceDescriptor, _buildEvent);
 }
 
-void Explorer::RayTraceLayer::buildBindlessScene(MTL::Device* device, const std::vector<Model*>& scene) {
-  std::vector<MTL::Resource*> resources;
+void EXP::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* notUsed) {
 	
-	int totalMeshCount = 0;
-	std::vector<Mesh*> allMeshes;
-	for (Model* model : scene) {
-		totalMeshCount += model->meshCount;
-		for (Mesh* mesh : model->meshes) allMeshes.emplace_back(mesh);
-	}
+	// Update camera part of the bindless scene
+	EXP::SCENE::updateBindlessScene(view->device());
 
-  int meshBufferSize = sizeof(Renderer::Mesh) * totalMeshCount;
-  MTL::Buffer* meshBuffer = device->newBuffer(meshBufferSize, MTL::ResourceStorageModeShared);
-  resources.emplace_back(meshBuffer);
-
-  for (int j = 0; j < totalMeshCount; j++) {
-    Renderer::Mesh* gpuMesh = ((Renderer::Mesh*)meshBuffer->contents()) + j;
-    Explorer::Mesh* cpuMesh = allMeshes[j];
-
-    gpuMesh->vertices = cpuMesh->buffers[0]->gpuAddress() + cpuMesh->offsets[0];
-    gpuMesh->attributes = cpuMesh->buffers[1]->gpuAddress() + cpuMesh->offsets[1];
-
-    resources.emplace_back(cpuMesh->buffers[0]);
-    resources.emplace_back(cpuMesh->buffers[1]);
-
-    int submeshBufferSize = sizeof(Renderer::Submesh) * cpuMesh->count;
-    MTL::Buffer* submeshBuffer = device->newBuffer(submeshBufferSize, MTL::ResourceStorageModeShared);
-    resources.emplace_back(submeshBuffer);
-
-    for (int k = 0; k < cpuMesh->count; k++) {
-      Renderer::Submesh* gpuSubmesh = ((Renderer::Submesh*)submeshBuffer->contents()) + k;
-			Explorer::Submesh* cpuSubmesh = cpuMesh->submeshes()[k];
-
-      gpuSubmesh->indices = cpuSubmesh->indexBuffer->gpuAddress() + cpuSubmesh->offset;
-      gpuSubmesh->texture = cpuSubmesh->textures[0]->gpuResourceID();
-			gpuSubmesh->textured = cpuSubmesh->material.useColor;
-			gpuSubmesh->emissive = cpuSubmesh->material.useLight;
-
-      resources.emplace_back(cpuSubmesh->indexBuffer);
-      resources.emplace_back(cpuSubmesh->textures[0]);
-    }
-
-    gpuMesh->submeshes = submeshBuffer->gpuAddress();
-  }
-
-  int sceneBufferSize = sizeof(struct Renderer::Scene);
-  MTL::Buffer* sceneBuffer = device->newBuffer(sceneBufferSize, MTL::ResourceStorageModeShared);
-  resources.emplace_back(sceneBuffer);
-
-  struct Renderer::Scene* gpuScene = ((struct Renderer::Scene*)sceneBuffer->contents());
-  gpuScene->meshes = meshBuffer->gpuAddress();
-
-  _resources = resources;
-  _sceneBuffer = sceneBuffer;
-}
-
-void Explorer::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* notUsed) {
-  
-	MTL::CommandBuffer* buffer = queue->commandBuffer();
-  MTL::ComputeCommandEncoder* encoder = buffer->computeCommandEncoder();
-
-  encoder->setComputePipelineState(_raytrace);
-
-  CA::MetalDrawable* drawable = view->currentDrawable();
-  MTL::Texture* texture = drawable->texture();
-  encoder->setTexture(texture, 0);
-
-  encoder->setBytes(&_resolution, sizeof(_resolution), 0);
-  encoder->setBytes(&_lightDir, sizeof(_lightDir), 1);
-
-  Renderer::RTTransform transform = _camera.update();
-  encoder->setBytes(&transform, sizeof(transform), 2);
-	
+	// Scene action
 	if (IO::isPressed(KEY_T)) { 
-		for (Model* model : scene) {
-			model->rotate(Transformation::yRotation(-1.0f));
+		for (Model* model : EXP::SCENE::getModels()) {
+			model->rotate(EXP::MATH::yRotation(-1.0f));
 		}
 	}
+	rebuildAccelerationStructures(view);
 
-	rebuildAccelerationStructures(view->device());
+	// Render pass 1
+	
+  MTL::CommandBuffer* gbufferCommand = queue->commandBuffer();
+	MTL::ComputePassDescriptor* gbufferDescriptor = MTL::ComputePassDescriptor::alloc()->init();
+	MTL::ComputeCommandEncoder* gbufferEncoder = gbufferCommand->computeCommandEncoder(gbufferDescriptor);
+	gbufferEncoder->setComputePipelineState(this->_gbufferState);
+	
+	gbufferEncoder->setBuffer(EXP::SCENE::getBindlessScene(), 0, 2);
+
+	gbufferEncoder->dispatchThreads(_gridSize, _threadGroupSize);
+	gbufferEncoder->endEncoding();
+	gbufferCommand->encodeSignalEvent(_dispatchEvent, 1);
+	gbufferCommand->commit();
+	
+	
+	// Render pass 2
+	CA::MetalDrawable* drawable = view->currentDrawable();
+  MTL::Texture* texture = drawable->texture();
+
+	MTL::CommandBuffer* buffer = queue->commandBuffer();
+	MTL::ComputePassDescriptor* computePassDescriptor2 = MTL::ComputePassDescriptor::alloc()->init();
+	MTL::ComputeCommandEncoder* encoder = buffer->computeCommandEncoder(computePassDescriptor2);
+  
+	encoder->setComputePipelineState(this->_raytraceState);
+
+  encoder->setTexture(view->currentDrawable()->texture(), 0);
 	
 	encoder->useHeap(_heap);
-  encoder->setAccelerationStructure(_instanceAccStructure, 3);
-  
-  for (auto resource : _resources) {
+  encoder->setAccelerationStructure(_instanceAccStructure, 1);
+	
+	for (MTL::Resource* resource : EXP::SCENE::getResources()) {
 		encoder->useResource(resource, MTL::ResourceUsageRead);
   }
-	encoder->setBuffer(_sceneBuffer, 0, 4);
+	encoder->setBuffer(EXP::SCENE::getBindlessScene(), 0, 2);
 
   encoder->dispatchThreads(_gridSize, _threadGroupSize);
-
   encoder->endEncoding();
+
   buffer->presentDrawable(drawable);
   buffer->commit();
 

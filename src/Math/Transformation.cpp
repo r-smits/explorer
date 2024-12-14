@@ -1,10 +1,10 @@
 #include "Metal/MTLAccelerationStructureTypes.hpp"
 #include <Math/Transformation.h>
 
-float toRadians(float degrees) { return degrees * (M_PI / 180); }
-simd::float4x4 Transformation::identity() { return simd::float4x4(1.0f); }
+float toRadians(const float& degrees) { return degrees * (M_PI / 180); }
+simd::float4x4 EXP::MATH::identity() { return simd::float4x4(1.0f); }
 
-simd::float4x4 Transformation::translation(simd::float3 pos) {
+simd::float4x4 EXP::MATH::translation(const simd::float3& pos) {
   simd::float4 column1 = {1.0f, 0.0f, 0.0f, 0.0f};
   simd::float4 column2 = {0.0f, 1.0f, 0.0f, 0.0f};
   simd::float4 column3 = {0.0f, 0.0f, 1.0f, 0.0f};
@@ -12,10 +12,10 @@ simd::float4x4 Transformation::translation(simd::float3 pos) {
   return simd_matrix(column1, column2, column3, column4);
 }
 
-simd::float4x4 Transformation::zRotation(float theta) {
-  theta = toRadians(theta); // Degrees -> radians: degrees * (pi/180)
-  float cos = cosf(theta);
-  float sin = sinf(theta);
+simd::float4x4 EXP::MATH::zRotation(const float& theta) {
+  float rad = toRadians(theta); // Degrees -> radians: degrees * (pi/180)
+  float cos = cosf(rad);
+  float sin = sinf(rad);
 
   simd::float4 column1 = {cos, sin, 0.0f, 0.0f};
   simd::float4 column2 = {-sin, cos, 0.0f, 0.0f};
@@ -25,10 +25,10 @@ simd::float4x4 Transformation::zRotation(float theta) {
   return simd_matrix(column1, column2, column3, column4);
 }
 
-simd::float4x4 Transformation::xRotation(float theta) {
-  theta = theta * (M_PI / 180);
-  float cos = cosf(theta);
-  float sin = sinf(theta);
+simd::float4x4 EXP::MATH::xRotation(const float& theta) {
+	float rad = toRadians(theta); // Degrees -> radians: degrees * (pi/180)
+  float cos = cosf(rad);
+  float sin = sinf(rad);
 
   simd::float4 column1 = {1.0f, 0.0f, 0.0f, 0.0f};
   simd::float4 column2 = {0.0f, cos, -sin, 0.0f};
@@ -38,10 +38,10 @@ simd::float4x4 Transformation::xRotation(float theta) {
   return simd_matrix(column1, column2, column3, column4);
 }
 
-simd::float4x4 Transformation::yRotation(float theta) {
-  theta = theta * (M_PI / 180);
-  float cos = cosf(theta);
-  float sin = sinf(theta);
+simd::float4x4 EXP::MATH::yRotation(const float& theta) {
+  float totalTheta = theta * (M_PI / 180);
+  float cos = cosf(totalTheta);
+  float sin = sinf(totalTheta);
 
   simd::float4 column1 = {cos, 0.0f, sin, 0.0f};
   simd::float4 column2 = {0.0f, 1.0f, 0.0f, 0.0f};
@@ -51,7 +51,7 @@ simd::float4x4 Transformation::yRotation(float theta) {
   return simd_matrix(column1, column2, column3, column4);
 }
 
-simd::float4x4 Transformation::scale(float factor) {
+simd::float4x4 EXP::MATH::scale(const float& factor) {
   simd_float4 column1 = {factor, 0.0f, 0.0f, 0.0f};
   simd_float4 column2 = {0.0f, factor, 0.0f, 0.0f};
   simd_float4 column3 = {0.0f, 0.0f, factor, 0.0f};
@@ -60,7 +60,7 @@ simd::float4x4 Transformation::scale(float factor) {
   return simd_matrix(column1, column2, column3, column4);
 }
 
-simd::float4x4 Transformation::perspective(float fov, float aspectRatio, float nearZ, float farZ) {
+simd::float4x4 EXP::MATH::perspective(const float& fov, const float& aspectRatio, const float& nearZ, const float& farZ) {
   float yPerspective = 1 / (tanf(toRadians(fov) * 0.5f));
   float xPerspective = yPerspective / aspectRatio;
   float zPerspective = farZ / (nearZ - farZ);
@@ -73,8 +73,8 @@ simd::float4x4 Transformation::perspective(float fov, float aspectRatio, float n
   return simd::float4x4(column1, column2, column3, column4);
 }
 
-simd::float4x4 Transformation::orthographic(
-    float left, float right, float bottom, float top, float nearZ, float farZ
+simd::float4x4 EXP::MATH::orthographic(
+    const float& left, const float& right, const float& bottom, const float& top, const float& nearZ, const float& farZ
 ) {
   simd::float4 col1 = {2.0f / (right - left), 0.0f, 0.0f, 0.0f};
   simd::float4 col2 = {0.0f, 2.0f / (top - bottom), 0.0f, 0.0f};
@@ -89,7 +89,7 @@ simd::float4x4 Transformation::orthographic(
 };
 
 // This is for right handed vertices!
-simd::float4x4 Transformation::lookat(simd::float3 eye, simd::float3 center, simd::float3 up) {
+simd::float4x4 EXP::MATH::lookat(const simd::float3& eye, const simd::float3& center, const simd::float3& up) {
 
   // const simd::float3 sF = simd::normalize(sCenter - sEye);
   // const simd::float3 sS = simd::normalize(simd::cross(sF, vUp));
@@ -115,11 +115,11 @@ simd::float4x4 Transformation::lookat(simd::float3 eye, simd::float3 center, sim
 }
 
 // Alternative
-simd::float4x4 Transformation::lookat2(simd::float3 right, simd::float3 center, simd::float3 up) {
+simd::float4x4 EXP::MATH::lookat2(const simd::float3& right, const simd::float3& center, const simd::float3& up) {
   return simd::float4x4(1.0f);
 }
 
-simd::float4x4 Transformation::rotate(float angle, simd::float3 vec) {
+simd::float4x4 EXP::MATH::rotate(const float& angle, const simd::float3& vec) {
 
   simd::float3 axis = simd::normalize(vec);
 
@@ -142,7 +142,7 @@ simd::float4x4 Transformation::rotate(float angle, simd::float3 vec) {
   return simd_matrix(col1, col2, col3, col4);
 }
 
-simd::quatf Transformation::cross(simd::quatf a, simd::quatf b) {
+simd::quatf EXP::MATH::cross(const simd::quatf& a, const simd::quatf& b) {
 
   simd::float4 q1 = a.vector;
   simd::float4 q2 = b.vector;
@@ -156,7 +156,7 @@ simd::quatf Transformation::cross(simd::quatf a, simd::quatf b) {
   return q;
 }
 
-MTL::PackedFloat4x3 Transformation::pack(const simd::float4x4& m4x4) {
+MTL::PackedFloat4x3 EXP::MATH::pack(const simd::float4x4& m4x4) {
 	MTL::PackedFloat3 col1 = {m4x4.columns[0].x, m4x4.columns[0].y, m4x4.columns[0].z};
 	MTL::PackedFloat3 col2 = {m4x4.columns[1].x, m4x4.columns[1].y, m4x4.columns[1].z};
 	MTL::PackedFloat3 col3 = {m4x4.columns[2].x, m4x4.columns[2].y, m4x4.columns[2].z};

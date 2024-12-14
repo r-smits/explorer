@@ -28,13 +28,13 @@ struct Descriptor {
 	);
 
   static MTL::PrimitiveAccelerationStructureDescriptor* primitive(
-			Explorer::Mesh* mesh, 
+			EXP::MDL::Mesh* mesh, 
 			const int& vStride, 
 			const int& pStride
 	);
 
   static std::vector<MTL::PrimitiveAccelerationStructureDescriptor*> primitives(
-			const std::vector<Explorer::Model*>& scene, 
+			const std::vector<EXP::Model*>& scene, 
 			const int& vStride, 
 			const int& pStride
 	);
@@ -42,11 +42,11 @@ struct Descriptor {
   static MTL::InstanceAccelerationStructureDescriptor* instance(
       MTL::Device* device,
       const std::vector<MTL::AccelerationStructure*>& primitiveStructures,
-      const std::vector<Explorer::Model*>& scene
+      const std::vector<EXP::Model*>& scene
   );
 
 	static MTL::InstanceAccelerationStructureDescriptor* updateTransformationMatrix(
-			const std::vector<Explorer::Model*>& scene,
+			const std::vector<EXP::Model*>& scene,
 			MTL::InstanceAccelerationStructureDescriptor* descriptor
 	);
 

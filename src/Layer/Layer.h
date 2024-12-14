@@ -2,12 +2,12 @@
 #include <Control/AppProperties.h>
 #include <pch.h>
 
-namespace Explorer {
+namespace EXP {
 
 class Layer {
 
 public:
-  Layer(MTL::Device* device, AppProperties* config, const std::string& name = "Layer");
+  Layer(MTL::Device* device, EXP::AppProperties* config, const std::string& name = "Layer");
   virtual ~Layer();
 
   virtual void onAttach();
@@ -25,4 +25,4 @@ private:
   const std::string name;
 };
 
-} // namespace Explorer
+} // namespace EXP

@@ -1,7 +1,7 @@
 #include <Log/Logger.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
-namespace Explorer {
+namespace EXP {
 
 std::shared_ptr<spdlog::logger> Logger::logger;
 
@@ -41,4 +41,4 @@ void Logger::error(std::string message) {
     Logger::init();
   logger->error(message);
 }
-} // namespace Explorer
+} // namespace EXP

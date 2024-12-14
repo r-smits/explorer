@@ -2,7 +2,7 @@
 #include <pch.h>
 #include <simd/simd.h>
 
-namespace Explorer {
+namespace EXP {
 NS::String* nsString(std::string str);
 NS::URL* nsUrl(std::string path);
 void printError(NS::Error* error);
@@ -17,4 +17,4 @@ std::string simd2str(const simd::float3& vec3);
 std::string simd2str(const simd::float4& vec4);
 
 
-}; // namespace Explorer
+}; // namespace EXP

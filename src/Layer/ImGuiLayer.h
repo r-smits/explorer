@@ -2,7 +2,7 @@
 #include <Layer/Layer.h>
 #include <pch.h>
 
-namespace Explorer {
+namespace EXP {
 
 class ImGuiLayer : public Layer {
 
@@ -28,4 +28,4 @@ private:
 	MTL::CommandQueue* queue;
 };
 
-}; // namespace Explorer
+}; // namespace EXP

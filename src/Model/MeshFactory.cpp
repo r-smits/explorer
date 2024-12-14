@@ -5,50 +5,7 @@
 #include <Renderer/Types.h>
 #include <View/ViewAdapter.hpp>
 
-Explorer::Object::Object()
-    : orientation(simd::float4x4(1)), position(simd::float3(0)), rotation(simd::float4x4(1)),
-      factor(1) {}
-
-// Computation of matrices are down right -> left.
-// Meaning you first need to translate, then rotate, then scale
-Explorer::Object* Explorer::Object::f4x4() {
-  orientation = Transformation::translation(position) * rotation * Transformation::scale(factor);
-  return this;
-}
-Explorer::Object* Explorer::Object::translate(const simd::float3& position) {
-  this->position += position;
-  return this;
-}
-
-Explorer::Object* Explorer::Object::scale(const float& factor) {
-  this->factor = factor;
-  return this;
-}
-Explorer::Object* Explorer::Object::rotate(const simd::float4x4& rotation) {
-  this->rotation = rotation;
-  return this;
-}
-
-Explorer::Mesh::Mesh(Submesh* submesh, std::string name, int vertexCount)
-    : name(name), vertexCount(vertexCount) {
-  vSubmeshes.emplace_back(submesh);
-  if (!count) count = 0;
-  count += 1;
-}
-
-Explorer::Mesh::Mesh(
-    std::vector<MTL::Buffer*> buffers,
-    std::vector<int> offsets,
-    const int& bufferCount,
-    const std::string& name,
-    const int& vertexCount
-)
-    : buffers(buffers), bufferCount(bufferCount), offsets(offsets), name(name),
-      vertexCount(vertexCount), count(0) {
-				DEBUG("Mesh: '" + this->name + "', vertex count: " + std::to_string(this->vertexCount));
-}
-
-Explorer::Model* Explorer::MeshFactory::pyramid(MTL::Device* device, std::string texture) {
+EXP::Model* EXP::MeshFactory::pyramid(MTL::Device* device, std::string texture) {
   Renderer::Vertex vertices[4] = {
       {  {0.0f, 1.0f, -1.0f}, {1.0f, 0.0f, 0.0f}},
       {{-1.0f, -1.0f, -1.0f},  {0.0f, 1.0f, 0.0}},
@@ -62,17 +19,13 @@ Explorer::Model* Explorer::MeshFactory::pyramid(MTL::Device* device, std::string
 	MTL::Texture* tex = Repository::Textures::read(device, texture);
 	textures.emplace_back(tex);
 
-  Submesh* submesh = new Submesh(
-      {
-          {1.0f, 1.0f, 1.0f, 1.0f},
-          true
-  },
-      textures,
-      MTL::PrimitiveType::PrimitiveTypeTriangle,
-      12,
-      MTL::IndexType::IndexTypeUInt16,
+	EXP::MDL::Submesh* submesh = new EXP::MDL::Submesh(
       Renderer::Buffer::create(device, indices, 12),
-      0
+			nullptr,
+			MTL::PrimitiveType::PrimitiveTypeTriangle,
+			MTL::IndexType::IndexTypeUInt16,
+      12,
+			0	
   );
 
   std::vector<MTL::Buffer*> buffers;
@@ -82,12 +35,12 @@ Explorer::Model* Explorer::MeshFactory::pyramid(MTL::Device* device, std::string
   buffers.emplace_back(vertexBuffer);
   offsets.emplace_back(0);
 
-  Mesh* pyramid = new Mesh(buffers, offsets, 1, "Pyramid", 4);
-  pyramid->add(submesh);
+	EXP::MDL::Mesh* pyramid = new EXP::MDL::Mesh(buffers, offsets, 1, "Pyramid", 4);
+  pyramid->addSubmesh(submesh);
   return new Model(pyramid);
 };
 
-Explorer::Model* Explorer::MeshFactory::cube(MTL::Device* device, std::string texture) {
+EXP::Model* EXP::MeshFactory::cube(MTL::Device* device, std::string texture) {
   Renderer::Vertex vertices[8] = {
       {  {-1.0f, 1.0f, 1.0f},  {1.0f, 0.0f, 0.0f}, {0, 0}},
       { {-1.0f, -1.0f, 1.0f},  {1.0f, 1.0f, 0.0f}, {0, 0}},
@@ -106,16 +59,12 @@ Explorer::Model* Explorer::MeshFactory::cube(MTL::Device* device, std::string te
 	MTL::Texture* tex = Repository::Textures::read(device, texture);
 	textures.emplace_back(tex);
 
-  Submesh* submesh = new Submesh(
-      {
-          {1.0f, 1.0f, 1.0f, 1.0f},
-          true
-  },
-      textures,
-      MTL::PrimitiveType::PrimitiveTypeTriangle,
-      36,
-      MTL::IndexType::IndexTypeUInt16,
+	EXP::MDL::Submesh* submesh = new EXP::MDL::Submesh(
       Renderer::Buffer::create(device, indices, 36),
+			nullptr,
+			MTL::PrimitiveType::PrimitiveTypeTriangle,
+			MTL::IndexType::IndexTypeUInt16,
+      36,
       0
   );
 
@@ -126,12 +75,12 @@ Explorer::Model* Explorer::MeshFactory::cube(MTL::Device* device, std::string te
   buffers.emplace_back(vertexBuffer);
   offsets.emplace_back(0);
 
-  Mesh* cube = new Mesh(buffers, offsets, 1, "Cube", 8);
-  cube->add(submesh);
+	EXP::MDL::Mesh* cube = new EXP::MDL::Mesh(buffers, offsets, 1, "Cube", 8);
+  cube->addSubmesh(submesh);
   return new Model(cube);
 }
 
-Explorer::Model* Explorer::MeshFactory::quad(MTL::Device* device, std::string texture) {
+EXP::Model* EXP::MeshFactory::quad(MTL::Device* device, std::string texture) {
 
   Renderer::Vertex vertices[4] = {
       {{-1.0f, -1.0f, 0.0f}, {1.0, 0.0, 0.0}, {0, 0}},
@@ -145,17 +94,13 @@ Explorer::Model* Explorer::MeshFactory::quad(MTL::Device* device, std::string te
 	MTL::Texture* tex = Repository::Textures::read(device, texture);
 	textures.emplace_back(tex);
 
-  Submesh* submesh = new Submesh(
-      {
-          {1.0f, 1.0f, 1.0f, 1.0f},
-          true
-  },
-      textures,
-      MTL::PrimitiveType::PrimitiveTypeTriangle,
-      6,
-      MTL::IndexType::IndexTypeUInt16,
+	EXP::MDL::Submesh* submesh = new EXP::MDL::Submesh(
       Renderer::Buffer::create(device, indices, 6),
-      0
+			nullptr,
+			MTL::PrimitiveType::PrimitiveTypeTriangle,
+      MTL::IndexType::IndexTypeUInt16,
+      6,
+			0
   );
 
   std::vector<MTL::Buffer*> buffers;
@@ -166,12 +111,12 @@ Explorer::Model* Explorer::MeshFactory::quad(MTL::Device* device, std::string te
   buffers.emplace_back(vertexBuffer);
   offsets.emplace_back(0);
 
-  Mesh* quad = new Mesh(buffers, offsets, 1, "Quad", 4);
-  quad->add(submesh);
+	EXP::MDL::Mesh* quad = new EXP::MDL::Mesh(buffers, offsets, 1, "Quad", 4);
+  quad->addSubmesh(submesh);
   return new Model(quad);
 }
 
-Explorer::Light* Explorer::Light::translate(const simd::float3& pos) {
+EXP::Light* EXP::Light::translate(const simd::float3& pos) {
   position += pos;
   data.position = position;
   // data.position = convert();
@@ -179,16 +124,16 @@ Explorer::Light* Explorer::Light::translate(const simd::float3& pos) {
 }
 
 // Convert from vertex plane to fragment plane
-simd::float3 Explorer::Light::convert() {
+simd::float3 EXP::Light::convert() {
   return {origin.x + (origin.x * position.x), origin.y - (origin.y * position.y), position.z};
 }
 
-Explorer::Light* Explorer::MeshFactory::light(MTL::Device* device) {
+EXP::Light* EXP::MeshFactory::light(MTL::Device* device) {
   CGRect frame = ViewAdapter::bounds();
   Renderer::Light data = {
       {(float)frame.size.width, (float)frame.size.height, 0.0f}, // position (x, y, z)
       {1.0f, 1.0f, 1.0f}, // color (r, g, b)
       {1.0f, 1.0f, 1.0f, 1.0f}  // brightness, fAmbient, fDiffuse, fSpecular
   };
-  return new Explorer::Light(data);
+  return new EXP::Light(data);
 }

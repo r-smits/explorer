@@ -5,25 +5,19 @@
 #include <View/ViewAdapter.hpp>
 #include <View/ViewDelegate.h>
 
-Explorer::ViewDelegate::ViewDelegate(MTK::View* view, AppProperties* config) : MTK::ViewDelegate() {
+EXP::ViewDelegate::ViewDelegate(MTK::View* view, EXP::AppProperties* config) : MTK::ViewDelegate() {
   DEBUG("Initializing ViewDelegate ...");
-  this->queue = view->device()->newCommandQueue();
 
   // Set up Keyboard IO eventing from MTK::View
   ViewAdapter* viewAdapter = ViewAdapter::sharedInstance();
   auto callback = [this](Event& event) { this->onEvent(event); };
   viewAdapter->setHandler(callback);
-
-  // Initialize layers & renderer (will be a layer in the future)
-  //this->layerStack.pushLayer(new BaseLayer(view->device(), config));
-  // this->layerStack.pushOverlay(new ImGuiLayer(view, config));
-
-	this->layerStack.pushLayer(new RayTraceLayer(view->device(), config));
+	this->layerStack.pushLayer(new EXP::RayTraceLayer(view->device(), config));
 }
 
-Explorer::ViewDelegate::~ViewDelegate() {}
+EXP::ViewDelegate::~ViewDelegate() {}
 
-void Explorer::ViewDelegate::onEvent(Event& event) {
+void EXP::ViewDelegate::onEvent(Event& event) {
   IO::onEvent(event);
   for (std::vector<Layer*>::iterator index = layerStack.end(); index != layerStack.begin();) {
     (*--index)->onEvent(event);
@@ -31,7 +25,7 @@ void Explorer::ViewDelegate::onEvent(Event& event) {
   }
 }
 
-void Explorer::ViewDelegate::drawInMTKView(MTK::View* view) {
+void EXP::ViewDelegate::drawInMTKView(MTK::View* view) {
   NS::AutoreleasePool* pool = NS::AutoreleasePool::alloc()->init();
 	
 
@@ -49,4 +43,4 @@ void Explorer::ViewDelegate::drawInMTKView(MTK::View* view) {
   //pool->release();
 }
 
-void Explorer::ViewDelegate::drawableSizeWillChange(MTK::View* view, CGSize size) {}
+void EXP::ViewDelegate::drawableSizeWillChange(MTK::View* view, CGSize size) {}

@@ -2,7 +2,7 @@
 #include <View/ViewAdapter.hpp>
 
 void Renderer::Draw::light(
-    MTL::RenderCommandEncoder* encoder, Explorer::Camera camera, Explorer::Light* light
+    MTL::RenderCommandEncoder* encoder, EXP::Camera camera, EXP::Light* light
 ) {
   light->data.position = light->data.position;
   encoder->setFragmentBytes(
@@ -13,7 +13,7 @@ void Renderer::Draw::light(
 }
 
 void Renderer::Draw::model(
-    MTL::RenderCommandEncoder* encoder, Explorer::Camera camera, Explorer::Model* model
+    MTL::RenderCommandEncoder* encoder, EXP::Camera camera, EXP::Model* model
 ) {
   // All calculations of the world are set only once and applied per vertex in
   // shader
@@ -24,10 +24,11 @@ void Renderer::Draw::model(
   //    sizeof(Renderer::Projection), // The size of data set in GPU
   //    20                             // The location of data: [[buffer(20)]]
   //);
-
+	
+	/**
   // For all meshes set vertex buffer, for all submeshes, index buffer and
   // materials
-  for (Explorer::Mesh* mesh : model->meshes) {
+  for (EXP::Mesh* mesh : model->meshes) {
 		
     for (int i = 0; i < mesh->bufferCount; i++) {
       encoder->setVertexBuffer(
@@ -37,7 +38,7 @@ void Renderer::Draw::model(
       );
     }
 
-    for (Explorer::Submesh* submesh : mesh->submeshes()) {
+    for (EXP::MDL::Submesh* submesh : mesh->submeshes()) {
       encoder->setFragmentBytes(&submesh->material, sizeof(Renderer::Material), 2);
       encoder->setFragmentTexture(submesh->textures[0],
                                   0); // Setting texture to buffer(0)
@@ -52,4 +53,5 @@ void Renderer::Draw::model(
       );
     }
   }
+	**/
 }

@@ -1,12 +1,14 @@
 #pragma once
 #include "Metal/MTLAccelerationStructure.hpp"
+#include "Metal/MTLComputePipeline.hpp"
 #include "Metal/MTLVertexDescriptor.hpp"
 #include <Layer/Layer.h>
 #include <Model/Camera.h>
 #include <Model/MeshFactory.h>
+#include <Model/ResourceManager.h>
 #include <pch.h>
 
-namespace Explorer {
+namespace EXP {
 
 class RayTraceLayer : public Layer {
 
@@ -20,8 +22,7 @@ public: // Setting up layer
 public: // Event
   void buildModels(MTL::Device* device);
   void buildAccelerationStructures(MTL::Device* device);
-	void rebuildAccelerationStructures(MTL::Device* device);
-	void buildBindlessScene(MTL::Device* device, const std::vector<Model*>& scene);
+	void rebuildAccelerationStructures(MTK::View* device);
 	MTL::Size calcGridsize();
 
 private: // Initialization
@@ -30,11 +31,10 @@ private: // Initialization
 private:
   MTL::Device* device;
 	MTL::Function* _kernelFn;
-  MTL::ComputePipelineState* _raytrace;
-  MTL::RenderPipelineState* _render;
+	MTL::ComputePipelineState* _gbufferState;
+  MTL::ComputePipelineState* _raytraceState;
 
 private:
-  VCamera _camera;
   MTL::CommandQueue* queue;
 
   MTL::Size _threadGroupSize;
@@ -43,25 +43,19 @@ private:
 
 private:
 	MTL::VertexDescriptor* _vertexDescriptor;
-  simd::float3 _lightDir;
-  Renderer::Sphere _spheres[3];
-  Renderer::RTMaterial _materials[3];
-  std::vector<Explorer::Model*> scene;
-  Explorer::Model* _modelsarr[1];
 
 private:
 	MTL::Event* _buildEvent;
+	MTL::Event* _dispatchEvent;
   MTL::Heap* _heap;
 	std::vector<MTL::PrimitiveAccelerationStructureDescriptor*> _primitiveDescriptors;
 	std::vector<MTL::AccelerationStructure*> _primitiveAccStructures;
 	MTL::InstanceAccelerationStructureDescriptor* _instanceDescriptor;
   MTL::AccelerationStructure* _instanceAccStructure;
-	MTL::Buffer* _sceneBuffer;
-	std::vector<MTL::Resource*> _resources;
 
 private:
 	int t = 0;
 
 
 };
-}; // namespace Explorer
+}; // namespace EXP
