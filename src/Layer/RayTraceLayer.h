@@ -31,9 +31,8 @@ private: // Initialization
 private:
   MTL::Device* device;
 	MTL::Function* _kernelFn;
-	MTL::ComputePipelineState* _normalBuffer;
-  MTL::ComputePipelineState* _raytrace;
-  MTL::RenderPipelineState* _render;
+	MTL::ComputePipelineState* _gbufferState;
+  MTL::ComputePipelineState* _raytraceState;
 
 private:
   MTL::CommandQueue* queue;

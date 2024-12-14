@@ -1,16 +1,21 @@
 #include <metal_stdlib>
 #include <metal_raytracing>
 using namespace metal;
+using namespace raytracing;
+
+#import "../src/Shaders/ShaderTypes.h"
 
 [[kernel]]
-void compute_normal_buffer(
-	texture2d<float, access::write> buffer								[[ texture(0) ]],
+void g_buffer(
+	instance_acceleration_structure structure							[[ buffer(1)	]],
+	constant Scene* scene																	[[ buffer(2)	]],
 	uint2 gid																							[[ thread_position_in_grid	]] 
 ) {
 
+	// We just need to ray trace and save the per primitive data into a buffer. 
+	// Which is held by your resource manager.
 
-
-	buffer.write(float4(0.0f), gid);
+	// buffer.write(float4(0.0f), gid);
 
 	// do nothing for now
 }

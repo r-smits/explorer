@@ -46,6 +46,17 @@ const int& SCENE::addTexture(const Repository::TextureWithName& textureWithName)
   return EXP::SCENE::texnames[name];
 }
 
+const int& SCENE::addTexture(MTL::Device* device, const std::string& name) {
+	MTL::TextureDescriptor* textureDescriptor = MTL::TextureDescriptor::texture2DDescriptor(
+			MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB, 
+			2000, 
+			1400, 
+			false
+	);
+	MTL::Texture* texture = device->newTexture(textureDescriptor);
+	return EXP::SCENE::addTexture({texture, name});	
+}
+
 inline MTL::Texture* SCENE::getTexture(const std::string& name) {
   const int& index = texnames[name];
   return textures[index];

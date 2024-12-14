@@ -41,6 +41,7 @@ public:
 	static const std::vector<EXP::Model*>& getModels();
 
 	static const int& addTexture(const Repository::TextureWithName& textureWithName);
+	static const int& addTexture(MTL::Device* device, const std::string& name);
 	static MTL::Texture* getTexture(const std::string& name);
 	static MTL::Texture* getTexture(const int& index);
 	static const std::vector<MTL::Texture*>& getTextures(); 

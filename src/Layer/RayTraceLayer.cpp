@@ -11,15 +11,14 @@
 EXP::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* config)
     : Layer(device->retain(), config), queue(device->newCommandQueue()) {
 	
-	MTL::Library* gBufferLib = Repository::Shaders::readLibrary(device, config->shaderPath + "GBuffer");
-  MTL::Library* library = Repository::Shaders::readLibrary(device, config->shaderPath + "Raytracing");
+	MTL::Library* gbufferLib = Repository::Shaders::readLibrary(device, config->shaderPath + "GBuffer");
+  MTL::Library* raytraceLib = Repository::Shaders::readLibrary(device, config->shaderPath + "Raytracing");
 
-	
-	MTL::Function* normalFn = gBufferLib->newFunction(EXP::nsString("compute_normal_buffer"));	
-	this->_kernelFn = library->newFunction(EXP::nsString("computeKernel"));
+	MTL::Function* gbufferFn = gbufferLib->newFunction(EXP::nsString("g_buffer"));	
+	this->_kernelFn = raytraceLib->newFunction(EXP::nsString("computeKernel"));
 
-	this->_normalBuffer = Renderer::State::Compute(device, normalFn);
-  this->_raytrace = Renderer::State::Compute(device, _kernelFn);
+	this->_gbufferState = Renderer::State::Compute(device, gbufferFn);
+  this->_raytraceState = Renderer::State::Compute(device, _kernelFn);
 
   this->_vertexDescriptor = Renderer::Descriptor::vertex(device, Renderer::Layouts::vertexNIP);
 
@@ -31,19 +30,12 @@ EXP::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* config)
 	
   buildModels(device);
   buildAccelerationStructures(device);
-
-	/**
-	MTL::TextureDescriptor* textureDescriptor = MTL::TextureDescriptor::texture2DDescriptor(
-			MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB, 
-			2000, 
-			1400, 
-			false
-	);
-	device->newTexture(textureDescriptor);
-	**/
 }
 
 void EXP::RayTraceLayer::buildModels(MTL::Device* device) {
+
+	EXP::SCENE::addTexture(device, "g_buffer_normals");
+	EXP::SCENE::addTexture(device, "g_buffer_colors");
 	
 	EXP::SCENE::addModel(device, _vertexDescriptor, config->meshPath + "f16/f16", "f16");
 	EXP::SCENE::addModel(device, _vertexDescriptor, config->meshPath + "sphere/sphere", "sphere1");
@@ -62,8 +54,8 @@ void EXP::RayTraceLayer::buildModels(MTL::Device* device) {
 }
 
 MTL::Size EXP::RayTraceLayer::calcGridsize() {
-  auto threadGroupWidth = _raytrace->threadExecutionWidth();
-  auto threadGroupHeight = _raytrace->maxTotalThreadsPerThreadgroup() / threadGroupWidth;
+  auto threadGroupWidth = _raytraceState->threadExecutionWidth();
+  auto threadGroupHeight = _raytraceState->maxTotalThreadsPerThreadgroup() / threadGroupWidth;
 	DEBUG("Thread group width x height: " + std::to_string(threadGroupWidth) + " x " + std::to_string(threadGroupHeight));
   return MTL::Size::Make(threadGroupWidth, threadGroupHeight, 1);
 }
@@ -101,15 +93,20 @@ void EXP::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* no
 	}
 	rebuildAccelerationStructures(view);
 
-	// Render pass 1 
-  MTL::CommandBuffer* normalBuffer = queue->commandBuffer();
-	MTL::ComputePassDescriptor* computePassDescriptor1 = MTL::ComputePassDescriptor::alloc()->init();
-	MTL::ComputeCommandEncoder* normalEncoder = normalBuffer->computeCommandEncoder(computePassDescriptor1);
-	normalEncoder->setComputePipelineState(this->_normalBuffer);
-	normalEncoder->dispatchThreads(_gridSize, _threadGroupSize);
-	normalEncoder->endEncoding();
-	normalBuffer->encodeSignalEvent(_dispatchEvent, 1);
-	normalBuffer->commit();
+	// Render pass 1
+	
+  MTL::CommandBuffer* gbufferCommand = queue->commandBuffer();
+	MTL::ComputePassDescriptor* gbufferDescriptor = MTL::ComputePassDescriptor::alloc()->init();
+	MTL::ComputeCommandEncoder* gbufferEncoder = gbufferCommand->computeCommandEncoder(gbufferDescriptor);
+	gbufferEncoder->setComputePipelineState(this->_gbufferState);
+	
+	gbufferEncoder->setBuffer(EXP::SCENE::getBindlessScene(), 0, 2);
+
+	gbufferEncoder->dispatchThreads(_gridSize, _threadGroupSize);
+	gbufferEncoder->endEncoding();
+	gbufferCommand->encodeSignalEvent(_dispatchEvent, 1);
+	gbufferCommand->commit();
+	
 	
 	// Render pass 2
 	CA::MetalDrawable* drawable = view->currentDrawable();
@@ -119,7 +116,7 @@ void EXP::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* no
 	MTL::ComputePassDescriptor* computePassDescriptor2 = MTL::ComputePassDescriptor::alloc()->init();
 	MTL::ComputeCommandEncoder* encoder = buffer->computeCommandEncoder(computePassDescriptor2);
   
-	encoder->setComputePipelineState(_raytrace);
+	encoder->setComputePipelineState(this->_raytraceState);
 
   encoder->setTexture(view->currentDrawable()->texture(), 0);
 	

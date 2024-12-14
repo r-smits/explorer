@@ -45,7 +45,7 @@ struct Mesh
 };
 
 struct Text2D {
-	texture2d<float, access::sample> value;
+	texture2d<float, access::read_write> value;
 };
 
 struct Scene
