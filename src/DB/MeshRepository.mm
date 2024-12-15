@@ -11,8 +11,8 @@ EXP::MDL::Submesh* buildSubmesh(
 ) {
   
 	Renderer::Material material = [TextureRepository readMaterial:device material:mdlSubmesh.material];
-	Repository::TextureWithName textureWithName = [TextureRepository read:device material:mdlSubmesh.material];
-	const int& texindex = EXP::SCENE::addTexture(textureWithName);
+	Renderer::Texture texture = [TextureRepository read:device material:mdlSubmesh.material];
+	const int& texindex = EXP::SCENE::addTexture(texture);
 	
 	MTL::Buffer* indexBuffer = (__bridge MTL::Buffer*)mtkSubmesh.indexBuffer.buffer;
 	MTL::Buffer* primitiveAttribBuffer = Renderer::Buffer::perPrimitive(

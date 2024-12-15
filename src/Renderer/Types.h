@@ -19,6 +19,17 @@ struct VCamera {
 	simd::float3 resolution;
 };
 
+enum struct TextureAccess {
+	READ_WRITE = 0,
+	SAMPLE = 1
+};
+
+struct Texture {
+	std::string name;
+	TextureAccess access;
+	MTL::Texture* value;
+};
+
 struct RTMaterial {
   simd::float3 color;
   simd::float3 roughness;
@@ -91,7 +102,8 @@ struct Text2D {
 };
 
 struct Scene {
-	uint64_t textures;
+	uint64_t textsample;
+	uint64_t textreadwrite;
 	uint64_t vcamera;
 };
 

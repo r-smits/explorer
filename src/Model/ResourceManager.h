@@ -20,9 +20,13 @@ class SCENE {
 	static inline std::vector<MTL::Resource*> resources = {};
 	static inline std::unordered_map<std::string, int> resnames = {};
 
-	static inline std::vector<MTL::Texture*> textures = {};
-	static inline std::unordered_map<std::string, int> texnames = {};
-	static inline int texcounter = -1;
+	static inline std::vector<Renderer::Texture> textSample = {};
+	static inline std::vector<Renderer::Texture> textReadWrite = {};
+	static inline std::unordered_map<std::string, int> textSampleNames = {};
+	static inline std::unordered_map<std::string, int> textReadWriteNames = {};
+
+	static inline int textsampleCounter = -1;
+	static inline int textreadwriteCounter = -1;
 
 public:
 	SCENE(){};
@@ -40,11 +44,11 @@ public:
 	static EXP::Model* getModel(const std::string& name);
 	static const std::vector<EXP::Model*>& getModels();
 
-	static const int& addTexture(const Repository::TextureWithName& textureWithName);
-	static const int& addTexture(MTL::Device* device, const std::string& name);
-	static MTL::Texture* getTexture(const std::string& name);
-	static MTL::Texture* getTexture(const int& index);
-	static const std::vector<MTL::Texture*>& getTextures(); 
+	static const int& addTexture(const Renderer::Texture& texture);
+	static const int& addTexture(MTL::Device* device, const std::string& name, const Renderer::TextureAccess& access);
+	static MTL::Texture* getTexture(const std::string& name, Renderer::TextureAccess access);
+	static MTL::Texture* getTexture(const int& index, Renderer::TextureAccess access);
+	static const std::vector<Renderer::Texture>& getTextures(); 
 	
 	static void addCamera(EXP::VCamera* camera);
 	static EXP::VCamera* getCamera();
@@ -53,7 +57,8 @@ public:
 	static const void updateBindlessScene(MTL::Device* device);
 	static MTL::Buffer* getBindlessScene();
 
-	static MTL::Buffer* buildTextureBuffer(MTL::Device* device);
+	static MTL::Buffer* buildTextSampleBuffer(MTL::Device* device);
+	static MTL::Buffer* buildTextReadWriteBuffer(MTL::Device* device);
 	static MTL::Buffer* buildVCameraBuffer(MTL::Device* device);
 
 

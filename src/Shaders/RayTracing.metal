@@ -7,7 +7,6 @@ using namespace raytracing;
 #import "../src/Shaders/RTUtils.h"
 
 // Object constants
-constexpr sampler sampler2d(address::clamp_to_edge, filter::linear);
 
 void transport(
 	thread ray& r,
@@ -65,7 +64,7 @@ void transport(
 			
 			// Calculate all color contributions; use texture, emission if there is one
 			float2 txcoord = (prim->txcoord[0] * bary_3d.x) + (prim->txcoord[1] * bary_3d.y) + (prim->txcoord[2] * bary_3d.z);
-			float4 wo_color = scene->textures[prim->flags[0]].value.sample(sampler2d, txcoord) + prim->color[0];
+			float4 wo_color = scene->textsample[prim->flags[0]].value.sample(sampler2d, txcoord) + prim->color[0];
 			
 			contribution *= wo_color * wi_dot_n;
 			// color *= (unshadowed_light_contribution) ? 1 : visibility_check();
