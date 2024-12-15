@@ -1,7 +1,7 @@
 #include "Math/Transformation.h"
 #include "Metal/MTLCommandBuffer.hpp"
 #include "Metal/MTLComputePass.hpp"
-#include "Metal/MTLTexture.hpp"
+#include "Renderer/Types.h"
 #include <DB/Repository.hpp>
 #include <Events/IOState.h>
 #include <Layer/RayTraceLayer.h>
@@ -14,7 +14,7 @@ EXP::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* config)
 	MTL::Library* gbufferLib = Repository::Shaders::readLibrary(device, config->shaderPath + "GBuffer");
   MTL::Library* raytraceLib = Repository::Shaders::readLibrary(device, config->shaderPath + "Raytracing");
 
-	MTL::Function* gbufferFn = gbufferLib->newFunction(EXP::nsString("g_buffer"));	
+	MTL::Function* gbufferFn = gbufferLib->newFunction(EXP::nsString("g_buffer"));
 	this->_kernelFn = raytraceLib->newFunction(EXP::nsString("computeKernel"));
 
 	this->_gbufferState = Renderer::State::Compute(device, gbufferFn);
@@ -34,8 +34,9 @@ EXP::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* config)
 
 void EXP::RayTraceLayer::buildModels(MTL::Device* device) {
 
-	EXP::SCENE::addTexture(device, "g_buffer_normals");
-	EXP::SCENE::addTexture(device, "g_buffer_colors");
+	EXP::SCENE::addTexture(device, "wpositions", Renderer::TextureAccess::READ_WRITE);
+	EXP::SCENE::addTexture(device, "wnormals", Renderer::TextureAccess::READ_WRITE);
+	EXP::SCENE::addTexture(device, "colors", Renderer::TextureAccess::READ_WRITE);
 	
 	EXP::SCENE::addModel(device, _vertexDescriptor, config->meshPath + "f16/f16", "f16");
 	EXP::SCENE::addModel(device, _vertexDescriptor, config->meshPath + "sphere/sphere", "sphere1");
@@ -47,7 +48,7 @@ void EXP::RayTraceLayer::buildModels(MTL::Device* device) {
 
 	f16->move({0.0f, 0.0f, 0.0f});
 	sphere1->setEmissive(true)->setColor({10.0f, 10.0f, 0.0f, 0.0f})->scale(.3f)->move({-.2f, .5f, .3f});
-	sphere2->setColor({0.0f, 1.0f, 0.0f, 1.0f})->scale(.3f)->move({-.2f, .5f, -.3f});
+	sphere2->setColor({0.0f, 1.0f, 0.0f, 1.0f})->scale(.2f)->move({-.2f, .5f, -.3f});
 
 	EXP::SCENE::buildBindlessScene(device);
 	EXP::SCENE::getCamera()->setIsometric();
@@ -93,25 +94,35 @@ void EXP::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* no
 	}
 	rebuildAccelerationStructures(view);
 
-	// Render pass 1
-	
-  MTL::CommandBuffer* gbufferCommand = queue->commandBuffer();
+
+	// ------------------------------ //
+	// GBuffer												//
+	// ------------------------------ //
+	MTL::CommandBuffer* gbufferCommand = queue->commandBuffer();
 	MTL::ComputePassDescriptor* gbufferDescriptor = MTL::ComputePassDescriptor::alloc()->init();
 	MTL::ComputeCommandEncoder* gbufferEncoder = gbufferCommand->computeCommandEncoder(gbufferDescriptor);
-	gbufferEncoder->setComputePipelineState(this->_gbufferState);
 	
+	gbufferEncoder->setComputePipelineState(this->_gbufferState);
+	gbufferEncoder->setTexture(view->currentDrawable()->texture(), 0);
+	
+	gbufferEncoder->useHeap(_heap);
+	gbufferEncoder->setAccelerationStructure(_instanceAccStructure, 1);	
 	gbufferEncoder->setBuffer(EXP::SCENE::getBindlessScene(), 0, 2);
+
+	for (MTL::Resource* resource : EXP::SCENE::getResources()) {
+		gbufferEncoder->useResource(resource, MTL::ResourceUsageSample);
+  }
 
 	gbufferEncoder->dispatchThreads(_gridSize, _threadGroupSize);
 	gbufferEncoder->endEncoding();
-	gbufferCommand->encodeSignalEvent(_dispatchEvent, 1);
+
+	// gbufferCommand->presentDrawable(view->currentDrawable());
 	gbufferCommand->commit();
 	
 	
-	// Render pass 2
-	CA::MetalDrawable* drawable = view->currentDrawable();
-  MTL::Texture* texture = drawable->texture();
-
+	// ------------------------------ //
+	// RT encoding										//
+	// ------------------------------ //
 	MTL::CommandBuffer* buffer = queue->commandBuffer();
 	MTL::ComputePassDescriptor* computePassDescriptor2 = MTL::ComputePassDescriptor::alloc()->init();
 	MTL::ComputeCommandEncoder* encoder = buffer->computeCommandEncoder(computePassDescriptor2);
@@ -126,12 +137,13 @@ void EXP::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* no
 	for (MTL::Resource* resource : EXP::SCENE::getResources()) {
 		encoder->useResource(resource, MTL::ResourceUsageRead);
   }
+	
 	encoder->setBuffer(EXP::SCENE::getBindlessScene(), 0, 2);
 
   encoder->dispatchThreads(_gridSize, _threadGroupSize);
   encoder->endEncoding();
 
-  buffer->presentDrawable(drawable);
+  buffer->presentDrawable(view->currentDrawable());
   buffer->commit();
 
-	}
+}

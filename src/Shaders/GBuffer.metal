@@ -4,22 +4,81 @@ using namespace metal;
 using namespace raytracing;
 
 #import "../src/Shaders/ShaderTypes.h"
+#import "../src/Shaders/RTUtils.h"
+
+
+// Texture coordinates
+// (0) World position
+// (1) World normal
+// (2) GID Color
+void shoot_ray(
+	thread ray& r,
+	thread instance_acceleration_structure& structure,
+	constant Scene* scene,
+	uint2 gid
+) {
+	
+	intersector<instancing, triangle_data, world_space_data> intersector;	
+	intersector.assume_geometry_type(geometry_type::triangle);
+	intersection_result<instancing, triangle_data, world_space_data> intersection = intersector.intersect(r, structure, 0xFF);
+
+	float4 contribution = float4(1.0f);
+	float4 sky_color = float4(.4f, .5f, .6f, 1.0f);
+
+	uint32_t seed = 0;
+
+	if (intersection.type == intersection_type::none) {
+		contribution *= sky_color;
+		scene->textreadwrite[GBufferIds::col].value.write(contribution, gid);
+		return; 
+	} 
+	
+	if (intersection.type == intersection_type::triangle) {
+		
+		float4 hit = float4(r.origin + r.direction * intersection.distance, 0.0f);
+
+		const device PrimitiveAttributes* prim = (const device PrimitiveAttributes*) intersection.primitive_data;
+		
+		float2 bary2 = intersection.triangle_barycentric_coord;
+		float3 bary3 = float3(1.0 - bary2.x - bary2.y, bary2.x, bary2.y);
+		
+		float3 normal3 = (prim->normal[0] * bary3.x) + (prim->normal[1] * bary3.y) + (prim->normal[2] * bary3.z);
+		float4 normal4 = float4(normalize(intersection.object_to_world_transform * float4(normal3, 0.0f)), 0.0f);
+
+		float2 txcoord = (prim->txcoord[0] * bary3.x) + (prim->txcoord[1] * bary3.y) + (prim->txcoord[2] * bary3.z);
+		float4 wo_color = scene->textsample[prim->flags[PrimFlagIds::textid]].value.sample(sampler2d, txcoord) + prim->color[0];
+		
+		contribution = contribution * wo_color + prim->flags[PrimFlagIds::emissive] * wo_color;
+		
+		scene->textreadwrite[GBufferIds::pos].value.write(hit, gid);
+		scene->textreadwrite[GBufferIds::norm].value.write(normal4, gid);
+		scene->textreadwrite[GBufferIds::col].value.write(contribution, gid);
+	}
+}
+
 
 [[kernel]]
 void g_buffer(
+	texture2d<float, access::write> buffer								[[ texture(0) ]],
 	instance_acceleration_structure structure							[[ buffer(1)	]],
 	constant Scene* scene																	[[ buffer(2)	]],
 	uint2 gid																							[[ thread_position_in_grid	]] 
 ) {
+	
+	float4 color = float4(1.0f, 0.0f, 1.0f, 1.0f);
+		if (is_null_instance_acceleration_structure(structure)) {
+		buffer.write(color, gid);
+		return;
+	}
 
-	// We just need to ray trace and save the per primitive data into a buffer. 
-	// Which is held by your resource manager.
+	ray r;	
+	build_ray(r, scene->vcamera, gid);
+	shoot_ray(r, structure, scene, gid);
+	
 
-	// buffer.write(float4(0.0f), gid);
-
-	// do nothing for now
+	float4 value = scene->textreadwrite[GBufferIds::col].value.read(gid);
+	buffer.write(value, gid);
 }
-
 
 
 /**

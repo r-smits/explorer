@@ -1,8 +1,9 @@
 #pragma once
 
-
 #ifndef ShaderTypes_h
 #define ShaderTypes_h
+
+constexpr sampler sampler2d(address::clamp_to_edge, filter::linear);
 
 struct RTMaterial {
 	float3 color;
@@ -44,14 +45,29 @@ struct Mesh
 	constant Submesh* submeshes;							// Submeshes related to the mesh
 };
 
-struct Text2D {
+struct Text2DSample {
+	texture2d<float, access::sample> value;
+};
+
+struct Text2DReadWrite {
 	texture2d<float, access::read_write> value;
 };
 
-struct Scene
-{
-		constant Text2D* textures;
-		constant VCamera* vcamera;
+struct Scene {
+	constant Text2DSample* textsample;
+	constant Text2DReadWrite* textreadwrite;
+	constant VCamera* vcamera;
+};
+
+struct GBufferIds {
+	static constant uint8_t pos = 0;
+	static constant uint8_t norm = 1;
+	static constant uint8_t col = 2;
+};
+
+struct PrimFlagIds {
+	static constant uint8_t textid = 0;
+	static constant uint8_t emissive = 0;
 };
 
 #endif

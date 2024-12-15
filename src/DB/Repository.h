@@ -14,6 +14,6 @@
 
 + (Renderer::Material)readMaterial:(MTL::Device*)device material:(MDLMaterial*)material;
 + (MTL::Texture*)read:(MTL::Device*)device semantic:(MDLMaterialSemantic)semantic material:(MDLMaterial*)material;
-+ (Repository::TextureWithName)read:(MTL::Device*)device material:(MDLMaterial*)material;
++ (Renderer::Texture)read:(MTL::Device*)device material:(MDLMaterial*)material;
 
 @end

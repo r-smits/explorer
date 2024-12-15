@@ -1,13 +1,14 @@
 #include "Log/Logger.h"
 #include "Metal/MTLResource.hpp"
 #include "Model/Camera.h"
+#include "Renderer/Types.h"
 #include <Model/ResourceManager.h>
 
 using namespace EXP;
 
 const std::vector<MTL::Resource*>& SCENE::getResources() { return resources; };
 
-const std::vector<MTL::Texture*>& SCENE::getTextures() { return textures; };
+const std::vector<Renderer::Texture>& SCENE::getTextures() { return textSample; };
 
 const std::vector<EXP::Model*>& SCENE::getModels() { return models; };
 
@@ -31,39 +32,63 @@ void SCENE::addModel(
 	DEBUG("Model stored. Name: " + model->name);
 };
 
-const int& SCENE::addTexture(const Repository::TextureWithName& textureWithName) {
-  const std::string& name = textureWithName.name;
-  if (texnames.find(name) == texnames.end()) {
-		texcounter += 1;
-    texnames.insert({name, texcounter});
-    textures.emplace_back(textureWithName.texture);
-    DEBUG("Texture stored. Index: " +
-		std::to_string(EXP::SCENE::texcounter) + ", name: " + name); 
+const int& SCENE::addTexture(const Renderer::Texture& texture) {
+	if (texture.access == Renderer::TextureAccess::SAMPLE) {
+		if (textSampleNames.find(texture.name) == textSampleNames.end()) {
+			textsampleCounter += 1;
+			textSampleNames.insert({texture.name, textsampleCounter});
+			textSample.emplace_back(texture);
+			DEBUG("Sample texture stored. Index: " +
+			std::to_string(EXP::SCENE::textsampleCounter) + ", name: " + texture.name);
+		} else {
+			DEBUG("Texture already stored. Index: " +
+			std::to_string(EXP::SCENE::textSampleNames[texture.name]) + ", name: " + texture.name);
+		}
+		return EXP::SCENE::textSampleNames[texture.name];
 	} else {
-    DEBUG("Texture already stored. Index: " +
-		std::to_string(EXP::SCENE::texnames[name]) + ", name: " + name);
-  }
-  return EXP::SCENE::texnames[name];
+		if (textReadWriteNames.find(texture.name) == textReadWriteNames.end()) {
+			textreadwriteCounter += 1;
+			textReadWriteNames.insert({texture.name, textreadwriteCounter});
+			textReadWrite.emplace_back(texture);
+			DEBUG("Read/Write texture stored. Index: " +
+			std::to_string(EXP::SCENE::textreadwriteCounter) + ", name: " + texture.name);
+		} else {
+			DEBUG("Texture already stored. Index: " +
+			std::to_string(EXP::SCENE::textReadWriteNames[texture.name]) + ", name: " + texture.name);
+		}
+		return EXP::SCENE::textReadWriteNames[texture.name];
+	}
 }
 
-const int& SCENE::addTexture(MTL::Device* device, const std::string& name) {
+const int& SCENE::addTexture(MTL::Device* device, const std::string& name, const Renderer::TextureAccess& access) {
 	MTL::TextureDescriptor* textureDescriptor = MTL::TextureDescriptor::texture2DDescriptor(
 			MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB, 
 			2000, 
 			1400, 
 			false
 	);
-	MTL::Texture* texture = device->newTexture(textureDescriptor);
-	return EXP::SCENE::addTexture({texture, name});	
+	MTL::Texture* mtlTexture = device->newTexture(textureDescriptor);
+	Renderer::Texture texture = {name, access, mtlTexture}; 
+	return EXP::SCENE::addTexture(texture);	
 }
 
-inline MTL::Texture* SCENE::getTexture(const std::string& name) {
-  const int& index = texnames[name];
-  return textures[index];
+MTL::Texture* SCENE::getTexture(const std::string& name, Renderer::TextureAccess access) {
+	if (access == Renderer::TextureAccess::SAMPLE) {
+		const int& index = textSampleNames[name];
+		return textSample[index].value;
+	} else {
+		const int& index = textReadWriteNames[name];
+		return textReadWrite[index].value;
+	}
 }
 
-inline MTL::Texture* SCENE::getTexture(const int& index) { return textures[index]; }
-
+MTL::Texture* SCENE::getTexture(const int& index, Renderer::TextureAccess access) { 
+	if (access == Renderer::TextureAccess::SAMPLE) {
+		return textSample[index].value;
+	} else {
+		return textReadWrite[index].value;
+	}
+}
 
 void SCENE::addCamera(EXP::VCamera* camera) {
 	vcamera = camera;
@@ -73,19 +98,40 @@ EXP::VCamera* SCENE::getCamera() {
 	return vcamera;
 };
 
-MTL::Buffer* SCENE::buildTextureBuffer(MTL::Device* device) {
-	MTL::Buffer* textureBuffer = device->newBuffer(sizeof(Renderer::Text2D) * textures.size(), MTL::ResourceStorageModeShared);
-	resources.emplace_back(textureBuffer);
-	Renderer::Text2D* textureBufferPtr = (Renderer::Text2D*)textureBuffer->contents();
-	for (int t = 0; t < textures.size(); t += 1) {
-		if (t == texnames["default"]) {
+MTL::Buffer* SCENE::buildTextSampleBuffer(MTL::Device* device) {
+	DEBUG("Preparing sample texture buffer...");
+	MTL::Buffer* textSampleBuffer = 
+		device->newBuffer(sizeof(Renderer::Text2D) * textSample.size(), MTL::ResourceStorageModeShared);
+	resources.emplace_back(textSampleBuffer);
+
+	Renderer::Text2D* textureBufferPtr = (Renderer::Text2D*)textSampleBuffer->contents();
+	for (int t = 0; t < textSample.size(); t += 1) {
+		if (t == textSampleNames["default"]) {
 			DEBUG("Default nullptr texture is skipped.");
 			continue;
 		}
-		(textureBufferPtr + t)->value = textures[t]->gpuResourceID();
-		resources.emplace_back(textures[t]);
+		(textureBufferPtr + t)->value = textSample[t].value->gpuResourceID();
+		resources.emplace_back(textSample[t].value);
 	}
-	return textureBuffer;
+	return textSampleBuffer;
+};
+
+MTL::Buffer* SCENE::buildTextReadWriteBuffer(MTL::Device* device) {
+	DEBUG("Preparing read/write texture buffer...");
+	MTL::Buffer* textReadWriteBuffer = 
+		device->newBuffer(sizeof(Renderer::Text2D) * textReadWrite.size(), MTL::ResourceStorageModeShared);
+	resources.emplace_back(textReadWriteBuffer);
+
+	Renderer::Text2D* textureBufferPtr = (Renderer::Text2D*)textReadWriteBuffer->contents();
+	for (int t = 0; t < textReadWrite.size(); t += 1) {
+		if (t == textReadWriteNames["default"]) {
+			DEBUG("Default nullptr texture is skipped.");
+			continue;
+		}
+		(textureBufferPtr + t)->value = textReadWrite[t].value->gpuResourceID();
+		resources.emplace_back(textReadWrite[t].value);
+	}
+	return textReadWriteBuffer;
 };
 
 
@@ -107,9 +153,10 @@ const void SCENE::buildBindlessScene(MTL::Device* device) {
 	sceneBuffer = device->newBuffer(sizeof(Renderer::Scene), MTL::ResourceStorageModeShared);
   resources.emplace_back(sceneBuffer);
   Renderer::Scene* gpuScene = (Renderer::Scene*)sceneBuffer->contents();
-	gpuScene->textures = SCENE::buildTextureBuffer(device)->gpuAddress();
+	gpuScene->textsample = SCENE::buildTextSampleBuffer(device)->gpuAddress();
+	gpuScene->textreadwrite = SCENE::buildTextReadWriteBuffer(device)->gpuAddress();
 	gpuScene->vcamera = SCENE::buildVCameraBuffer(device)->gpuAddress();
-	};
+};
 
 
 const void SCENE::updateBindlessScene(MTL::Device* device) {
@@ -119,8 +166,4 @@ const void SCENE::updateBindlessScene(MTL::Device* device) {
 	vcameraPtr->resolution = updatedVCamera.resolution;
 	vcameraPtr->orientation = updatedVCamera.orientation;
 }
-
-
-
-
 

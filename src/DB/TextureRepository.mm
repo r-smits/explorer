@@ -1,3 +1,4 @@
+#include "Renderer/Types.h"
 #include <DB/Repository.h>
 #include <DB/Repository.hpp>
 #include <Foundation/Foundation.h>
@@ -43,7 +44,7 @@
   return (__bridge MTL::Texture*)mtlTexture;
 }
 
-+ (Repository::TextureWithName)read:(MTL::Device*)device material:(MDLMaterial*)material {
++ (Renderer::Texture)read:(MTL::Device*)device material:(MDLMaterial*)material {
 	
 	id<MDLAssetResolver> assetResolver = nullptr;
 	[material loadTexturesUsingResolver:assetResolver];
@@ -70,11 +71,11 @@
 
 			if (err) EXP::printError((__bridge NS::Error*)err);
 			MTL::Texture* resultTexture = (__bridge MTL::Texture*)mtlTexture;
-			return {resultTexture, filename};
+			return {filename, Renderer::TextureAccess::SAMPLE, resultTexture};
 		}
 	}
   WARN("No texture found.");
-  return {nullptr, "default"};
+  return {"default", Renderer::TextureAccess::SAMPLE, nullptr};
 }
 
 @end
