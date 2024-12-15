@@ -10,7 +10,7 @@ Features:
 - Render 3D .obj files inc. textures, with light sources.
 - Instance acceleration structures for ray-tracing (Metal3 API).
 - Naive implementation of ReSTiR (without temporal or spacial re-use of samples at this point)
-  [https://research.nvidia.com/sites/default/files/pubs/2020-07_Spatiotemporal-reservoir-resampling/ReSTIR.pdf]
+  https://research.nvidia.com/sites/default/files/pubs/2020-07_Spatiotemporal-reservoir-resampling/ReSTIR.pdf
 - Bindless setup. No naive binding of buffers / bytes / textures required.
 - Resource manager to manage aformentioned bindless setup.
 - Per primitive data stored on dedicated heap.
