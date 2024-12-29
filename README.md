@@ -9,7 +9,7 @@ System requirements:
 Features:
 - Render 3D .obj files inc. textures, with light sources.
 - Instance acceleration structures for ray-tracing (Metal3 API).
-- Naive implementation of ReSTiR (without temporal or spacial re-use of samples at this point)
+- Naive implementation of ReSTiR, including global illumination (with temporal re-use of samples).
   https://research.nvidia.com/sites/default/files/pubs/2020-07_Spatiotemporal-reservoir-resampling/ReSTIR.pdf
 - Bindless setup. No naive binding of buffers / bytes / textures required.
 - Resource manager to manage aformentioned bindless setup.
@@ -19,9 +19,8 @@ Inputs:
 - Key inputs: W, A, S, D to explore the scene with vector camera (using quaternions)
 - Key inputs: look left/right with arrow keys.
 - Key inputs: T for rotating objects around Y axis.
-
-![restir_showcase](https://github.com/r-smits/explorer/media/restir_showcase.gif)
-
+- 
+![restir_showcase](https://github.com/user-attachments/assets/d6c316aa-aa8b-486a-a651-a847b9f02bb3)
 <img width="986" alt="Screenshot 2024-01-11 at 00 22 29" src="https://github.com/r-smits/explorer/assets/35615011/2813c38e-8732-4dfa-85bd-bfa26e86cf04" />
 <img width="985" alt="Screenshot 2024-01-18 at 22 56 11" src="https://github.com/r-smits/explorer/assets/35615011/639ff909-517e-4bdb-acc3-fa21a2d56479" />
 
