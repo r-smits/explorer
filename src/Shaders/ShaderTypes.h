@@ -91,7 +91,7 @@ struct RestirIdx {
 
 struct PrimFlagIds {
 	static constant uint8_t textid = 0;
-	static constant uint8_t emissive = 0;
+	static constant uint8_t emissive = 1;
 };
 
 
