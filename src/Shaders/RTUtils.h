@@ -3,6 +3,8 @@
 #ifndef RTUtils_h
 #define RTUtils_h
 
+#if __METAL_VERSION__
+
 // PCG Hash for random number generation
 uint32_t pcg_hash(thread uint32_t input) {
 	uint32_t state = input * 747796405u + 2891336453u;
@@ -28,6 +30,28 @@ float3 uniform_pdf(thread uint32_t& seed) {
 	);
 }
 
+float3 vec_perpendicular(float3 u) {
+	float3 a = abs(u);
+	uint xm = ((a.x - a.y) < 0 && (a.x - a.z) < 0) ? 1 : 0;
+	uint ym = (a.y - a.z) < 0 ? (1 ^ xm) : 0;
+	uint zm = 1 ^ (xm | ym);
+	return cross(u, float3(xm, ym, zm));
+}
+
+
+// Get a uniform weighted random vector centered around a specified normal direction.
+float3 rand_hemisphere(thread uint32_t& seed, float3 normal) {
+	float2 point_rand = float2(rand(seed), rand(seed));
+
+	float3 bitangent = vec_perpendicular(normal);
+	float3 tangent = cross(bitangent, normal);
+	float r = sqrt(max(0.0f, 1.0f - point_rand.x * point_rand.x));
+	float phi = 2.0f * 3.14159265f * point_rand.y;
+
+	return tangent * (r * cos(phi)) + bitangent * (r * sin(phi)) + normal.xyz * point_rand.x;
+}
+
+
 // Cosine: decrease light intensity based on the angle between the normal and outgoing light direction (wi).
 float lambertian(
 	thread float3& wi,
@@ -47,32 +71,6 @@ float cos_inverse_square(
 	return result;
 }
 
-// Check whether there is direct visibility between two points
-float visibility_check() {
-	return 1;
-}
-
-// Calculate the intensity of a vector based on its constituent components excluding the w term
-float intensity(
-	thread float4& vector
-) {
-	return (vector.x + vector.y + vector.z) / 3;
-}
-
-float intensity(
-	thread float3& vector
-) {
-	return (vector.x + vector.y + vector.z) / 3;
-}
-
-float vsum(thread float3& vector) {
-	return vector.r + vector.g + vector.b;
-}
-
-float vsum(float4 vector) {
-	return vector.r + vector.g + vector.b + vector.a;
-}
-
 float4 compare(float3 vec1, float3 vec2) {
 	if (distance(vec1, vec2) < 0.01) {
 		return float4(.0f, 1.0f, .0f, .0f);	
@@ -81,47 +79,6 @@ float4 compare(float3 vec1, float3 vec2) {
 	}
 }
 
-// Struct required for reservoir sampling
-struct Reservoir {
-	float w_sum = 0;					// sum of weights
-	float m = 0;							// number of samples
-	float w = 0;							// weight
-	float3 y = float3(0.0f);	// chosen sample (ray direction)
-
-	void update(
-		thread float3& sample, 
-		thread float& weight,
-		thread uint32_t& seed
-	) {
-		w_sum += weight;
-		m += 1;
-		float random = rand(seed);
-		if (random <= (weight / w_sum)) {
-			y = sample;
-			w = weight;
-		}
-	}
-};
-
-void build_ray(thread ray& r, constant VCamera* vcamera, uint2 gid) {
-	
-	// Camera point needs to be within world space:
-	// -1 >= x >= 1 :: Normalized
-	// -1 >= y >= 1 :: We want to scale y in opposite direction for viewport coordinates
-	// -1 >= z >= 0 :: The camera is pointed towards -z axis, as we use right handed
-	float3 pixel = float3(float2(gid), 1.0f);
-	pixel = pixel / vcamera->resolution * 2 - 1;
-	pixel *= float3(1, -1, 1);
-
-	// Projection transformations
-	// orientation = matView * matProjection
-	float3 vecRayDir = (vcamera->orientation * float4(pixel, 1.0f)).xyz;
-	
-	// Ray is modified by reference
-	r.origin = vcamera->vecOrigin;
-	r.direction = vecRayDir;
-	r.min_distance = 0.2f;						// Set to avoid self-occlusion
-	r.max_distance = FLT_MAX;
-}
-
 #endif
+#endif
+
