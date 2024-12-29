@@ -49,7 +49,7 @@ void transport(
 
 			// Calculate variables needed to solve the rendering equation
 			normal = (prim->normal[0] * bary_3d.x) + (prim->normal[1] * bary_3d.y) + (prim->normal[2] * bary_3d.z);
-			normal = normalize((intersection.object_to_world_transform * float4(normal, 0.0f)).xyz);
+			normal = normalize(intersection.object_to_world_transform * float4(normal, 0.0f));
 			seed = gid.x * (intersection.primitive_id * bary_3d.z * i) + gid.y * (intersection.primitive_id * bary_2d.y);
 			
 			// We assume for now that the surface is perfectly reflective.
@@ -60,7 +60,7 @@ void transport(
 			r.direction = reflect(r.direction, jittered_normal);
 
 			float3 wi = normalize(r.direction);
-			float wi_dot_n = (inverse_square) ? cos_inverse_square(intersection.distance, wi, normal) : cos(wi, normal);
+			float wi_dot_n = (inverse_square) ? cos_inverse_square(intersection.distance, wi, normal) : lambertian(wi, normal);
 			
 			// Calculate all color contributions; use texture, emission if there is one
 			float2 txcoord = (prim->txcoord[0] * bary_3d.x) + (prim->txcoord[1] * bary_3d.y) + (prim->txcoord[2] * bary_3d.z);
@@ -82,17 +82,32 @@ void computeKernel(
 	uint2 gid																							[[ thread_position_in_grid	]] 
 ) {
 	
+	/**
+	// Figure out how to get previous gid compared to the next
+	float gid_x = gid.x;
+	float gid_y = gid.y;
+	float4 gid_color = float4(gid.x / 2000, gid.y / 1400, .0f, .0f);
+	buffer.write(gid_color, gid);
+	return;
+	**/
+	
+	float4 gid_color = float4(gid.x / 2000, gid.y / 1400, .0f, .0f);
+
+	// In case you want to use a gbuffer
+	// float4 gcolor = scene->textreadwrite[GBufferIds::col].value.read(gid);
+	// float3 gnormal = scene->textreadwrite[GBufferIds::norm].value.read(gid).xyz;
+	// float3 gposition = scene->textreadwrite[GBufferIds::pos].value.read(gid).xyz;
+	
 	// Check if instance acceleration structure was built succesfully
-	float4 color = float4(0.0f, 0.0f, 0.0f, 1.0f);
-		if (is_null_instance_acceleration_structure(structure)) {
-		buffer.write(color, gid);
+	if (is_null_instance_acceleration_structure(structure)) {
+		buffer.write(gid_color, gid);
 		return;
 	}
 	
 	// Initialize default parameters
-	thread uint32_t seed = 0;
+	thread uint32_t seed = 0; // gid.x * vsum(gnormal) + gid.y * (5 - vsum(gposition)) * 10;
 	thread int bounces = 3;
-	thread float3 normal = float3(0.0f);
+	thread bool terminate_flag = false;
 
 	// Initialize ReSTIR variables (later to reconsider the memory scope)
 	// N good samples defined in constant address space, maybe there is a better way of doing things
@@ -105,13 +120,20 @@ void computeKernel(
 
 	// Build ray. Ray shoots out from point (gid). Camera is a grid, point is a coordinate on the grid. 
 	ray r;
+	// r.origin = gposition;
+	r.min_distance = 0.2f;
+	r.max_distance = FLT_MAX;
 	ray x;
+	
 	build_ray(r, scene->vcamera, gid);
-		
+	x = r;
+
+	float4 color = float(0.0f);
+	float3 normal = float(0.0f);
 	// Shoot initial ray from the camera into the scene. 
 	// This will set the ray, color and seed by reference.
-	bool terminate_flag = false;
-	transport(r, structure, scene, gid, bounces, color, seed, true, normal, terminate_flag, false);
+	transport(x, structure, scene, gid, bounces, color, seed, true, normal, terminate_flag, false);
+
 	if (terminate_flag) {
 		buffer.write(color, gid);
 		return;
@@ -123,7 +145,6 @@ void computeKernel(
 
 		// 1. Calculate the samples from the uniform pdf.
 		// All samples in a uniform have equal weights, so we don't have to calculate them. The sum of weights would be 1.
-		//float3 pdf_sample = normalize(normal + uniform_pdf(seed) * 1); 
 		float3 pdf_sample = uniform_pdf(seed);	
 		
 		// 2. Calculate the weights of the complex pdf through the unshadowed light contribution.
@@ -131,7 +152,7 @@ void computeKernel(
 		float4 sample_color = float4(0.0f, 0.0f, 0.0f, 0.0f);
 		x.direction = pdf_sample;
 		x.origin = r.origin;
-		transport(x, structure, scene, gid, 2, sample_color, seed, true, normal, terminate_flag, true);
+		transport(x, structure, scene, gid, bounces, sample_color, seed, true, normal, terminate_flag, true);
 		float pdf_weight = intensity(sample_color);
 
 		// 3. Build the complex pdf to re-sample the samples from.
@@ -145,15 +166,15 @@ void computeKernel(
 	float average_weight_samples = r1.w_sum / r1.m;
 	
 	// r1
-	x.direction = r1.y;
+	r.direction = r1.y;
 	float4 sample_color = float4(0.0f);
-	transport(x, structure, scene, gid, bounces, sample_color, seed, true, normal, terminate_flag, true);
-	x = r;
+	transport(r, structure, scene, gid, bounces, sample_color, seed, true, normal, terminate_flag, true);
 	
 	float r1_norm_weight = average_weight_samples / r1.w; // intensity(sample_color); <- Should be this but minimal difference
 
 	total_sample_color += sample_color * r1_norm_weight;
 
 	color *= total_sample_color;
+	
 	buffer.write(color, gid);
 }

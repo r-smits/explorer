@@ -1,3 +1,4 @@
+#include "Renderer/Types.h"
 #include <DB/Repository.h>
 #include <DB/Repository.hpp>
 #include <ModelIO/ModelIO.h>
@@ -61,6 +62,10 @@ EXP::MDL::Mesh* buildMesh(MTL::Device* device, MDLMesh* mdlMesh, MTL::VertexDesc
 	
 	// MDLMeshBufferTypeVertex 
 	// Both buffers use the same amount of vertices -> buf[0] the points, buf[1] the attribs. So safe to use.
+	DEBUG("Found vertex buffer count.");
+	DEBUG(std::to_string([mtkMesh.vertexBuffers objectAtIndex:1].length / sizeof(Renderer::VertexAttributes)));
+
+	DEBUG(std::to_string(mtkMesh.vertexBuffers.count));
   for (int i = 0; i < mtkMesh.vertexBuffers.count; i++) {
 		MTL::Buffer* buffer = (__bridge MTL::Buffer*)[mtkMesh.vertexBuffers objectAtIndex:i].buffer;
     int offset = [mtkMesh.vertexBuffers objectAtIndex:i].offset;

@@ -1,3 +1,4 @@
+#include "Renderer/Types.h"
 #include <Model/Submesh.h>
 
 const void EXP::MDL::Submesh::setColor(const simd::float4& color) {
@@ -17,3 +18,8 @@ const void EXP::MDL::Submesh::setEmissive(const bool& emissive) {
     (primAttribPtr + i)->flags[1] = emissive;
   }
 }
+
+const bool EXP::MDL::Submesh::isEmissive() {
+	Renderer::PrimitiveAttributes* primAttribPtr = (Renderer::PrimitiveAttributes*)primitiveBuffer->contents();
+	return primAttribPtr->flags[1];
+};

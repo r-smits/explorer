@@ -23,13 +23,15 @@ void shoot_ray(
 	intersection_result<instancing, triangle_data, world_space_data> intersection = intersector.intersect(r, structure, 0xFF);
 
 	float4 contribution = float4(1.0f);
+	float4 saturated = float4(1.0f);
 	float4 sky_color = float4(.4f, .5f, .6f, 1.0f);
-
-	uint32_t seed = 0;
 
 	if (intersection.type == intersection_type::none) {
 		contribution *= sky_color;
 		scene->textreadwrite[GBufferIds::col].value.write(contribution, gid);
+		scene->textreadwrite[GBufferIds::norm].value.write(saturated, gid);
+		scene->textreadwrite[GBufferIds::pos].value.write(saturated, gid);
+
 		return; 
 	} 
 	
@@ -43,15 +45,19 @@ void shoot_ray(
 		float3 bary3 = float3(1.0 - bary2.x - bary2.y, bary2.x, bary2.y);
 		
 		float3 normal3 = (prim->normal[0] * bary3.x) + (prim->normal[1] * bary3.y) + (prim->normal[2] * bary3.z);
-		float4 normal4 = float4(normalize(intersection.object_to_world_transform * float4(normal3, 0.0f)), 0.0f);
+		normal3 = normalize(intersection.object_to_world_transform * float4(normal3, 0.0f));
 
 		float2 txcoord = (prim->txcoord[0] * bary3.x) + (prim->txcoord[1] * bary3.y) + (prim->txcoord[2] * bary3.z);
 		float4 wo_color = scene->textsample[prim->flags[PrimFlagIds::textid]].value.sample(sampler2d, txcoord) + prim->color[0];
 		
-		contribution = contribution * wo_color + prim->flags[PrimFlagIds::emissive] * wo_color;
-		
+		float3 wi_dir = normalize(reflect(r.direction, normal3));
+		float cosine = lambertian(wi_dir, normal3);
+
+		// float3 wo_dir = 1 - normalize(r.direction);
+		contribution *= wo_color * cosine;
+		// contribution = prim->flags[PrimFlagIds::emissive] * wo_color + contribution * wo_color;
 		scene->textreadwrite[GBufferIds::pos].value.write(hit, gid);
-		scene->textreadwrite[GBufferIds::norm].value.write(normal4, gid);
+		scene->textreadwrite[GBufferIds::norm].value.write(float4(normal3, .0f), gid);
 		scene->textreadwrite[GBufferIds::col].value.write(contribution, gid);
 	}
 }

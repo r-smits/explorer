@@ -24,6 +24,12 @@ public:
 			const int& texindex
 	);
 
+	static void setVertexColor(
+			MTL::Buffer* vertexAttribBuffer,
+			MTL::Buffer* indices,
+			const int& indexCount,
+			const simd::float4& color
+	);
 };
 
 }; // namespace EXP

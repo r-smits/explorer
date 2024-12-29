@@ -71,6 +71,31 @@ MTL::Buffer* Renderer::Buffer::perPrimitive(
 };
 
 
+void Renderer::Buffer::setVertexColor(
+		MTL::Buffer* vertexAttribBuffer,
+		MTL::Buffer* indices,
+		const int& indexCount,
+		const simd::float4& color
+) {
+	Renderer::VertexAttributes* verAttribPtr = (Renderer::VertexAttributes*)vertexAttribBuffer->contents();
+	uint32_t* indexPtr = (uint32_t*)indices->contents();
+  	
+	for (int i = 0; i < indexCount / 3; i += 1) {
+
+		uint32_t vertAttribIndex1 = *(indexPtr + i * 3 + 0);
+		uint32_t vertAttribIndex2 = *(indexPtr + i * 3 + 1);
+		uint32_t vertAttribIndex3 = *(indexPtr + i * 3 + 2);
+
+		Renderer::VertexAttributes* vertAttrib1 = verAttribPtr + vertAttribIndex1;
+		Renderer::VertexAttributes* vertAttrib2 = verAttribPtr + vertAttribIndex2;
+		Renderer::VertexAttributes* vertAttrib3 = verAttribPtr + vertAttribIndex3;
+		
+		vertAttrib1->color = color;
+		vertAttrib2->color = color;
+		vertAttrib3->color = color;
+	}
+}
+
 	
 //primAttrib->txindex = txindex;
 

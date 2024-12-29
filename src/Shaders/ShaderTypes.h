@@ -43,6 +43,8 @@ struct Mesh
 	constant packed_float3* vertices;					// Vertices packed: XYZXYZ...
   constant VertexAttributes* attributes;		// Attributes of the vertices
 	constant Submesh* submeshes;							// Submeshes related to the mesh
+	float4x4 orientation;
+	int vertexCount;
 };
 
 struct Text2DSample {
@@ -57,12 +59,18 @@ struct Scene {
 	constant Text2DSample* textsample;
 	constant Text2DReadWrite* textreadwrite;
 	constant VCamera* vcamera;
+	constant Mesh* lights;
+	uint8_t lightsCount;
 };
 
 struct GBufferIds {
 	static constant uint8_t pos = 0;
 	static constant uint8_t norm = 1;
 	static constant uint8_t col = 2;
+};
+
+struct RestirIdx {
+	static constant uint8_t prev_frame = 0;
 };
 
 struct PrimFlagIds {

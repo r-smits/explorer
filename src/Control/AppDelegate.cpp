@@ -46,7 +46,7 @@ void EXP::AppDelegate::applicationDidFinishLaunching(NS::Notification* msg) {
   if (!device->supportsFamily(MTL::GPUFamily::GPUFamilyMetal3)) WARN("Metal 3 support required!");
   
 	// Set MTK::View defaults
-	mtkView->setPreferredFramesPerSecond((NS::Integer)120);
+	mtkView->setPreferredFramesPerSecond((NS::Integer)60);
 	mtkView->setEnableSetNeedsDisplay(true);
 	mtkView->setFramebufferOnly(false); // Needed for compute kernel shaders
 	mtkView->setPaused(false);
@@ -62,7 +62,7 @@ void EXP::AppDelegate::applicationDidFinishLaunching(NS::Notification* msg) {
 
   // Set NS::Window defaults
   this->window->setContentView(mtkView);
-  this->window->setTitle(NS::String::string("Window", NS::StringEncoding::UTF8StringEncoding));
+  this->window->setTitle(NS::String::string("EXPLORER", NS::StringEncoding::UTF8StringEncoding));
   this->window->makeKeyAndOrderFront(nullptr);
 
   NS::Application* app = reinterpret_cast<NS::Application*>(msg->object());

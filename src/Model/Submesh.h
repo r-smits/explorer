@@ -35,6 +35,7 @@ struct Submesh {
 
   const void setColor(const simd::float4& color);
   const void setEmissive(const bool& emissive);
+	const bool isEmissive();
 };
 
 }; // namespace MDL
