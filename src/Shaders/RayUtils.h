@@ -23,7 +23,7 @@ void build_ray(thread ray& r, constant VCamera* vcamera, uint2 gid) {
 	// Ray is modified by reference
 	r.origin = vcamera->vecOrigin;
 	r.direction = vecRayDir;
-	r.min_distance = 0.2f;						// Set to avoid self-occlusion
+	r.min_distance = 0.01f;						// Set to avoid self-occlusion
 	r.max_distance = FLT_MAX;
 }
 
@@ -40,8 +40,9 @@ bool shadow_ray(
 
 	if (intersection.type == intersection_type::triangle) {
 		const device PrimitiveAttributes* prim = (const device PrimitiveAttributes*) intersection.primitive_data;
-		float3 origin = r.origin + r.direction * intersection.distance;
-		if (prim->flags[1] || abs(distance(vec_light_origin, origin)) < 0.1) return true;
+		return prim->flags[1];	
+		// float3 origin = r.origin + r.direction * intersection.distance;
+		// if (prim->flags[1] || abs(distance(vec_light_origin, origin)) < 0.01) return true;
 	}
 	return false;
 }
@@ -83,7 +84,7 @@ bool color_ray(
 	intersector.assume_geometry_type(geometry_type::triangle);
 	intersection_result<instancing, triangle_data, world_space_data> intersection;
 	
-	float4 sky_color = float4(.2f, .3f, .4f, 1.0f);
+	float4 sky_color = float4(.3f, .4f, .5f, 1.0f);
 	float4 contribution = float4(1.0f, 1.0f, 1.0f, 1.0f);
 	
 	intersection = intersector.intersect(r, structure, 0xFF);
