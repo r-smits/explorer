@@ -20,7 +20,7 @@ Inputs:
 - Key inputs: look left/right with arrow keys.
 - Key inputs: T for rotating objects around Y axis.
 
-![restir_showcase](https://github.com/user-attachments/assets/0c057bdc-4f81-469c-baea-eebbe1e4b91c)
+![restir_showcase](https://github.com/r-smits/explorer/media/restir_showcase.gif)
 
 <img width="986" alt="Screenshot 2024-01-11 at 00 22 29" src="https://github.com/r-smits/explorer/assets/35615011/2813c38e-8732-4dfa-85bd-bfa26e86cf04" />
 <img width="985" alt="Screenshot 2024-01-18 at 22 56 11" src="https://github.com/r-smits/explorer/assets/35615011/639ff909-517e-4bdb-acc3-fa21a2d56479" />
