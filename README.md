@@ -22,10 +22,8 @@ Inputs:
 
 ![restir_showcase](https://github.com/user-attachments/assets/1e3335d7-809e-4436-a6c7-debdcee59a43)
 
-<img width="987" alt="Screenshot 2024-12-29 at 12 50 27" src="https://github.com/user-attachments/assets/7d64fcf1-1fd6-43e4-b1bf-cb0be87ad984" />
 <img width="986" alt="Screenshot 2024-01-11 at 00 22 29" src="https://github.com/r-smits/explorer/assets/35615011/2813c38e-8732-4dfa-85bd-bfa26e86cf04" />
 <img width="985" alt="Screenshot 2024-01-18 at 22 56 11" src="https://github.com/r-smits/explorer/assets/35615011/639ff909-517e-4bdb-acc3-fa21a2d56479" />
-<img width="977" alt="Screenshot 2024-01-28 at 20 29 57" src="https://github.com/r-smits/explorer/assets/35615011/fa288350-0306-4ac9-958c-2cca06754c6f" />
 
 To compile a binary:
 - Run cmake in the root directory of the project.
