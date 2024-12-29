@@ -13,7 +13,7 @@ EXP::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* config)
     : Layer(device->retain(), config), queue(device->newCommandQueue()) {
 	
 	MTL::Library* gbufferLib = Repository::Shaders::readLibrary(device, config->shaderPath + "GBuffer");
-	MTL::Library* temporalReuseLib = Repository::Shaders::readLibrary(device, config->shaderPath + "Temporal"); 
+	MTL::Library* temporalReuseLib = Repository::Shaders::readLibrary(device, config->shaderPath + "RESTIR"); 
   MTL::Library* raytraceLib = Repository::Shaders::readLibrary(device, config->shaderPath + "Raytracing");
 
 	MTL::Function* gbufferFn = gbufferLib->newFunction(EXP::nsString("g_buffer"));
@@ -38,10 +38,6 @@ EXP::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* config)
 
 void EXP::RayTraceLayer::buildModels(MTL::Device* device) {
 
-	// EXP::SCENE::addTexture(device, "wpositions", Renderer::TextureAccess::READ_WRITE);
-	// EXP::SCENE::addTexture(device, "wnormals", Renderer::TextureAccess::READ_WRITE);
-	// EXP::SCENE::addTexture(device, "colors", Renderer::TextureAccess::READ_WRITE);
-	
 	EXP::SCENE::addTexture(device, "reservoirs", Renderer::TextureAccess::READ_WRITE);
 	
 	EXP::SCENE::addModel(device, _vertexDescriptor, config->meshPath + "f16/f16", "f16");
@@ -101,7 +97,6 @@ void EXP::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* no
 	}
 	rebuildAccelerationStructures(view);
 
-
 	// ------------------------------ //
 	// GBuffer												//
 	// ------------------------------ //
@@ -129,7 +124,7 @@ void EXP::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* no
 	**/
 	
 	// ------------------------------ //
-	// Temporal Re-use								//
+	// Temporal Re-use RESTIR GI			//
 	// ------------------------------ //
 	MTL::CommandBuffer* temporalCommand = queue->commandBuffer();
 	MTL::ComputePassDescriptor* temporalDescriptor = MTL::ComputePassDescriptor::alloc()->init();
@@ -152,33 +147,5 @@ void EXP::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* no
 
 	temporalCommand->presentDrawable(view->currentDrawable());
 	temporalCommand->commit();
-
-	
-	// ------------------------------ //
-	// RT encoding										//
-	// ------------------------------ //
-	/**	
-	MTL::CommandBuffer* buffer = queue->commandBuffer();
-	MTL::ComputePassDescriptor* computePassDescriptor2 = MTL::ComputePassDescriptor::alloc()->init();
-	MTL::ComputeCommandEncoder* encoder = buffer->computeCommandEncoder(computePassDescriptor2);
-  
-	encoder->setComputePipelineState(this->_raytraceState);
-  encoder->setTexture(view->currentDrawable()->texture(), 0);
-	
-	encoder->useHeap(_heap);
-  encoder->setAccelerationStructure(_instanceAccStructure, 1);
-	
-	for (MTL::Resource* resource : EXP::SCENE::getResources()) {
-		encoder->useResource(resource, MTL::ResourceUsageRead);
-  }
-	
-	encoder->setBuffer(EXP::SCENE::getBindlessScene(), 0, 2);
-
-  encoder->dispatchThreads(_gridSize, _threadGroupSize);
-  encoder->endEncoding();
-
-  buffer->presentDrawable(view->currentDrawable());
-  buffer->commit();
-	**/
 
 }
