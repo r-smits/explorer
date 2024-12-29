@@ -23,27 +23,38 @@ void build_ray(thread ray& r, constant VCamera* vcamera, uint2 gid) {
 	// Ray is modified by reference
 	r.origin = vcamera->vecOrigin;
 	r.direction = vecRayDir;
-	r.min_distance = 0.2f;						// Set to avoid self-occlusion
+	r.min_distance = 0.1f;						// Set to avoid self-occlusion
 	r.max_distance = FLT_MAX;
 }
 
 
 bool shadow_ray(
-	ray r,
-	instance_acceleration_structure structure,
+	thread ray& s,
+	thread instance_acceleration_structure& structure,
+	float3 vec_to_light,
 	float3 vec_light_origin
 ) {
-	intersector<instancing, triangle_data> intersector;	
-	intersector.assume_geometry_type(geometry_type::triangle);
-	intersection_result<instancing, triangle_data> intersection;
-	intersection = intersector.intersect(r, structure, 0xFF);
+	bool result = false;
+	float prev_min_distance = s.min_distance;
+	float3 prev_direction = s.direction;
 
-	if (intersection.type == intersection_type::triangle) {
-		const device PrimitiveAttributes* prim = (const device PrimitiveAttributes*) intersection.primitive_data;
-		float3 origin = r.origin + r.direction * intersection.distance;
-		if (prim->flags[1] || abs(distance(vec_light_origin, origin)) < 0.1) return true;
+	s.min_distance = 0.001f;						// Set to avoid self-occlusion
+	s.direction = vec_to_light;
+
+	intersector<instancing, triangle_data> shadow_intersector;	
+	shadow_intersector.assume_geometry_type(geometry_type::triangle);
+	intersection_result<instancing, triangle_data> shadow_intersection;
+	shadow_intersection = shadow_intersector.intersect(s, structure, 0xFF);
+
+	if (shadow_intersection.type == intersection_type::triangle) {
+		// const device PrimitiveAttributes* prim = (const device PrimitiveAttributes*) shadow_intersection.primitive_data;
+		float3 origin = s.origin + s.direction * shadow_intersection.distance;
+		result = (abs(distance(vec_light_origin, origin)) < 0.001);
 	}
-	return false;
+
+	s.min_distance = prev_min_distance;
+	s.direction = prev_direction;
+	return result;
 }
 
 
@@ -83,7 +94,7 @@ bool color_ray(
 	intersector.assume_geometry_type(geometry_type::triangle);
 	intersection_result<instancing, triangle_data, world_space_data> intersection;
 	
-	float4 sky_color = float4(.2f, .3f, .4f, 1.0f);
+	float4 sky_color = float4(.3f, .4f, .5f, 1.0f);
 	float4 contribution = float4(1.0f, 1.0f, 1.0f, 1.0f);
 	
 	intersection = intersector.intersect(r, structure, 0xFF);
@@ -116,12 +127,13 @@ bool color_ray(
 	float2 txcoord = (prim->txcoord[0] * bary_3d.x) + (prim->txcoord[1] * bary_3d.y) + (prim->txcoord[2] * bary_3d.z);
 	float4 wo_color = scene->textsample[prim->flags[0]].value.sample(sampler2d, txcoord) + prim->color[0];
 	
-	color += contribution * wo_color * wi_dot_n;
+	color += contribution * wo_color;
+	if (!light) color *= wi_dot_n;
 	light = prim->flags[1];
 	return !light;
 }
 
-
+/**
 float4 transport_ray_x(
 	thread ray& r,
 	thread instance_acceleration_structure& structure,
@@ -190,7 +202,7 @@ float4 transport_ray_x(
 	color += contribution * sky_color;
 	return visible;
 }
-
+**/
 
 void update_reservoir(
 	thread float4& reservoir, 

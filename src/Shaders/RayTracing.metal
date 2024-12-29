@@ -86,21 +86,19 @@ void computeKernel(
 	// Figure out how to get previous gid compared to the next
 	float gid_x = gid.x;
 	float gid_y = gid.y;
-	float4 gid_color = float4(gid.x / 2000, gid.y / 1400, .0f, .0f);
+	float4 gid_color = float4(gid_x / 2000, gid_y / 1400, .0f, .0f);
 	buffer.write(gid_color, gid);
 	return;
 	**/
-	
-	float4 gid_color = float4(gid.x / 2000, gid.y / 1400, .0f, .0f);
 
-	// In case you want to use a gbuffer
-	// float4 gcolor = scene->textreadwrite[GBufferIds::col].value.read(gid);
-	// float3 gnormal = scene->textreadwrite[GBufferIds::norm].value.read(gid).xyz;
-	// float3 gposition = scene->textreadwrite[GBufferIds::pos].value.read(gid).xyz;
-	
 	// Check if instance acceleration structure was built succesfully
-	if (is_null_instance_acceleration_structure(structure)) {
-		buffer.write(gid_color, gid);
+	float4 gcolor = scene->textreadwrite[GBufferIds::col].value.read(gid);
+	float3 gnormal = scene->textreadwrite[GBufferIds::norm].value.read(gid).xyz;
+	float3 gposition = scene->textreadwrite[GBufferIds::pos].value.read(gid).xyz;
+	
+	// Check if value is normalized or not. If not, there's no intersection.
+	if (vsum(gnormal) > 2 || is_null_instance_acceleration_structure(structure)) {
+		buffer.write(gcolor, gid);
 		return;
 	}
 	
@@ -125,6 +123,7 @@ void computeKernel(
 	r.max_distance = FLT_MAX;
 	ray x;
 	
+	
 	build_ray(r, scene->vcamera, gid);
 	x = r;
 
@@ -132,7 +131,7 @@ void computeKernel(
 	float3 normal = float(0.0f);
 	// Shoot initial ray from the camera into the scene. 
 	// This will set the ray, color and seed by reference.
-	transport(x, structure, scene, gid, bounces, color, seed, true, normal, terminate_flag, false);
+	transport(x, structure, scene, gid, bounces, color, seed, true, gnormal, terminate_flag, false);
 
 	if (terminate_flag) {
 		buffer.write(color, gid);
@@ -152,7 +151,7 @@ void computeKernel(
 		float4 sample_color = float4(0.0f, 0.0f, 0.0f, 0.0f);
 		x.direction = pdf_sample;
 		x.origin = r.origin;
-		transport(x, structure, scene, gid, bounces, sample_color, seed, true, normal, terminate_flag, true);
+		transport(x, structure, scene, gid, bounces, sample_color, seed, true, gnormal, terminate_flag, true);
 		float pdf_weight = intensity(sample_color);
 
 		// 3. Build the complex pdf to re-sample the samples from.
@@ -168,7 +167,7 @@ void computeKernel(
 	// r1
 	r.direction = r1.y;
 	float4 sample_color = float4(0.0f);
-	transport(r, structure, scene, gid, bounces, sample_color, seed, true, normal, terminate_flag, true);
+	transport(r, structure, scene, gid, bounces, sample_color, seed, true, gnormal, terminate_flag, true);
 	
 	float r1_norm_weight = average_weight_samples / r1.w; // intensity(sample_color); <- Should be this but minimal difference
 
