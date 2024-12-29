@@ -29,11 +29,11 @@ float3 uniform_pdf(thread uint32_t& seed) {
 }
 
 // Cosine: decrease light intensity based on the angle between the normal and outgoing light direction (wi).
-float cos(
+float lambertian(
 	thread float3& wi,
 	thread float3& normal
 ) {
-	return max(0.001, saturate(dot(wi, normal)));
+	return max(0.001, saturate(dot(normalize(wi), normal)));
 }
 
 // Inverse square: light intensity inversely proportional to distance.
@@ -42,7 +42,7 @@ float cos_inverse_square(
 	thread float3& wi, 
 	thread float3& normal
 ) {
-	float cosine = cos(wi, normal);
+	float cosine = lambertian(wi, normal);
 	float result = cosine / abs(distance * distance);
 	return result;
 }
@@ -57,6 +57,28 @@ float intensity(
 	thread float4& vector
 ) {
 	return (vector.x + vector.y + vector.z) / 3;
+}
+
+float intensity(
+	thread float3& vector
+) {
+	return (vector.x + vector.y + vector.z) / 3;
+}
+
+float vsum(thread float3& vector) {
+	return vector.r + vector.g + vector.b;
+}
+
+float vsum(float4 vector) {
+	return vector.r + vector.g + vector.b + vector.a;
+}
+
+float4 compare(float3 vec1, float3 vec2) {
+	if (distance(vec1, vec2) < 0.01) {
+		return float4(.0f, 1.0f, .0f, .0f);	
+	} else {
+		return float4(1.0f, .0f, .0f, .0f);
+	}
 }
 
 // Struct required for reservoir sampling

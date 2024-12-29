@@ -55,7 +55,7 @@
     MTKTextureLoaderOptionTextureUsage : @(MTLTextureUsageShaderRead),
     MTKTextureLoaderOptionTextureStorageMode : @(MTLStorageModePrivate),
     MTKTextureLoaderOptionOrigin : MTKTextureLoaderOriginBottomLeft,
-    MTKTextureLoaderOptionGenerateMipmaps : @true
+    MTKTextureLoaderOptionGenerateMipmaps : @true,
   };
 	
 	NSError* err = nil;
@@ -65,12 +65,12 @@
 			std::string filename = [[property.URLValue relativeString] UTF8String];
 			filename = filename.substr(filename.find_last_of("/")+1);
 			
-			MDLTextureSampler* sampler = [property textureSamplerValue];
 			MDLTexture* texture = [property textureSamplerValue].texture;
 			id<MTLTexture> mtlTexture = [loader newTextureWithMDLTexture:texture options:options error:&err];
 
 			if (err) EXP::printError((__bridge NS::Error*)err);
 			MTL::Texture* resultTexture = (__bridge MTL::Texture*)mtlTexture;
+			DEBUG(std::to_string(resultTexture->pixelFormat()));
 			return {filename, Renderer::TextureAccess::SAMPLE, resultTexture};
 		}
 	}

@@ -28,6 +28,9 @@ class SCENE {
 	static inline int textsampleCounter = -1;
 	static inline int textreadwriteCounter = -1;
 
+	static inline std::vector<EXP::MDL::Mesh*> lights = {};
+	static inline MTL::Buffer* lightsBuffer = nullptr;
+
 public:
 	SCENE(){};
   ~SCENE(){};
@@ -60,6 +63,7 @@ public:
 	static MTL::Buffer* buildTextSampleBuffer(MTL::Device* device);
 	static MTL::Buffer* buildTextReadWriteBuffer(MTL::Device* device);
 	static MTL::Buffer* buildVCameraBuffer(MTL::Device* device);
+	static MTL::Buffer* buildLightsBuffer(MTL::Device* device);
 
 
 

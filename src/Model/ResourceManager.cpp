@@ -1,6 +1,7 @@
 #include "Log/Logger.h"
 #include "Metal/MTLResource.hpp"
 #include "Model/Camera.h"
+#include "Model/Mesh.h"
 #include "Renderer/Types.h"
 #include <Model/ResourceManager.h>
 
@@ -62,7 +63,7 @@ const int& SCENE::addTexture(const Renderer::Texture& texture) {
 
 const int& SCENE::addTexture(MTL::Device* device, const std::string& name, const Renderer::TextureAccess& access) {
 	MTL::TextureDescriptor* textureDescriptor = MTL::TextureDescriptor::texture2DDescriptor(
-			MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB, 
+			MTL::PixelFormat::PixelFormatRGBA16Float,
 			2000, 
 			1400, 
 			false
@@ -147,6 +148,46 @@ MTL::Buffer* SCENE::buildVCameraBuffer(MTL::Device* device) {
 	return vcameraBuffer;
 };
 
+MTL::Buffer* SCENE::buildLightsBuffer(MTL::Device* device) {
+	
+	for (EXP::Model* model: SCENE::models) {
+		if (model->isEmissive()) {
+			DEBUG("Found emissive model.");
+			for (EXP::MDL::Mesh* mesh : model->meshes) {
+				SCENE::lights.emplace_back(mesh);
+			}
+		}
+	}
+
+	SCENE::lightsBuffer = device->newBuffer(sizeof(Renderer::Mesh) * lights.size(), MTL::ResourceStorageModeShared);
+  resources.emplace_back(lightsBuffer);
+	DEBUG("Number of lights: " + std::to_string(lights.size()));	
+	for (int i = 0; i < lights.size(); i++) {
+		Renderer::Mesh* gpuMesh = (Renderer::Mesh*)lightsBuffer->contents() + i;
+		EXP::MDL::Mesh* cpuMesh = SCENE::lights[i];
+		gpuMesh->vertices = cpuMesh->buffers[0]->gpuAddress() + cpuMesh->offsets[0];
+		gpuMesh->attributes = cpuMesh->buffers[1]->gpuAddress() + cpuMesh->offsets[1];
+		gpuMesh->orientation = cpuMesh->f4x4()->get();
+		gpuMesh->vertexCount = cpuMesh->vertexCount;
+		DEBUG("vertex count: " + std::to_string(cpuMesh->vertexCount));
+		resources.emplace_back(cpuMesh->buffers[0]);
+		resources.emplace_back(cpuMesh->buffers[1]);
+
+		DEBUG("Number of submeshes: " + std::to_string(lights[i]->submeshes.size()));
+		int submeshBufferSize = sizeof(Renderer::Submesh) * lights[i]->submeshes.size();
+		MTL::Buffer* submeshBuffer = device->newBuffer(submeshBufferSize, MTL::ResourceStorageModeShared);
+		resources.emplace_back(submeshBuffer);
+		for (int k = 0; k < lights[i]->submeshes.size(); k++) {
+			Renderer::Submesh* gpuSubmesh = (Renderer::Submesh*)submeshBuffer->contents() + k;
+			EXP::MDL::Submesh* cpuSubmesh = cpuMesh->submeshes[k];
+			gpuSubmesh->indices = cpuSubmesh->indexBuffer->gpuAddress() + cpuSubmesh->offset;
+			resources.emplace_back(cpuSubmesh->indexBuffer);
+		}
+		gpuMesh->submeshes = submeshBuffer->gpuAddress();
+	}
+	return lightsBuffer;
+};
+
 
 const void SCENE::buildBindlessScene(MTL::Device* device) {
 	vcamera = new VCamera();
@@ -156,6 +197,8 @@ const void SCENE::buildBindlessScene(MTL::Device* device) {
 	gpuScene->textsample = SCENE::buildTextSampleBuffer(device)->gpuAddress();
 	gpuScene->textreadwrite = SCENE::buildTextReadWriteBuffer(device)->gpuAddress();
 	gpuScene->vcamera = SCENE::buildVCameraBuffer(device)->gpuAddress();
+	gpuScene->lights = SCENE::buildLightsBuffer(device)->gpuAddress();
+	gpuScene->lightsCount = SCENE::lights.size();
 };
 
 
@@ -165,5 +208,10 @@ const void SCENE::updateBindlessScene(MTL::Device* device) {
 	vcameraPtr->vecOrigin = updatedVCamera.vecOrigin;
 	vcameraPtr->resolution = updatedVCamera.resolution;
 	vcameraPtr->orientation = updatedVCamera.orientation;
-}
+
+	Renderer::Mesh* meshPtr = (Renderer::Mesh*)lightsBuffer->contents();
+	for (int i = 0; i < SCENE::lights.size(); i += 1) {
+		(meshPtr + i)->orientation = SCENE::lights[i]->f4x4()->get();
+	}
+};
 

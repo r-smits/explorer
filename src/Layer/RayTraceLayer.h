@@ -32,6 +32,7 @@ private:
   MTL::Device* device;
 	MTL::Function* _kernelFn;
 	MTL::ComputePipelineState* _gbufferState;
+	MTL::ComputePipelineState* _temporalReuseState;
   MTL::ComputePipelineState* _raytraceState;
 
 private:

@@ -1,3 +1,4 @@
+#include "Renderer/Types.h"
 #include <Model/Mesh.h>
 
 EXP::MDL::Mesh::Mesh(
@@ -44,6 +45,20 @@ const void EXP::MDL::Mesh::setColor(const simd::float4& color) {
   for (EXP::MDL::Submesh* submesh : this->submeshes) {
     submesh->setColor(color);
   }
+
+	EXP::print(color);
+	
+	Renderer::VertexAttributes* verAttribPtr = (Renderer::VertexAttributes*)this->buffers[1]->contents();
+		
+	DEBUG("Verifying whether size of buffer is equal to expected vertex count.");
+	assert (this->vertexCount == this->buffers[1]->length() / sizeof(Renderer::VertexAttributes));
+  	
+	for (int i = 0; i < this->vertexCount; i += 1) {
+		Renderer::VertexAttributes* vertAttrib1 = verAttribPtr + i;
+		vertAttrib1->color = {color.x, color.y, color.z, color.w};
+	}
+
+	EXP::print((verAttribPtr + this->vertexCount-1)->color);
 }
 
 /**

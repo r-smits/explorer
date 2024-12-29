@@ -71,11 +71,15 @@ public:
   EXP::Model* setEmissive(const bool& emissive) {
     for (EXP::MDL::Mesh* mesh : this->meshes) {
       for (EXP::MDL::Submesh* submesh : mesh->getSubmeshes()) {
-				submesh->setEmissive(true);
+				submesh->setEmissive(emissive);
       }
     }
     return this;
   }
+
+	const bool isEmissive() {
+		return this->meshes[0]->getSubmeshes()[0]->isEmissive();
+	}
 
   const simd::float4x4& get() { 
 		return this->meshes[0]->get();

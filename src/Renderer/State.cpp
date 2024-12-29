@@ -22,6 +22,7 @@ MTL::ComputePipelineState* Renderer::State::compute(MTL::Device* device, std::st
 
 MTL::ComputePipelineState* Renderer::State::Compute(MTL::Device* device, MTL::Function* fn) {
   NS::Error* error = nullptr;
+	DEBUG("Setting up a state.");
 	MTL::ComputePipelineState* state = device->newComputePipelineState(fn, &error);
   if (!state) EXP::printError(error);
 	return state;

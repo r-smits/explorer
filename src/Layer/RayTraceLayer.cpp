@@ -1,5 +1,6 @@
 #include "Math/Transformation.h"
 #include "Metal/MTLCommandBuffer.hpp"
+#include "Metal/MTLCommandEncoder.hpp"
 #include "Metal/MTLComputePass.hpp"
 #include "Renderer/Types.h"
 #include <DB/Repository.hpp>
@@ -12,12 +13,15 @@ EXP::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* config)
     : Layer(device->retain(), config), queue(device->newCommandQueue()) {
 	
 	MTL::Library* gbufferLib = Repository::Shaders::readLibrary(device, config->shaderPath + "GBuffer");
+	MTL::Library* temporalReuseLib = Repository::Shaders::readLibrary(device, config->shaderPath + "Temporal"); 
   MTL::Library* raytraceLib = Repository::Shaders::readLibrary(device, config->shaderPath + "Raytracing");
 
 	MTL::Function* gbufferFn = gbufferLib->newFunction(EXP::nsString("g_buffer"));
+	MTL::Function* temporalReuseFn = temporalReuseLib->newFunction(EXP::nsString("temporal_reuse"));
 	this->_kernelFn = raytraceLib->newFunction(EXP::nsString("computeKernel"));
 
 	this->_gbufferState = Renderer::State::Compute(device, gbufferFn);
+	this->_temporalReuseState = Renderer::State::Compute(device, temporalReuseFn);
   this->_raytraceState = Renderer::State::Compute(device, _kernelFn);
 
   this->_vertexDescriptor = Renderer::Descriptor::vertex(device, Renderer::Layouts::vertexNIP);
@@ -34,9 +38,11 @@ EXP::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* config)
 
 void EXP::RayTraceLayer::buildModels(MTL::Device* device) {
 
-	EXP::SCENE::addTexture(device, "wpositions", Renderer::TextureAccess::READ_WRITE);
-	EXP::SCENE::addTexture(device, "wnormals", Renderer::TextureAccess::READ_WRITE);
-	EXP::SCENE::addTexture(device, "colors", Renderer::TextureAccess::READ_WRITE);
+	// EXP::SCENE::addTexture(device, "wpositions", Renderer::TextureAccess::READ_WRITE);
+	// EXP::SCENE::addTexture(device, "wnormals", Renderer::TextureAccess::READ_WRITE);
+	// EXP::SCENE::addTexture(device, "colors", Renderer::TextureAccess::READ_WRITE);
+	
+	EXP::SCENE::addTexture(device, "reservoirs", Renderer::TextureAccess::READ_WRITE);
 	
 	EXP::SCENE::addModel(device, _vertexDescriptor, config->meshPath + "f16/f16", "f16");
 	EXP::SCENE::addModel(device, _vertexDescriptor, config->meshPath + "sphere/sphere", "sphere1");
@@ -47,8 +53,9 @@ void EXP::RayTraceLayer::buildModels(MTL::Device* device) {
 	EXP::Model* sphere2 = EXP::SCENE::getModel("sphere2");
 
 	f16->move({0.0f, 0.0f, 0.0f});
-	sphere1->setEmissive(true)->setColor({10.0f, 10.0f, 0.0f, 0.0f})->scale(.3f)->move({-.2f, .5f, .3f});
-	sphere2->setColor({0.0f, 1.0f, 0.0f, 1.0f})->scale(.2f)->move({-.2f, .5f, -.3f});
+	
+	sphere1->setEmissive(true)->setColor({10.0f, 10.0f, 3.0f, .0f})->scale(.2f)->move({-.3f, .6f, .1f});
+	sphere2->setColor({0.0f, 1.0f, 0.0f, 1.0f})->scale(.25f)->move({-.2f, .3f, -.3f});
 
 	EXP::SCENE::buildBindlessScene(device);
 	EXP::SCENE::getCamera()->setIsometric();
@@ -86,7 +93,7 @@ void EXP::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* no
 	// Update camera part of the bindless scene
 	EXP::SCENE::updateBindlessScene(view->device());
 
-	// Scene action
+	// Scene action & update acceleration structure
 	if (IO::isPressed(KEY_T)) { 
 		for (Model* model : EXP::SCENE::getModels()) {
 			model->rotate(EXP::MATH::yRotation(-1.0f));
@@ -98,6 +105,7 @@ void EXP::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* no
 	// ------------------------------ //
 	// GBuffer												//
 	// ------------------------------ //
+	/**	
 	MTL::CommandBuffer* gbufferCommand = queue->commandBuffer();
 	MTL::ComputePassDescriptor* gbufferDescriptor = MTL::ComputePassDescriptor::alloc()->init();
 	MTL::ComputeCommandEncoder* gbufferEncoder = gbufferCommand->computeCommandEncoder(gbufferDescriptor);
@@ -110,7 +118,7 @@ void EXP::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* no
 	gbufferEncoder->setBuffer(EXP::SCENE::getBindlessScene(), 0, 2);
 
 	for (MTL::Resource* resource : EXP::SCENE::getResources()) {
-		gbufferEncoder->useResource(resource, MTL::ResourceUsageSample);
+		gbufferEncoder->useResource(resource, MTL::ResourceUsageWrite);
   }
 
 	gbufferEncoder->dispatchThreads(_gridSize, _threadGroupSize);
@@ -118,17 +126,43 @@ void EXP::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* no
 
 	// gbufferCommand->presentDrawable(view->currentDrawable());
 	gbufferCommand->commit();
+	**/
 	
+	// ------------------------------ //
+	// Temporal Re-use								//
+	// ------------------------------ //
+	MTL::CommandBuffer* temporalCommand = queue->commandBuffer();
+	MTL::ComputePassDescriptor* temporalDescriptor = MTL::ComputePassDescriptor::alloc()->init();
+	MTL::ComputeCommandEncoder* temporalEncoder = temporalCommand->computeCommandEncoder(temporalDescriptor);
+	
+	temporalEncoder->setComputePipelineState(this->_temporalReuseState);
+	temporalEncoder->setTexture(view->currentDrawable()->texture(), 0);
+	
+	temporalEncoder->useHeap(_heap);
+	temporalEncoder->setAccelerationStructure(_instanceAccStructure, 1);	
+	
+	for (MTL::Resource* resource : EXP::SCENE::getResources()) {
+		temporalEncoder->useResource(resource, MTL::ResourceUsageRead);
+  }
+	
+	temporalEncoder->setBuffer(EXP::SCENE::getBindlessScene(), 0, 2);
+
+	temporalEncoder->dispatchThreads(_gridSize, _threadGroupSize);
+	temporalEncoder->endEncoding();
+
+	temporalCommand->presentDrawable(view->currentDrawable());
+	temporalCommand->commit();
+
 	
 	// ------------------------------ //
 	// RT encoding										//
 	// ------------------------------ //
+	/**	
 	MTL::CommandBuffer* buffer = queue->commandBuffer();
 	MTL::ComputePassDescriptor* computePassDescriptor2 = MTL::ComputePassDescriptor::alloc()->init();
 	MTL::ComputeCommandEncoder* encoder = buffer->computeCommandEncoder(computePassDescriptor2);
   
 	encoder->setComputePipelineState(this->_raytraceState);
-
   encoder->setTexture(view->currentDrawable()->texture(), 0);
 	
 	encoder->useHeap(_heap);
@@ -145,5 +179,6 @@ void EXP::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* no
 
   buffer->presentDrawable(view->currentDrawable());
   buffer->commit();
+	**/
 
 }

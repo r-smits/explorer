@@ -95,6 +95,8 @@ struct Mesh {
   uint64_t vertices;						// Vertices packed: XYZXYZ...
   uint64_t attributes;					// Attributes of the vertices. See shader for data types
   uint64_t submeshes;						// Submeshes related to the mesh
+	simd::float4x4 orientation;
+	int vertexCount;
 };
 
 struct Text2D {
@@ -105,6 +107,8 @@ struct Scene {
 	uint64_t textsample;
 	uint64_t textreadwrite;
 	uint64_t vcamera;
+	uint64_t lights;
+	uint8_t lightsCount;
 };
 
 }; // namespace Renderer
