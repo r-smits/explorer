@@ -275,4 +275,3 @@ void temporal_reuse(
 	buffer.write(indirect_color + shade_color, tid);
 }
 
-
