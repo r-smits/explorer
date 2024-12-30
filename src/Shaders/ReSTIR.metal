@@ -24,7 +24,7 @@ float4 transport_ray(
 	
 	// Contribution is set to color because it will continue from previous light transport.
 	float4 contribution = float(1.0f);
-	float4 sky_color = float4(.2f, .3f, .4f, 1.0f);
+	float4 sky_color = float4(.3f, .4f, .5f, 1.0f);
 	float4 color = float4(.0f);
 	float3 normal = float3(.0f);
 	
@@ -41,6 +41,7 @@ float4 transport_ray(
 		
 		// If our ray does not hit, terminate early.
 		if (intersection.type == intersection_type::none) { 
+			// return float4(1.0f, .0f, .0f, .0f);	
 			color += contribution * visible * sky_color;
 			return color;
 		}
@@ -70,14 +71,18 @@ float4 transport_ray(
 		// Sampling light and assessing shadow ray visibility
 		float light_index = float(min(int(rand(seed) * scene->lights[0].vertexCount), scene->lights[0].vertexCount-1));
 		sample_light(scene, light_index, r.origin, vec_light_origin, vec_to_light, light_color, distance_to_light);
-		
+		float l_dot_n = lambertian(vec_to_light, normal); 
+
 		direction = r.direction;
 		r.direction = vec_to_light;
 		visible = shadow_ray(r, structure, vec_light_origin);
 		r.direction = direction;
-
-		contribution *= visible * wo_color * light_color * wi_dot_n / M_PI_F;
+		
+		//return light_color * l_dot_n;
+		// return float4(vec_to_light, 1.0f);	
+		contribution = (prim->flags[1] * prim->color[0]) + visible * contribution * wo_color * light_color * l_dot_n / M_PI_F;
 	}
+
 	color += contribution * sky_color;
 	return color;
 }
@@ -182,14 +187,15 @@ void temporal_reuse(
 	//	Indirect Illumination									//
 	//	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	//
 	
-	r.direction = rand_hemisphere(seed, vec_normal);
-	float n_dot_l = saturate(dot(vec_normal, r.direction));
+	r.direction = r.direction + rand_hemisphere(seed, vec_normal) * .01;
+	// float3 jittered_normal = normalize(vec_normal + uniform_pdf(seed) * .005);
+	// r.direction = jittered_normal;
+	float n_dot_l = lambertian(r.direction, vec_normal);
 	float sample_probability = 1.0f / (2.0f * M_PI_F);
-	
-	float4 indirect_color = transport_ray(r, structure, scene, tid, 2, seed);
-	indirect_color = float4((n_dot_l * indirect_color.xyz * color.xyz / M_PI_F / sample_probability), 1.f);
 
-	buffer.write(shade_color + indirect_color, tid);
+	float4 indirect_color = transport_ray(r, structure, scene, tid, 5, seed);
+	indirect_color = float4((n_dot_l * indirect_color.xyz * color.xyz / M_PI_F / sample_probability), 1.f);
+	buffer.write(shade_color * indirect_color, tid);
 }
 
 

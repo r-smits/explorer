@@ -50,7 +50,7 @@ void EXP::RayTraceLayer::buildModels(MTL::Device* device) {
 
 	f16->move({0.0f, 0.0f, 0.0f});
 	
-	sphere1->setEmissive(true)->setColor({10.0f, 10.0f, 3.0f, .0f})->scale(.2f)->move({-.3f, .6f, .1f});
+	sphere1->setEmissive(true)->setColor({10.0f, 10.0f, 7.0f, .0f})->scale(.2f)->move({-.3f, .6f, .1f});
 	sphere2->setColor({0.0f, 1.0f, 0.0f, 1.0f})->scale(.25f)->move({-.2f, .3f, -.3f});
 
 	EXP::SCENE::buildBindlessScene(device);
