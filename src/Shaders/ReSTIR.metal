@@ -267,11 +267,12 @@ void temporal_reuse(
 	//	Indirect Illumination									//
 	//	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	//
 	
-	//r.direction = r.direction + rand_hemisphere(seed, vec_normal) * .05;
+	r.direction = rand_hemisphere(seed, vec_normal);
 	float sample_probability = 1.0f / (2.0f * M_PI_F);
+	float n_dot_l = lambertian(r.direction, vec_normal);
 	
 	float4 indirect_color = transport_ray(r, structure, scene, tid, 1, seed);
-	indirect_color = float4(l_dot_n * indirect_color.rgb * color.rgb / M_PI_F / sample_probability, 1.f);
+	indirect_color = float4(n_dot_l * indirect_color.rgb * color.rgb / M_PI_F / sample_probability, 1.f);
 	buffer.write(indirect_color + shade_color, tid);
 }
 
