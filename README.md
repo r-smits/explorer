@@ -21,14 +21,3 @@ Inputs:
 - Key inputs: T for rotating objects around Y axis.
 - 
 ![restir_showcase](https://github.com/user-attachments/assets/d6c316aa-aa8b-486a-a651-a847b9f02bb3)
-<img width="986" alt="Screenshot 2024-01-11 at 00 22 29" src="https://github.com/r-smits/explorer/assets/35615011/2813c38e-8732-4dfa-85bd-bfa26e86cf04" />
-<img width="985" alt="Screenshot 2024-01-18 at 22 56 11" src="https://github.com/r-smits/explorer/assets/35615011/639ff909-517e-4bdb-acc3-fa21a2d56479" />
-
-To compile a binary:
-- Run cmake in the root directory of the project.
-- Alternatively, use the build script, ./build.sh.
-
-Controls:
-- Use the W, A, S, D keys to rotate the .obj file.
-
-
