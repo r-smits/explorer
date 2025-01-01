@@ -206,34 +206,32 @@ void temporal_reuse(
 	float distance_to_light = float(0.0f);
 	float l_dot_n = float(0.0f);
 	float light_index = float(.0f);
-	float p_hat_weight = float(0.0f);
+	float uniform_pdf_sample = 1; 1 / scene->lights[0].vertexCount;
+	float complex_pdf_sample = float(0.0f);
 	float prev_p_hat_weight = float(0.0f);
 	float3 vec_ray_direction = float3(.0f);
 	float3 vec_to_light = float3(.0f);
 	float4 vec_light_col = float4(.0f);
 	float3 vec_world_light_pos = float3(0.0f);
 	
-	for (int i = 0; i < min(int(scene->lightsCount), 32); i += 1) {
+	for (int i = 0; i < min(int(scene->lights[0].vertexCount), 32); i += 1) {
 		
-		// Generating light indices
 		// TODO: create a new abstraction with: (a) vertex attributes, (b) vertices, (c) total vertex count
 		// TODO: generate a single number to randomly choose a light and position to sample.
-		// int light_sample_index = min(int(rand(seed) * scene->lightsCount), int(scene->lightsCount-1));
-		int vertex_count = scene->lights[0].vertexCount;
 		float light_index = float(min(int(rand(seed) * scene->lights[0].vertexCount), scene->lights[0].vertexCount-1));
-	
+
 		// Update reservoir as a float4
 		sample_light(scene, light_index, r.origin, vec_world_light_pos, vec_to_light, vec_light_col, distance_to_light);
 		l_dot_n = lambertian(vec_to_light, vec_normal); 
-		p_hat_weight = length(color.xyz / M_PI_F * vec_light_col.xyz * l_dot_n / distance_to_light);
-		update_reservoir(curr_reservoir, light_index, p_hat_weight, seed); 
+		complex_pdf_sample = length(color.xyz / M_PI_F * vec_light_col.xyz * l_dot_n / distance_to_light) / uniform_pdf_sample;
+		update_reservoir(curr_reservoir, light_index, complex_pdf_sample, seed); 
 	}
 	
 	// Retrieve final selected weight
 	sample_light(scene, curr_reservoir.y, r.origin, vec_world_light_pos, vec_to_light, vec_light_col, distance_to_light);
 	l_dot_n = lambertian(vec_to_light, vec_normal); 
-	p_hat_weight = length(color.xyz / M_PI_F * vec_light_col.xyz * l_dot_n / distance_to_light);
-	curr_reservoir.w = (1.f / max(p_hat_weight, 0.0001f)) * (curr_reservoir.x / max(curr_reservoir.z, 0.0001f));
+	complex_pdf_sample = length(color.xyz / M_PI_F * vec_light_col.xyz * l_dot_n / distance_to_light) / uniform_pdf_sample;
+	curr_reservoir.w = (1.f / max(complex_pdf_sample, 0.0001f)) * (curr_reservoir.x / max(curr_reservoir.z, 0.0001f));
 
 	// Shadow ray for current reservoir
 	bool visible = shadow_ray(r, structure, vec_to_light, vec_world_light_pos);
@@ -241,13 +239,13 @@ void temporal_reuse(
 
 	// Add current reservoir to combined reservoir 
 	float4 combined_reservoir = float4(.0f);
-	update_reservoir(combined_reservoir, curr_reservoir.y, p_hat_weight * curr_reservoir.w * curr_reservoir.z, seed);
+	update_reservoir(combined_reservoir, curr_reservoir.y, complex_pdf_sample * curr_reservoir.w * curr_reservoir.z, seed);
 	
 	// Add previous reservoir to combined reservoir
 	float4 prev_reservoir = scene->textreadwrite[RestirIdx::prev_frame].value.read(tid);
 	sample_light(scene, prev_reservoir.y, r.origin, vec_world_light_pos, vec_to_light, vec_light_col, distance_to_light);
 	l_dot_n = lambertian(vec_to_light, vec_normal); 
-	prev_p_hat_weight = length(color.xyz / M_PI_F * vec_light_col.xyz * l_dot_n / distance_to_light);
+	prev_p_hat_weight = length(color.xyz / M_PI_F * vec_light_col.xyz * l_dot_n / distance_to_light) / uniform_pdf_sample;
 	prev_reservoir.z = min(20.f * curr_reservoir.z, prev_reservoir.z);
 	update_reservoir(combined_reservoir, prev_reservoir.y, prev_p_hat_weight * prev_reservoir.w * prev_reservoir.z, seed);
 	
@@ -255,18 +253,21 @@ void temporal_reuse(
 	combined_reservoir.z = curr_reservoir.z + prev_reservoir.z;
 	sample_light(scene, combined_reservoir.y, r.origin, vec_world_light_pos, vec_to_light, vec_light_col, distance_to_light);
 	l_dot_n = lambertian(vec_to_light, vec_normal); 
-	p_hat_weight = length(color.xyz / M_PI_F * vec_light_col.xyz * l_dot_n / distance_to_light);
-	combined_reservoir.w = (1.f / max(p_hat_weight, 0.0001f)) * (combined_reservoir.x / max(combined_reservoir.z, 0.0001f));
+	complex_pdf_sample = length(color.xyz / M_PI_F * vec_light_col.xyz * l_dot_n / distance_to_light) / uniform_pdf_sample;
+	combined_reservoir.w = (1.f / max(complex_pdf_sample, 0.0001f)) * (combined_reservoir.x / max(combined_reservoir.z, 0.0001f));
 	
 	// Shadow ray for combined reservoir	
 	visible = shadow_ray(r, structure, vec_to_light, vec_world_light_pos);
 	scene->textreadwrite[RestirIdx::prev_frame].value.write(combined_reservoir, tid);
-	float4 shade_color = float4(visible * combined_reservoir.w * l_dot_n * vec_light_col.xyz * color.rgb / M_PI_F, 1.f);
+
+	float4 shade_color = 
+		float4(color.xyz / M_PI_F * vec_light_col.xyz * l_dot_n / distance_to_light * visible * combined_reservoir.w, 1.f);
 	
 	//	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	//
 	//	Indirect Illumination									//
 	//	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	//
 	
+	// r.direction = r.direction + rand_hemisphere(seed, vec_normal) * .1;
 	r.direction = rand_hemisphere(seed, vec_normal);
 	float sample_probability = 1.0f / (2.0f * M_PI_F);
 	float n_dot_l = lambertian(r.direction, vec_normal);
