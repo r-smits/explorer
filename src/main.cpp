@@ -14,9 +14,9 @@ int main() {
   EXP::AppProperties properties = EXP::AppProperties(
       1000.0f,
       700.0f,
-      "/Users/ramonsmits/Code/cpp/graphics/Explorer/src/Shaders/",
-      "/Users/ramonsmits/Code/cpp/graphics/Explorer/src/Assets/Textures/",
-			"/Users/ramonsmits/Code/cpp/graphics/Explorer/src/Assets/Meshes/"
+      "/Users/ramonsmits/Code/Explorer/src/Shaders/",
+      "/Users/ramonsmits/Code/Explorer/src/Assets/Textures/",
+			"/Users/ramonsmits/Code/Explorer/src/Assets/Meshes/"
   );
 
   EXP::AppDelegate appDelegate = EXP::AppDelegate(&properties);

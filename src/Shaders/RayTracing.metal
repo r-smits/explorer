@@ -5,6 +5,7 @@ using namespace raytracing;
 
 #import "../src/Shaders/ShaderTypes.h"
 #import "../src/Shaders/RTUtils.h"
+#import "../src/Shaders/RayUtils.h"
 
 // Object constants
 
@@ -97,13 +98,13 @@ void computeKernel(
 	float3 gposition = scene->textreadwrite[GBufferIds::pos].value.read(gid).xyz;
 	
 	// Check if value is normalized or not. If not, there's no intersection.
-	if (vsum(gnormal) > 2 || is_null_instance_acceleration_structure(structure)) {
+	if (length(gnormal) > 2 || is_null_instance_acceleration_structure(structure)) {
 		buffer.write(gcolor, gid);
 		return;
 	}
 	
 	// Initialize default parameters
-	thread uint32_t seed = 0; // gid.x * vsum(gnormal) + gid.y * (5 - vsum(gposition)) * 10;
+	thread uint32_t seed = 0; // gid.x * length(gnormal) + gid.y * (5 - length(gposition)) * 10;
 	thread int bounces = 3;
 	thread bool terminate_flag = false;
 
@@ -152,7 +153,7 @@ void computeKernel(
 		x.direction = pdf_sample;
 		x.origin = r.origin;
 		transport(x, structure, scene, gid, bounces, sample_color, seed, true, gnormal, terminate_flag, true);
-		float pdf_weight = intensity(sample_color);
+		float pdf_weight = length(sample_color);
 
 		// 3. Build the complex pdf to re-sample the samples from.
 		// Sample color intensity are weights for the complex pdf.

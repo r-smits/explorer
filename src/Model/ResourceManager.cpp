@@ -69,7 +69,7 @@ const int& SCENE::addTexture(MTL::Device* device, const std::string& name, const
 			false
 	);
 	MTL::Texture* mtlTexture = device->newTexture(textureDescriptor);
-	Renderer::Texture texture = {name, access, mtlTexture}; 
+	const Renderer::Texture texture {name, access, mtlTexture};
 	return EXP::SCENE::addTexture(texture);	
 }
 
