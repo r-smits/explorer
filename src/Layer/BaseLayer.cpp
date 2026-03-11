@@ -5,8 +5,8 @@
 #include <Math/Transformation.h>
 #include <Renderer/Renderer.h>
 
-EXP::BaseLayer::BaseLayer(MTL::Device* device, AppProperties* config)
-    : Layer(device->retain(), config) {
+EXP::BaseLayer::BaseLayer(MTL::Device* device, std::shared_ptr<const AppProperties> _config)
+    : Layer(device->retain(), _config) {
 
   _vertexDescriptor = Renderer::Descriptor::vertex(device, Renderer::Layouts::vertexNIP);
   this->buildPipeline();
@@ -53,8 +53,8 @@ bool EXP::BaseLayer::onMouseMove(MouseMoveEvent& event) {
 
 void EXP::BaseLayer::buildPipeline() {
   auto descriptor =
-      Renderer::Descriptor::render(device, _vertexDescriptor, config->shaderPath + "General");
-  if (false) Repository::Shaders::write(device, descriptor, config->shaderPath + "General");
+      Renderer::Descriptor::render(device, _vertexDescriptor, config->shader_path / "General");
+  if (false) Repository::Shaders::write(device, descriptor, config->shader_path / "General");
   generalPipelineState = Renderer::State::render(device, descriptor);
   depthStencilState = Renderer::State::depthStencil(device); // Z coordinate interpretation
 
@@ -87,13 +87,13 @@ void EXP::BaseLayer::buildMeshes() {
   // bugatti = Repository::Meshes::read(device, config->meshPath +
   // "bugatti/bugatti"); bugatti->position.z -= 80;
 
-  sphere = Repository::Meshes::read(device, _vertexDescriptor, config->meshPath + "sphere/sphere");
+  sphere = Repository::Meshes::read(device, _vertexDescriptor, config->mesh_path / "sphere/sphere");
   sphere->move({0.0f, 0.30f, -2.5f})->scale(0.1)->f4x4();
 
-  f16 = Repository::Meshes::read(device, _vertexDescriptor, config->meshPath + "f16/f16");
+  f16 = Repository::Meshes::read(device, _vertexDescriptor, config->mesh_path / "f16/f16");
   f16->move({0.0f, 0.0f, -2.5f});
 
-  cruiser = Repository::Meshes::read(device, _vertexDescriptor, config->meshPath + "cruiser/cruiser");
+  cruiser = Repository::Meshes::read(device, _vertexDescriptor, config->mesh_path / "cruiser/cruiser");
   cruiser->move({0.0f, 0.0f, -2.5f})->scale(0.5f)->f4x4();
 
   light = EXP::MeshFactory::light(this->device);

@@ -8,7 +8,7 @@
 #include <imgui.h>
 #include <imgui_impl_metal.h>
 
-EXP::ImGuiLayer::ImGuiLayer(MTK::View* view, EXP::AppProperties* config)
+EXP::ImGuiLayer::ImGuiLayer(MTK::View* view, std::shared_ptr<const EXP::AppProperties> config)
     : Layer(view->device(), config, "ImGuiLayer"), queue(device->newCommandQueue()) {
   this->onAttach(view);
 }

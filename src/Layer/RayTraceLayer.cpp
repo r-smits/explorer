@@ -9,12 +9,17 @@
 #include <Renderer/Renderer.h>
 
 
-EXP::RayTraceLayer::RayTraceLayer(MTL::Device* device, AppProperties* config)
-    : Layer(device->retain(), config), queue(device->newCommandQueue()) {
-	
-	MTL::Library* gbufferLib = Repository::Shaders::readLibrary(device, config->shaderPath + "GBuffer");
-	MTL::Library* temporalReuseLib = Repository::Shaders::readLibrary(device, config->shaderPath + "RESTIR"); 
-  MTL::Library* raytraceLib = Repository::Shaders::readLibrary(device, config->shaderPath + "Raytracing");
+using s_repo = Repository::Shaders;
+using r_acc = Renderer::Acceleration;
+
+
+EXP::RayTraceLayer::RayTraceLayer(MTL::Device* device, std::shared_ptr<const AppProperties> _config)
+    : Layer(device->retain(), _config), queue(device->newCommandQueue()) {
+
+		
+	MTL::Library* gbufferLib = s_repo::readLibrary(device, config->shader_path / "GBuffer");
+	MTL::Library* temporalReuseLib = s_repo::readLibrary(device, config->shader_path / "RESTIR"); 
+  	MTL::Library* raytraceLib = s_repo::readLibrary(device, config->shader_path / "Raytracing");
 
 	MTL::Function* gbufferFn = gbufferLib->newFunction(EXP::nsString("g_buffer"));
 	MTL::Function* temporalReuseFn = temporalReuseLib->newFunction(EXP::nsString("temporal_reuse"));
@@ -40,9 +45,9 @@ void EXP::RayTraceLayer::buildModels(MTL::Device* device) {
 
 	EXP::SCENE::addTexture(device, "reservoirs", Renderer::TextureAccess::READ_WRITE);
 	
-	EXP::SCENE::addModel(device, _vertexDescriptor, config->meshPath + "f16/f16", "f16");
-	EXP::SCENE::addModel(device, _vertexDescriptor, config->meshPath + "sphere/sphere", "sphere1");
-	EXP::SCENE::addModel(device, _vertexDescriptor, config->meshPath + "sphere/sphere", "sphere2");
+	EXP::SCENE::addModel(device, _vertexDescriptor, config->mesh_path / "f16/f16", "f16");
+	EXP::SCENE::addModel(device, _vertexDescriptor, config->mesh_path / "sphere/sphere", "sphere1");
+	EXP::SCENE::addModel(device, _vertexDescriptor, config->mesh_path / "sphere/sphere", "sphere2");
 	
 	EXP::Model* f16 = EXP::SCENE::getModel("f16");
 	EXP::Model* sphere1 = EXP::SCENE::getModel("sphere1");

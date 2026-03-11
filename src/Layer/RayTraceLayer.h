@@ -13,7 +13,7 @@ namespace EXP {
 class RayTraceLayer : public Layer {
 
 public: // Setting up layer
-  RayTraceLayer(MTL::Device* device, AppProperties* config);
+  RayTraceLayer(MTL::Device* device, std::shared_ptr<const AppProperties> config);
   ~RayTraceLayer() {
     device->release();
     queue->release();

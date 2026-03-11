@@ -1,5 +1,9 @@
 # Exludes
 build/*
-Testing/*
+.build/*
+.vscode/*
+bin/*
+.idea/*
+out/*
 .cache/*
 .git/*

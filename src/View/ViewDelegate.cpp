@@ -5,14 +5,14 @@
 #include <View/ViewAdapter.hpp>
 #include <View/ViewDelegate.h>
 
-EXP::ViewDelegate::ViewDelegate(MTK::View* view, EXP::AppProperties* config) : MTK::ViewDelegate() {
+EXP::ViewDelegate::ViewDelegate(MTK::View* view, std::shared_ptr<const EXP::AppProperties> _config) : MTK::ViewDelegate() {
   DEBUG("Initializing ViewDelegate ...");
 
   // Set up Keyboard IO eventing from MTK::View
   ViewAdapter* viewAdapter = ViewAdapter::sharedInstance();
   auto callback = [this](Event& event) { this->onEvent(event); };
   viewAdapter->setHandler(callback);
-	this->layerStack.pushLayer(new EXP::RayTraceLayer(view->device(), config));
+	this->layerStack.pushLayer(new EXP::RayTraceLayer(view->device(), _config));
 }
 
 EXP::ViewDelegate::~ViewDelegate() {}
