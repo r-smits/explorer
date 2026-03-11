@@ -5,6 +5,7 @@ using namespace raytracing;
 
 #import "../src/Shaders/ShaderTypes.h"
 #import "../src/Shaders/RTUtils.h"
+#import "../src/Shaders/RayUtils.h"
 
 
 // Texture coordinates

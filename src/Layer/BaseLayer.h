@@ -12,7 +12,7 @@ namespace EXP {
 class BaseLayer : public Layer {
 
 public: // Setting up layer
-  BaseLayer(MTL::Device* device, AppProperties* config);
+  BaseLayer(MTL::Device* device, std::shared_ptr<const AppProperties> config);
   ~BaseLayer();
 
 public: // Event

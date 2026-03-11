@@ -7,7 +7,7 @@ namespace EXP {
 class ImGuiLayer : public Layer {
 
 public:
-  ImGuiLayer(MTK::View *view, AppProperties* config);
+  ImGuiLayer(MTK::View *view, std::shared_ptr<const AppProperties> config);
   ~ImGuiLayer();
   void onAttach(MTK::View *view);
   void onDetach() override;

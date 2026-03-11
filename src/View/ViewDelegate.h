@@ -10,7 +10,7 @@ namespace EXP {
 class ViewDelegate : public MTK::ViewDelegate {
 
 public: // ViewDelegate overrides
-  ViewDelegate(MTK::View* view, AppProperties* config);
+  ViewDelegate(MTK::View* view, std::shared_ptr<const AppProperties> _config);
   virtual ~ViewDelegate() override;
   virtual void drawInMTKView(MTK::View* view) override;
   virtual void drawableSizeWillChange(MTK::View* view, CGSize) override;

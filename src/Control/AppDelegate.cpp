@@ -1,10 +1,10 @@
 #include <Control/AppDelegate.h>
 #include <sstream>
 
-EXP::AppDelegate::AppDelegate(EXP::AppProperties* properties) {
-  this->properties = properties;
-	EXP::ViewAdapter* viewAdapter = ViewAdapter::sharedInstance();
-  this->mtkView = ViewAdapter::initView(properties->cgRect);
+EXP::AppDelegate::AppDelegate(std::shared_ptr<const EXP::AppProperties> _properties) : 
+properties(_properties), mtkView(ViewAdapter::initView(_properties->cgRect)) {
+	// EXP::ViewAdapter* viewAdapter = ViewAdapter::sharedInstance();
+  // this->mtkView = ViewAdapter::initView(properties->cgRect);
 }
 
 EXP::AppDelegate::~AppDelegate() {
@@ -14,9 +14,9 @@ EXP::AppDelegate::~AppDelegate() {
   delete viewDelegate;
 }
 
-double EXP::AppDelegate::getWidth() { return properties->cgRect.size.width; }
+const double& EXP::AppDelegate::getWidth() { return properties->cgRect.size.width; }
 
-double EXP::AppDelegate::getHeight() { return properties->cgRect.size.height; }
+const double& EXP::AppDelegate::getHeight() { return properties->cgRect.size.height; }
 
 void EXP::AppDelegate::printDebug() {
   std::stringstream ss;

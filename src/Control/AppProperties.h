@@ -1,6 +1,9 @@
 #pragma once
 #include <pch.h>
 
+
+using path = std::filesystem::path;
+
 namespace EXP {
 
 class AppProperties {
@@ -19,20 +22,20 @@ public:
   AppProperties(
       double width,
       double height,
-      std::string shaderPath,
-      std::string texturePath,
-      std::string meshPath
+      const path& shader_path,
+      const path& texture_path,
+      const path& mesh_path
   )
-      : shaderPath(shaderPath), texturePath(texturePath), meshPath(meshPath),
+      : shader_path(shader_path), texture_path(texture_path), mesh_path(mesh_path),
         cgRect({
             {100.0f, 100.0f},
             { width, height}
   }) {}
   ~AppProperties() {}
   CGRect cgRect;
-  const std::string shaderPath;
-  const std::string texturePath;
-  const std::string meshPath;
+  const path shader_path;
+  const path texture_path;
+  const path mesh_path;
   std::string vertexFnName;
   std::string fragmentFnName;
 };
