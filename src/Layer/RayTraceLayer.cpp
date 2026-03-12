@@ -16,29 +16,23 @@ using r_acc = Renderer::Acceleration;
 EXP::RayTraceLayer::RayTraceLayer(MTL::Device* device, std::shared_ptr<const AppProperties> _config)
     : Layer(device->retain(), _config), queue(device->newCommandQueue()) {
 
-		
 	MTL::Library* gbufferLib = s_repo::readLibrary(device, config->shader_path / "GBuffer");
 	MTL::Library* temporalReuseLib = s_repo::readLibrary(device, config->shader_path / "RESTIR"); 
-  	MTL::Library* raytraceLib = s_repo::readLibrary(device, config->shader_path / "Raytracing");
-
 	MTL::Function* gbufferFn = gbufferLib->newFunction(EXP::nsString("g_buffer"));
 	MTL::Function* temporalReuseFn = temporalReuseLib->newFunction(EXP::nsString("temporal_reuse"));
-	this->_kernelFn = raytraceLib->newFunction(EXP::nsString("computeKernel"));
 
 	this->_gbufferState = Renderer::State::Compute(device, gbufferFn);
 	this->_temporalReuseState = Renderer::State::Compute(device, temporalReuseFn);
-  this->_raytraceState = Renderer::State::Compute(device, _kernelFn);
 
-  this->_vertexDescriptor = Renderer::Descriptor::vertex(device, Renderer::Layouts::vertexNIP);
+	this->_vertexDescriptor = Renderer::Descriptor::vertex(device, Renderer::Layouts::vertexNIP);
+	CGRect frame = ViewAdapter::bounds();
+	this->_gridSize = MTL::Size::Make(frame.size.width * 2, frame.size.height * 2, 1);
+	this->_resolution = {(float)_gridSize.width, (float)_gridSize.height, (float)_gridSize.depth};
 
-  CGRect frame = ViewAdapter::bounds();
-  this->_gridSize = MTL::Size::Make(frame.size.width * 2, frame.size.height * 2, 1);
-  this->_resolution = {(float)_gridSize.width, (float)_gridSize.height, (float)_gridSize.depth};
-
-  this->_threadGroupSize = calcGridsize();
-	
-  buildModels(device);
-  buildAccelerationStructures(device);
+	this->_threadGroupSize = calcGridsize(_temporalReuseState);
+		
+	buildModels(device);
+	buildAccelerationStructures(device);
 }
 
 void EXP::RayTraceLayer::buildModels(MTL::Device* device) {
@@ -62,10 +56,10 @@ void EXP::RayTraceLayer::buildModels(MTL::Device* device) {
 	EXP::SCENE::getCamera()->setIsometric();
 }
 
-MTL::Size EXP::RayTraceLayer::calcGridsize() {
-  auto threadGroupWidth = _raytraceState->threadExecutionWidth();
-  auto threadGroupHeight = _raytraceState->maxTotalThreadsPerThreadgroup() / threadGroupWidth;
-	DEBUG("Thread group width x height: " + std::to_string(threadGroupWidth) + " x " + std::to_string(threadGroupHeight));
+MTL::Size EXP::RayTraceLayer::calcGridsize(const MTL::ComputePipelineState* state) {
+  auto threadGroupWidth = state->threadExecutionWidth();
+  auto threadGroupHeight = state->maxTotalThreadsPerThreadgroup() / threadGroupWidth;
+  DEBUG("Thread group width x height: " + std::to_string(threadGroupWidth) + " x " + std::to_string(threadGroupHeight));
   return MTL::Size::Make(threadGroupWidth, threadGroupHeight, 1);
 }
 

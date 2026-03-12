@@ -1,7 +1,8 @@
 #include "Metal/MTLAccelerationStructureTypes.hpp"
 #include <Math/Transformation.h>
 
-float toRadians(const float& degrees) { return degrees * (M_PI / 180); }
+const float RAD = M_PI / 180;
+float toRadians(const float& degrees) { return degrees * RAD; }
 simd::float4x4 EXP::MATH::identity() { return simd::float4x4(1.0f); }
 
 simd::float4x4 EXP::MATH::translation(const simd::float3& pos) {
@@ -39,7 +40,7 @@ simd::float4x4 EXP::MATH::xRotation(const float& theta) {
 }
 
 simd::float4x4 EXP::MATH::yRotation(const float& theta) {
-  float totalTheta = theta * (M_PI / 180);
+  float totalTheta = toRadians(theta);
   float cos = cosf(totalTheta);
   float sin = sinf(totalTheta);
 
@@ -61,7 +62,7 @@ simd::float4x4 EXP::MATH::scale(const float& factor) {
 }
 
 simd::float4x4 EXP::MATH::perspective(const float& fov, const float& aspectRatio, const float& nearZ, const float& farZ) {
-  float yPerspective = 1 / (tanf(toRadians(fov) * 0.5f));
+  float yPerspective = simd::recip(tanf(toRadians(fov) * 0.5f));
   float xPerspective = yPerspective / aspectRatio;
   float zPerspective = farZ / (nearZ - farZ);
   float wPerspective = zPerspective * nearZ;
@@ -76,13 +77,13 @@ simd::float4x4 EXP::MATH::perspective(const float& fov, const float& aspectRatio
 simd::float4x4 EXP::MATH::orthographic(
     const float& left, const float& right, const float& bottom, const float& top, const float& nearZ, const float& farZ
 ) {
-  simd::float4 col1 = {2.0f / (right - left), 0.0f, 0.0f, 0.0f};
-  simd::float4 col2 = {0.0f, 2.0f / (top - bottom), 0.0f, 0.0f};
-  simd::float4 col3 = {0.0f, 0.0f, 1.0f / (farZ - nearZ), 0.0f};
+  simd::float4 col1 = {2.0f * simd::recip(right - left), 0.0f, 0.0f, 0.0f};
+  simd::float4 col2 = {0.0f, 2.0f * simd::recip(top - bottom), 0.0f, 0.0f};
+  simd::float4 col3 = {0.0f, 0.0f, simd::recip(farZ - nearZ), 0.0f};
   simd::float4 col4 = {
-      -(right + left) / (right - left),
-      -(top + bottom) / (top - bottom),
-      -nearZ / (farZ - nearZ),
+      -(right + left) * simd::recip(right - left),
+      -(top + bottom) * simd::recip (top - bottom),
+      -nearZ * simd::recip(farZ - nearZ),
       1.0f
   };
   return simd::float4x4(col1, col2, col3, col4);
