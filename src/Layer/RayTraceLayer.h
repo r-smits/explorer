@@ -23,7 +23,7 @@ public: // Event
   void buildModels(MTL::Device* device);
   void buildAccelerationStructures(MTL::Device* device);
 	void rebuildAccelerationStructures(MTK::View* device);
-	MTL::Size calcGridsize();
+	MTL::Size calcGridsize(const MTL::ComputePipelineState* state);
 
 private: // Initialization
   virtual void onUpdate(MTK::View* view, MTL::RenderCommandEncoder* encoder) override;

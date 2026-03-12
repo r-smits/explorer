@@ -7,7 +7,8 @@ using namespace raytracing;
 #import "../src/Shaders/RTUtils.h"
 #import "../src/Shaders/RayUtils.h"
 
-void intersect_and_do_nothing(
+
+void shade_ray(
 	thread ray& r,
 	thread instance_acceleration_structure& structure,
 	constant Scene* scene,
@@ -17,7 +18,7 @@ void intersect_and_do_nothing(
 	thread float4& contribution,
 	thread bool& bounce_continue
 ) {
-	
+	// Initialize local variables
 	float3 normal = float3(.0f);
 	float3 direction = float3(.0f);
 	float3 vec_light_origin = float3(.0f);
@@ -32,114 +33,68 @@ void intersect_and_do_nothing(
 	intersection_result<instancing, triangle_data, world_space_data> result;
 	result = intersector.intersect(r, structure, 0xFF);
 
-	if (result.type == intersection_type::triangle) {
-		bounce_continue = true;
-		
-		float2 bary_2d = result.triangle_barycentric_coord;
-		float3 bary_3d = float3(1.0 - bary_2d.x - bary_2d.y, bary_2d.x, bary_2d.y);
-
-		const device PrimitiveAttributes* prim = (const device PrimitiveAttributes*) result.primitive_data;
-
-		// Calculate variables needed to solve the rendering equation
-		normal = (prim->normal[0] * bary_3d.x) + (prim->normal[1] * bary_3d.y) + (prim->normal[2] * bary_3d.z);
-		normal = normalize(result.object_to_world_transform * float4(normal, 0.0f));
-		seed = gid.x * (result.primitive_id * bary_3d.z * 1) + gid.y * (result.primitive_id * bary_2d.y);
-			
-		// We assume for now that the surface is perfectly reflective.
-		// You can chance this for materials and so forth
-		// Called: BSDF: bi-directional scattering distribution function.
-		r.origin = r.origin + r.direction * result.distance;
-		float3 jittered_normal = normalize(normal + uniform_pdf(seed) * .0);
-		r.direction = reflect(r.direction, jittered_normal);
-		float wi_dot_n = lambertian(r.direction, normal);
-			
-		// Calculate all color contributions; use texture, emission if there is one
-		float2 txcoord = (prim->txcoord[0] * bary_3d.x) + (prim->txcoord[1] * bary_3d.y) + (prim->txcoord[2] * bary_3d.z);
-		
-		float4 sampled_color = scene->textsample[prim->flags[0]].value.sample(sampler2d, txcoord); 
-		// float4 wo_color = scene->textsample[prim->flags[0]].value.sample(sampler2d, txcoord) + prim->color[0];
-		float4 wo_color = sampled_color + prim->color[0];	
-			
-		contribution = float4(txcoord, .0f, 1.0f);
-		// contribution *= 1 * wo_color;
-		//contribution *= 1 * wi_dot_n * wo_color * 1 * 1;
-
-
-		/**
-		// Sampling light and assessing shadow ray visibility
-		float light_index = float(min(int(rand(seed) * scene->lights[0].vertexCount), scene->lights[0].vertexCount-1));
-		sample_light(scene, light_index, r.origin, vec_light_origin, vec_to_light, light_color, distance_to_light);
-		float l_dot_n = min(1.f, lambertian(vec_to_light, normal) + prim->flags[1]); 
-	
-		visible = shadow_ray(r, structure, vec_to_light, vec_light_origin);
-		contribution *= visible * wi_dot_n * wo_color * light_color * l_dot_n;
-	
-		bounce_continue = !prim->flags[1];
-		**/	
-	}
-}
-
-void shade_ray(
-	thread ray& r,
-	thread instance_acceleration_structure& structure,
-	constant Scene* scene,
-	uint2 gid,
-	int bounces,
-	thread uint32_t& seed,
-	thread float4& contribution,
-	thread bool& bounce_continue
-) {
-	
-	float3 normal = float3(.0f);
-	float3 direction = float3(.0f);
-	float3 vec_light_origin = float3(.0f);
-	float3 vec_to_light = float3(.0f);
-	float4 light_color = float4(.0f);
-	float distance_to_light = .0f;
-	bool visible = true;
-
-	intersector<instancing, triangle_data, world_space_data> intersector;	
-	intersector.assume_geometry_type(geometry_type::triangle);
-	intersection_result<instancing, triangle_data, world_space_data> result;
-	result = intersector.intersect(r, structure, 0xFF);
-
 	// If our ray does not hit, terminate early.
 	if (result.type == intersection_type::none) {
 		bounce_continue = false;
-	} else {
-		
+		return;
+	}
+
 	float2 bary_2d = result.triangle_barycentric_coord;
 	float3 bary_3d = float3(1.0 - bary_2d.x - bary_2d.y, bary_2d.x, bary_2d.y);
 
 	const device PrimitiveAttributes* prim = (const device PrimitiveAttributes*) result.primitive_data;
 
-	// Calculate variables needed to solve the rendering equation
+	// Compute surface normal
 	normal = (prim->normal[0] * bary_3d.x) + (prim->normal[1] * bary_3d.y) + (prim->normal[2] * bary_3d.z);
 	normal = normalize(result.object_to_world_transform * float4(normal, 0.0f));
+
+	// Update seed deterministically per primitive
 	seed = gid.x * (result.primitive_id * bary_3d.z * 1) + gid.y * (result.primitive_id * bary_2d.y);
-			
-	// We assume for now that the surface is perfectly reflective.
-	// You can chance this for materials and so forth
-	// Called: BSDF: bi-directional scattering distribution function.
+
+	// Move ray origin to intersection point
 	r.origin = r.origin + r.direction * result.distance;
-	float3 jittered_normal = normalize(normal + uniform_pdf(seed) * .0);
+
+	// Compute outgoing direction (toward previous ray origin / camera)
+	float3 wo = normalize(-r.direction);
+
+	// Perfect reflection for now
+	float3 jittered_normal = normalize(normal + uniform_pdf(seed) * 0.1);
 	r.direction = reflect(r.direction, jittered_normal);
-	float wi_dot_n = lambertian(r.direction, normal);
-			
-	// Calculate all color contributions; use texture, emission if there is one
+
+	// ----------------------------
+	// Direct lighting contribution
+	// ----------------------------
+
+	// Sample a light from the scene
+	float light_index = float(min(int(rand(seed) * scene->lights[0].vertexCount), scene->lights[0].vertexCount - 1));
+	sample_light(scene, light_index, r.origin, vec_light_origin, vec_to_light, light_color, distance_to_light);
+
+	// Compute incoming light direction
+	float3 wi = normalize(vec_to_light);
+
+	// Lambertian cosine term
+	float wi_dot_n = max(dot(normal, wi), 0.0f);
+
+	// PDFs for MIS
+	float p_light = 1.0f / scene->lights[0].vertexCount;       // uniform light sample
+	float p_bsdf = wi_dot_n / M_PI_F;			               // cosine-weighted PDF
+
+	// MIS weight (balance heuristic)
+	float mis_weight = p_light / (p_light + p_bsdf);
+
+	// Compute surface color from texture
 	float2 txcoord = (prim->txcoord[0] * bary_3d.x) + (prim->txcoord[1] * bary_3d.y) + (prim->txcoord[2] * bary_3d.z);
 	float4 wo_color = scene->textsample[prim->flags[0]].value.sample(sampler2d, txcoord) + prim->color[0];
-		
-	// Sampling light and assessing shadow ray visibility
-	float light_index = float(min(int(rand(seed) * scene->lights[0].vertexCount), scene->lights[0].vertexCount-1));
-	sample_light(scene, light_index, r.origin, vec_light_origin, vec_to_light, light_color, distance_to_light);
-	float l_dot_n = min(1.f, lambertian(vec_to_light, normal) + prim->flags[1]); 
-	
+
+	// Shadow ray
 	visible = shadow_ray(r, structure, vec_to_light, vec_light_origin);
-	contribution *= visible * wi_dot_n * wo_color * light_color * l_dot_n;
-	
+
+	// Weighted contribution using MIS
+	float4 weighted_contribution = visible * wi_dot_n * wo_color * light_color * mis_weight;
+
+	// Update the reservoir contribution
+	update_reservoir(contribution, light_index, length(weighted_contribution.xyz), seed);
 	bounce_continue = !prim->flags[1];
-	}
 }
 
 
@@ -158,7 +113,7 @@ float4 transport_ray(
 	float4 color = float4(.0f);
 	bool bounce_continue = true;
 	
-	for (int i = 1; i <= bounces; i += 1) {
+	for (int i = 1; i <= bounces && bounce_continue; i += 1) {
 		shade_ray(r, structure, scene, gid, bounces, seed, contribution, bounce_continue); 
 	}
 		
@@ -169,10 +124,10 @@ float4 transport_ray(
 
 [[kernel]]
 void temporal_reuse(
-	uint2 tid																							[[ thread_position_in_grid	]], 
-	texture2d<float, access::write> buffer								[[ texture(0) ]],
-	instance_acceleration_structure structure							[[ buffer(1)	]],
-	constant Scene* scene																	[[ buffer(2)	]]
+	uint2 tid										[[ thread_position_in_grid	]], 
+	texture2d<float, access::write> buffer			[[ texture(0) ]],
+	instance_acceleration_structure structure		[[ buffer(1)	]],
+	constant Scene* scene							[[ buffer(2)	]]
 ) {
 	
 	float4 curr_reservoir = float4(.0f);
@@ -185,7 +140,6 @@ void temporal_reuse(
 	//	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	//
 	//	Retrieving initial colors and values	//
 	//	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	//
-	
 
 	if (is_null_instance_acceleration_structure(structure)) {
 		buffer.write(color, tid);
@@ -200,7 +154,7 @@ void temporal_reuse(
 	}
 	
 	//	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	//
-	//	Global Illumination										//
+	//	Global Illumination						//
 	//	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	//
 
 	float distance_to_light = float(0.0f);
@@ -264,7 +218,7 @@ void temporal_reuse(
 		float4(color.xyz / M_PI_F * vec_light_col.xyz * l_dot_n / distance_to_light * visible * combined_reservoir.w, 1.f);
 	
 	//	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	//
-	//	Indirect Illumination									//
+	//	Indirect Illumination					//
 	//	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	//
 	
 	// r.direction = r.direction + rand_hemisphere(seed, vec_normal) * .1;
