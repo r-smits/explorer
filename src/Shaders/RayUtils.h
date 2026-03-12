@@ -60,7 +60,7 @@ bool shadow_ray(
 
 void sample_light(
 	constant Scene* scene,
-	float light_index,
+	int light_index,
 	float3 vec_ray_world_pos,
 	thread float3& vec_world_light_pos,
 	thread float3& vec_to_light,
@@ -68,12 +68,11 @@ void sample_light(
 	thread float& distance_to_light
 ) {
 	// Retrieve light vertex data
-	int index = int(light_index);
-	vec_world_light_pos = (scene->lights[0].orientation * float4(scene->lights[0].vertices[index], 1.0f)).xyz;
+	vec_world_light_pos = (scene->lights[0].orientation * float4(scene->lights[0].vertices[light_index], 1.0f)).xyz;
 
 	// Set variables by reference
 	vec_to_light = normalize(vec_world_light_pos - vec_ray_world_pos);
-	vec_light_col = scene->lights[0].attributes[index].color;
+	vec_light_col = scene->lights[0].attributes[light_index].color;
 	distance_to_light = distance_squared(vec_world_light_pos, vec_ray_world_pos);
 }
 
@@ -206,14 +205,14 @@ float4 transport_ray_x(
 
 void update_reservoir(
 	thread float4& reservoir, 
-	float light_indices, 
+	int light_indices, 
 	float p_hat_weight, 
 	thread uint32_t& seed
 ) {
 	reservoir.x += p_hat_weight;											// w_sum - total sum of weights
 	reservoir.z += 1.0f;															// m_sum - total sum of samples
 	float random = rand(seed);
-	if (random <= (p_hat_weight / reservoir.x)) {
+	if (random <= (p_hat_weight / max(reservoir.x, 1e-6f))) {
 		reservoir.y = light_indices;										// sample inside of reservoir
 	}
 }

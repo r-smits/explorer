@@ -160,32 +160,33 @@ void temporal_reuse(
 	float distance_to_light = float(0.0f);
 	float l_dot_n = float(0.0f);
 	float light_index = float(.0f);
-	float uniform_pdf_sample = 1; 1 / scene->lights[0].vertexCount;
+	float uniform_pdf_sample = 1.f / scene->lights[0].vertexCount;
 	float complex_pdf_sample = float(0.0f);
 	float prev_p_hat_weight = float(0.0f);
 	float3 vec_ray_direction = float3(.0f);
 	float3 vec_to_light = float3(.0f);
 	float4 vec_light_col = float4(.0f);
 	float3 vec_world_light_pos = float3(0.0f);
+	float3 luminance = float3(0.2126f, 0.7152f, 0.0722f);
 	
 	for (int i = 0; i < min(int(scene->lights[0].vertexCount), 32); i += 1) {
 		
 		// TODO: create a new abstraction with: (a) vertex attributes, (b) vertices, (c) total vertex count
 		// TODO: generate a single number to randomly choose a light and position to sample.
-		float light_index = float(min(int(rand(seed) * scene->lights[0].vertexCount), scene->lights[0].vertexCount-1));
+		int light_index = min(int(rand(seed) * scene->lights[0].vertexCount), scene->lights[0].vertexCount-1);
 
 		// Update reservoir as a float4
 		sample_light(scene, light_index, r.origin, vec_world_light_pos, vec_to_light, vec_light_col, distance_to_light);
 		l_dot_n = lambertian(vec_to_light, vec_normal); 
-		complex_pdf_sample = length(color.xyz / M_PI_F * vec_light_col.xyz * l_dot_n / distance_to_light) / uniform_pdf_sample;
+		complex_pdf_sample = dot(color.xyz / M_PI_F * vec_light_col.xyz * l_dot_n / distance_to_light, luminance) / uniform_pdf_sample;
 		update_reservoir(curr_reservoir, light_index, complex_pdf_sample, seed); 
 	}
 	
 	// Retrieve final selected weight
 	sample_light(scene, curr_reservoir.y, r.origin, vec_world_light_pos, vec_to_light, vec_light_col, distance_to_light);
 	l_dot_n = lambertian(vec_to_light, vec_normal); 
-	complex_pdf_sample = length(color.xyz / M_PI_F * vec_light_col.xyz * l_dot_n / distance_to_light) / uniform_pdf_sample;
-	curr_reservoir.w = (1.f / max(complex_pdf_sample, 0.0001f)) * (curr_reservoir.x / max(curr_reservoir.z, 0.0001f));
+	complex_pdf_sample = dot(color.xyz / M_PI_F * vec_light_col.xyz * l_dot_n / distance_to_light, luminance) / uniform_pdf_sample;
+	curr_reservoir.w = (curr_reservoir.x / curr_reservoir.z) / max(complex_pdf_sample, 1e-4f);
 
 	// Shadow ray for current reservoir
 	bool visible = shadow_ray(r, structure, vec_to_light, vec_world_light_pos);
@@ -207,8 +208,8 @@ void temporal_reuse(
 	combined_reservoir.z = curr_reservoir.z + prev_reservoir.z;
 	sample_light(scene, combined_reservoir.y, r.origin, vec_world_light_pos, vec_to_light, vec_light_col, distance_to_light);
 	l_dot_n = lambertian(vec_to_light, vec_normal); 
-	complex_pdf_sample = length(color.xyz / M_PI_F * vec_light_col.xyz * l_dot_n / distance_to_light) / uniform_pdf_sample;
-	combined_reservoir.w = (1.f / max(complex_pdf_sample, 0.0001f)) * (combined_reservoir.x / max(combined_reservoir.z, 0.0001f));
+	complex_pdf_sample = dot(color.xyz / M_PI_F * vec_light_col.xyz * l_dot_n / distance_to_light, luminance) / uniform_pdf_sample;
+	combined_reservoir.w = (combined_reservoir.x / combined_reservoir.z) / max(complex_pdf_sample, 1e-4f);
 	
 	// Shadow ray for combined reservoir	
 	visible = shadow_ray(r, structure, vec_to_light, vec_world_light_pos);
