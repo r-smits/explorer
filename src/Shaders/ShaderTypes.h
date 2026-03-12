@@ -19,8 +19,12 @@ struct RTMaterial {
 
 struct VCamera {
 	float4x4 orientation;
-	float3 vecOrigin;
-	float3 resolution;
+	float4 vecOrigin;          // was float3
+	float4 resolution;         // was float3
+	float4 vecRight;
+	float4 vecUp;
+	float4 vecForward;
+	float fovScale;
 };
 
 

@@ -135,17 +135,12 @@ MTL::Buffer* SCENE::buildTextReadWriteBuffer(MTL::Device* device) {
 	return textReadWriteBuffer;
 };
 
-
 MTL::Buffer* SCENE::buildVCameraBuffer(MTL::Device* device) {
-	vcameraBuffer = device->newBuffer(sizeof(Renderer::VCamera), MTL::ResourceStorageModeShared);
-	resources.emplace_back(vcameraBuffer);
-	Renderer::VCamera* vcameraPtr = (Renderer::VCamera*) vcameraBuffer->contents();
-
-	const Renderer::VCamera& updatedVCamera = vcamera->update();
-	vcameraPtr->vecOrigin = updatedVCamera.vecOrigin;
-	vcameraPtr->resolution = updatedVCamera.resolution;
-	vcameraPtr->orientation = updatedVCamera.orientation;
-	return vcameraBuffer;
+    vcameraBuffer = device->newBuffer(sizeof(Renderer::VCamera), MTL::ResourceStorageModeShared);
+    resources.emplace_back(vcameraBuffer);
+    const Renderer::VCamera& updatedVCamera = vcamera->update();
+    memcpy(vcameraBuffer->contents(), &updatedVCamera, sizeof(Renderer::VCamera));
+    return vcameraBuffer;
 };
 
 MTL::Buffer* SCENE::buildLightsBuffer(MTL::Device* device) {
@@ -201,14 +196,9 @@ const void SCENE::buildBindlessScene(MTL::Device* device) {
 	gpuScene->lightsCount = SCENE::lights.size();
 };
 
-
 const void SCENE::updateBindlessScene(MTL::Device* device) {
-	Renderer::VCamera* vcameraPtr = (Renderer::VCamera*)vcameraBuffer->contents();
 	const Renderer::VCamera& updatedVCamera = vcamera->update();
-	vcameraPtr->vecOrigin = updatedVCamera.vecOrigin;
-	vcameraPtr->resolution = updatedVCamera.resolution;
-	vcameraPtr->orientation = updatedVCamera.orientation;
-
+	memcpy(vcameraBuffer->contents(), &updatedVCamera, sizeof(Renderer::VCamera));
 	Renderer::Mesh* meshPtr = (Renderer::Mesh*)lightsBuffer->contents();
 	for (int i = 0; i < SCENE::lights.size(); i += 1) {
 		(meshPtr + i)->orientation = SCENE::lights[i]->f4x4()->get();

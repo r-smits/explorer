@@ -7,28 +7,26 @@ namespace EXP {
 VCamera::VCamera() {
 	
 	CGRect frame = ViewAdapter::bounds();
-	simd::float3 resolution = {(float)frame.size.width * 2, (float)frame.size.height * 2, 1.0f};
+	resolution = {(float)frame.size.width * 2, (float)frame.size.height * 2};
+	speed = {.05, .05 * .25};
+  lastMousePos = IO::getMouse() / resolution.xy * 2 - 1;
 
-	this->speed = {.05, .05 * .25};
-  this->lastMousePos = IO::getMouse() / resolution.xy * 2 - 1;
-
-	simd::float3 vecOrigin = {0.0f, 0.0f, 2.0f};
-	this->vecUp = {0.0f, 1.0f, 0.0f};
-  this->vecForward = {0.0f, 0.0f, -1.0f};
+  vecOrigin = {.0f, .0f, 2.0f};
+	vecUp = {.0f, 1.0f, .0f};
+  vecRight = {1.0f, .0f, .0f};
+  vecForward = {.0f, .0f, -1.0f};
 	
-	this->quatPosY = simd::quatf(this->speed.y, this->vecUp);
-	this->quatNegY = simd::quatf(-this->speed.y, this->vecUp);
+	quatPosY = simd::quatf(speed.y, vecUp);
+	quatNegY = simd::quatf(-speed.y, vecUp);
 
 	//simd::float4x4 mProjection = EXP::MATH::orthographic(-1, 1, -1, 1, 1, -1);
-	this->projection = simd::inverse(EXP::MATH::perspective(45.0f, frame.size.width / frame.size.height, 0.1f, 100.0f));
-	this->view = EXP::MATH::lookat(vecOrigin, vecOrigin + this->vecForward, this->vecUp);
-
-	this->transforms = {this->view * this->projection, vecOrigin, resolution};
+	projection = EXP::MATH::perspective(45.0f, frame.size.width / frame.size.height, 0.1f, 100.0f);
+	setIsometric();
 };
 
 const simd::float3& VCamera::getVRight() { 
-	this->vecRight = simd::cross(this->vecForward, this->vecUp);
-	return this->vecRight; 
+	vecRight = simd::cross(vecForward, vecUp);
+	return vecRight; 
 }
 
 const void VCamera::setSpeed(const float& speed) { 
@@ -37,40 +35,49 @@ const void VCamera::setSpeed(const float& speed) {
 
 const void VCamera::setIsometric() {
 	simd::quatf rotX = simd::quatf(-45.0f * M_PI/180, this->getVRight());
-	simd::quatf rotY = simd::quatf(-45.0f * M_PI/180, this->vecUp);
+	simd::quatf rotY = simd::quatf(-45.0f * M_PI/180, vecUp);
 	simd::quatf angle = simd::normalize(rotX * rotY);
 	
-	this->vecForward = simd_act(angle, this->vecForward);
-	this->transforms.vecOrigin = simd_act(angle, this->transforms.vecOrigin);
+	vecForward = simd_act(angle, vecForward);
+	vecOrigin = simd_act(angle, vecOrigin);
+  flush_to_gpu();
 }
 
 const Renderer::VCamera& VCamera::update() {
+  if (IO::isPressed(KEY_W)) vecOrigin += vecForward * speed.x;
+  if (IO::isPressed(KEY_S)) vecOrigin -= vecForward * speed.x;
+  if (IO::isPressed(KEY_A)) vecOrigin -= getVRight() * speed.x;
+  if (IO::isPressed(KEY_D)) vecOrigin += getVRight() * speed.x;
+  if (IO::isPressed(KEY_Q)) vecOrigin -= vecUp * speed.x;
+  if (IO::isPressed(KEY_E)) vecOrigin += vecUp * speed.x;
 
-  if (IO::isPressed(KEY_W)) this->transforms.vecOrigin += this->vecForward * this->speed.x;
-  if (IO::isPressed(KEY_S)) this->transforms.vecOrigin -= this->vecForward * this->speed.x;
-  if (IO::isPressed(KEY_A)) this->transforms.vecOrigin -= this->getVRight() * this->speed.x;
-  if (IO::isPressed(KEY_D)) this->transforms.vecOrigin += this->getVRight() * this->speed.x;
-  if (IO::isPressed(KEY_Q)) this->transforms.vecOrigin -= this->vecUp * this->speed.x;
-  if (IO::isPressed(KEY_E)) this->transforms.vecOrigin += this->vecUp * this->speed.x;
-	
-	if (IO::isPressed(KEY_J)) {
-		this->vecForward = simd_act(this->quatPosY, this->vecForward);
-		this->transforms.vecOrigin = simd_act(this->quatPosY, this->transforms.vecOrigin);
-	}
+  if (IO::isPressed(KEY_J)) {
+      vecForward = simd_act(quatPosY, vecForward);
+      vecOrigin  = simd_act(quatPosY, vecOrigin);
+  }
+  if (IO::isPressed(KEY_K)) {
+      vecForward = simd_act(quatNegY, vecForward);
+      vecOrigin  = simd_act(quatNegY, vecOrigin);
+  }
+  if (IO::isPressed(ARROW_LEFT))  vecForward = simd_act(quatPosY, vecForward);
+  if (IO::isPressed(ARROW_RIGHT)) vecForward = simd_act(quatNegY, vecForward);
 
-	if (IO::isPressed(KEY_K)) {
-		this->vecForward = simd_act(this->quatNegY, this->vecForward);
-		this->transforms.vecOrigin = simd_act(this->quatNegY, this->transforms.vecOrigin);
-	}
+  // Recompute right from current forward/up before flushing
+  vecRight = simd::cross(vecForward, vecUp);
+  flush_to_gpu();
+  return vcamera;
+}
 
-  if (IO::isPressed(ARROW_LEFT)) this->vecForward = simd_act(this->quatPosY, this->vecForward);
-  if (IO::isPressed(ARROW_RIGHT)) this->vecForward = simd_act(this->quatNegY, this->vecForward);
-	
-  simd::float3 center = this->transforms.vecOrigin + this->vecForward;
-  this->view = EXP::MATH::lookat(this->transforms.vecOrigin, center, this->vecUp);
-
-	this->transforms.orientation = this->view * this->projection;
-  return transforms;
+const void VCamera::flush_to_gpu() {
+  this->vcamera = {
+    .orientation = EXP::MATH::lookat(vecOrigin, vecOrigin + vecForward, vecUp), // ← not stale `view`
+    .vecOrigin   = {vecOrigin.x,  vecOrigin.y,  vecOrigin.z,  1.0f},
+    .resolution  = {resolution.x, resolution.y, 0.0f,         0.0f},
+    .vecRight    = {vecRight.x,   vecRight.y,   vecRight.z,   0.0f},
+    .vecUp       = {vecUp.x,      vecUp.y,      vecUp.z,      0.0f},
+    .vecForward  = {vecForward.x, vecForward.y, vecForward.z, 0.0f},
+    .fovScale    = tanf(45.0f * M_PI / 180.0f * 0.5f)
+  };
 }
 
 const void VCamera::updateView() {}

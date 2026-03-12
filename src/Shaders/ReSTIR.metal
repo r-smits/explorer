@@ -134,7 +134,10 @@ void temporal_reuse(
 	float4 color = float4(.0f);
 	float3 vec_origin = float3(.0f);
 	float3 vec_normal = float3(.0f);
-	thread uint32_t seed = (1 + tid.x) * (tid.y - tid.x) + (1 + tid.y) * (tid.x + tid.y); 
+	thread uint32_t seed = tid.x * 1973u + tid.y * 9277u + 26699u;
+	seed ^= seed << 6;
+	seed ^= seed >> 26;
+	seed *= 0x27d4eb2du;
 	bool light = false;
 	
 	//	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	//

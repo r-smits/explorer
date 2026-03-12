@@ -15,8 +15,12 @@ namespace Renderer {
 
 struct VCamera {
   simd::float4x4 orientation;
-  simd::float3 vecOrigin;
-	simd::float3 resolution;
+  simd::float4 vecOrigin;    // was float3
+  simd::float4 resolution;   // was float3
+  simd::float4 vecRight;
+  simd::float4 vecUp;
+  simd::float4 vecForward;
+  float fovScale;
 };
 
 enum struct TextureAccess {

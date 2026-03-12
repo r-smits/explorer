@@ -7,24 +7,38 @@
 
 
 void build_ray(thread ray& r, constant VCamera* vcamera, uint2 gid) {
-	
-	// Camera point needs to be within world space:
-	// -1 >= x >= 1 :: Normalized
-	// -1 >= y >= 1 :: We want to scale y in opposite direction for viewport coordinates
-	// -1 >= z >= 0 :: The camera is pointed towards -z axis, as we use right handed
-	float3 pixel = float3(float2(gid), 1.0f);
-	pixel = pixel / vcamera->resolution * 2 - 1;
-	pixel *= float3(1, -1, 1);
 
-	// Projection transformations
-	// orientation = matView * matProjection
-	float3 vecRayDir = (vcamera->orientation * float4(pixel, 1.0f)).xyz;
+	float2 uv = (float2(gid) / vcamera->resolution.xy) * 2.0f - 1.0f;
+    uv.y *= -1.0f;
+
+    float3 vecRayDir = normalize(
+        vcamera->vecForward.xyz +
+        uv.x * vcamera->fovScale * vcamera->vecRight.xyz +
+        uv.y * vcamera->fovScale * vcamera->vecUp.xyz
+    );
+
+    r.origin       = vcamera->vecOrigin.xyz;
+    r.direction    = vecRayDir;
+    r.min_distance = 0.1f;
+    r.max_distance = FLT_MAX;
 	
-	// Ray is modified by reference
-	r.origin = vcamera->vecOrigin;
-	r.direction = vecRayDir;
-	r.min_distance = 0.1f;						// Set to avoid self-occlusion
-	r.max_distance = FLT_MAX;
+	// // Camera point needs to be within world space:
+	// // -1 >= x >= 1 :: Normalized
+	// // -1 >= y >= 1 :: We want to scale y in opposite direction for viewport coordinates
+	// // -1 >= z >= 0 :: The camera is pointed towards -z axis, as we use right handed
+	// float3 pixel = float3(float2(gid), 1.0f);
+	// pixel = pixel / vcamera->resolution * 2 - 1;
+	// pixel *= float3(1, -1, 1);
+
+	// // Projection transformations
+	// // orientation = matView * matProjection
+	// float3 vecRayDir = (vcamera->orientation * float4(pixel, .0f)).xyz;
+	
+	// // Ray is modified by reference
+	// r.origin = vcamera->vecOrigin;
+	// r.direction = normalize(vecRayDir);
+	// r.min_distance = 0.1f;						// Set to avoid self-occlusion
+	// r.max_distance = FLT_MAX;
 }
 
 

@@ -91,25 +91,19 @@ simd::float4x4 EXP::MATH::orthographic(
 
 // This is for right handed vertices!
 simd::float4x4 EXP::MATH::lookat(const simd::float3& eye, const simd::float3& center, const simd::float3& up) {
-
-  // const simd::float3 sF = simd::normalize(sCenter - sEye);
-  // const simd::float3 sS = simd::normalize(simd::cross(sF, vUp));
-  // const simd::float3 sU = simd::cross(sS, sF);
-
   const simd::float3 f = simd::normalize(center - eye);
   const simd::float3 s = simd::normalize(simd::cross(f, up));
   const simd::float3 u = simd::cross(s, f);
 
-  // The GLM variant
-  // const simd::float4 col1 = {s.x, u.x, -f.x, -simd::dot(s, eye)};
-  // const simd::float4 col2 = {s.y, u.y, -f.y, -simd::dot(u, eye)};
-  // const simd::float4 col3 = {s.z, u.z, -f.z, simd::dot(f, eye)};
-  // const simd::float4 col4 = {0.0f, 0.0f, 0.0f, 1.0f};
+  const simd::float4 col1 = {s.x,  u.x,  -f.x,  0.0f};
+  const simd::float4 col2 = {s.y,  u.y,  -f.y,  0.0f};
+  const simd::float4 col3 = {s.z,  u.z,  -f.z,  0.0f};
+  const simd::float4 col4 = {-simd::dot(s, eye), -simd::dot(u, eye), simd::dot(f, eye), 1.0f};
 
-  const simd::float4 col1 = {s.x, s.y, s.z, -simd::dot(s, eye)};
-  const simd::float4 col2 = {u.x, u.y, u.z, -simd::dot(u, eye)};
-  const simd::float4 col3 = {-f.x, -f.y, -f.z, simd::dot(f, eye)};
-  const simd::float4 col4 = {0.0f, 0.0f, 0.0f, 1.0f};
+  // const simd::float4 col1 = {s.x, s.y, s.z, -simd::dot(s, eye)};
+  // const simd::float4 col2 = {u.x, u.y, u.z, -simd::dot(u, eye)};
+  // const simd::float4 col3 = {-f.x, -f.y, -f.z, simd::dot(f, eye)};
+  // const simd::float4 col4 = {0.0f, 0.0f, 0.0f, 1.0f};
   // const simd::float4 col4 = {-simd::dot(s, eye), -simd::dot(u, eye),
   // simd::dot(f, eye), 1.0f};
   return simd_matrix(col1, col2, col3, col4);

@@ -30,6 +30,7 @@ class VCamera {
 		simd::float2 lastMousePos;
 		simd::float2 resolution;
 		
+    simd::float3 vecOrigin;
 		simd::float3 vecForward;
 		simd::float3 vecUp;
 		simd::float3 vecRight;
@@ -40,7 +41,7 @@ class VCamera {
 		simd::float4x4 view;
 		simd::float4x4 projection;
 
-		Renderer::VCamera transforms;
+		Renderer::VCamera vcamera;
 
 	public:
 		VCamera();
@@ -52,6 +53,7 @@ class VCamera {
 		const void setIsometric();
 		const simd::float3& getVRight();
 		const Renderer::VCamera& update();
+    const void flush_to_gpu();
 		
 };
 
