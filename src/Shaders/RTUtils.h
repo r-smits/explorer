@@ -57,7 +57,7 @@ float lambertian(
 	thread float3& wi,
 	thread float3& normal
 ) {
-	return max(0.001, saturate(dot(normalize(wi), normal)));
+	return max(dot(normalize(wi), normal), 0.0f);
 }
 
 // Inverse square: light intensity inversely proportional to distance.
