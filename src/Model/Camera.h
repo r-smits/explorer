@@ -28,9 +28,11 @@ class VCamera {
 		
 		simd::float2 speed;
 		simd::float2 lastMousePos;
-		simd::float2 resolution;
+		simd::float3 resolution;
+    float fovScale;
 		
 		simd::float3 vecForward;
+    simd::float3 vecOrigin;
 		simd::float3 vecUp;
 		simd::float3 vecRight;
 					
@@ -52,53 +54,8 @@ class VCamera {
 		const void setIsometric();
 		const simd::float3& getVRight();
 		const Renderer::VCamera& update();
+    const Renderer::VCamera& get();
 		
 };
 
-class DefaultCamera : public Camera {
-
-public:
-  DefaultCamera();
-  ~DefaultCamera(){};
-
-public:
-  virtual DefaultCamera* project() override;
-
-public:
-  void setFov(float fov);
-  void setAspectRatio(float aspectRatio);
-  void setNearZ(float nearZ);
-  void setFarZ(float farZ);
-
-private:
-  float fov;
-  float aspectRatio;
-  float nearZ;
-  float farZ;
 };
-
-class OrthographicCamera : public Camera {
-
-public:
-  OrthographicCamera();
-  ~OrthographicCamera(){};
-
-public:
-  virtual OrthographicCamera* project() override;
-
-public:
-  void setLeft(float left);
-  void setRight(float right);
-  void setTop(float top);
-  void setBottom(float bottom);
-
-private:
-  float left;
-  float right;
-  float top;
-  float bottom;
-	float nearZ;
-	float farZ;
-};
-
-}; // namespace EXP

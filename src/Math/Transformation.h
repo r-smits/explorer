@@ -37,6 +37,8 @@ simd::float4x4 lookat2(const simd::float3& eye, const simd::float3& center, cons
 simd::float4x4 rotate(const float& angle, const simd::float3& axis);
 simd::quatf cross(const simd::quatf& a, const simd::quatf& b);
 MTL::PackedFloat4x3 pack(const simd::float4x4& m4x4);
+MTL::PackedFloat3 pack(const simd::float3& f3);
+float toRadians(const float& degrees);
 } // namespace MATH
 
 } // namespace EXP

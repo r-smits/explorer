@@ -2,7 +2,7 @@
 #include <Math/Transformation.h>
 
 const float RAD = M_PI / 180;
-float toRadians(const float& degrees) { return degrees * RAD; }
+float EXP::MATH::toRadians(const float& degrees) { return degrees * RAD; }
 simd::float4x4 EXP::MATH::identity() { return simd::float4x4(1.0f); }
 
 simd::float4x4 EXP::MATH::translation(const simd::float3& pos) {
@@ -164,6 +164,10 @@ MTL::PackedFloat4x3 EXP::MATH::pack(const simd::float4x4& m4x4) {
 	MTL::PackedFloat3 col4 = {m4x4.columns[3].x, m4x4.columns[3].y, m4x4.columns[3].z};
 	MTL::PackedFloat4x3 result = {col1, col2, col3, col4};
 	return result;
+}
+
+MTL::PackedFloat3 EXP::MATH::pack(const simd::float3& f3) {
+  return {f3.x, f3.y, f3.z};
 }
 
 /**

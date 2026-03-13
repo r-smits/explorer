@@ -68,7 +68,10 @@ add_executable(EXPLORER
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Model/Mesh.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Model/Object.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Model/Object.cpp
-
+	${CMAKE_CURRENT_SOURCE_DIR}/src/Shaders/RayUtils.h
+	${CMAKE_CURRENT_SOURCE_DIR}/src/Shaders/RTUtils.h
+	${CMAKE_CURRENT_SOURCE_DIR}/src/Shaders/ShaderTypes.h
+	${CMAKE_CURRENT_SOURCE_DIR}/src/Shaders/ReSTIR.metal 
 )
 
 # Configure compilation variables
@@ -76,6 +79,10 @@ set_target_properties(EXPLORER PROPERTIES
 	CXX_STANDARD 17
 	CXX_STANDARD_REQUIRED ON
 	CXX_EXTENSIONS ON
+)
+
+set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/src/Shaders/ReSTIR.metal PROPERTIES
+    OBJECT_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/Shaders/RayUtils.h;${CMAKE_CURRENT_SOURCE_DIR}/src/Shaders/ShaderTypes.h;${CMAKE_CURRENT_SOURCE_DIR}/src/Shaders/RTUtils.h"
 )
 
 # Metal cpp headers

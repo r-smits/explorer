@@ -21,15 +21,17 @@ EXP::RayTraceLayer::RayTraceLayer(MTL::Device* device, std::shared_ptr<const App
 	MTL::Function* gbufferFn = gbufferLib->newFunction(EXP::nsString("g_buffer"));
 	MTL::Function* temporalReuseFn = temporalReuseLib->newFunction(EXP::nsString("temporal_reuse"));
 
-	this->_gbufferState = Renderer::State::Compute(device, gbufferFn);
-	this->_temporalReuseState = Renderer::State::Compute(device, temporalReuseFn);
+	_gbufferState = Renderer::State::Compute(device, gbufferFn);
+	_temporalReuseState = Renderer::State::Compute(device, temporalReuseFn);
 
-	this->_vertexDescriptor = Renderer::Descriptor::vertex(device, Renderer::Layouts::vertexNIP);
+	_vertexDescriptor = Renderer::Descriptor::vertex(device, Renderer::Layouts::vertexNIP);
 	CGRect frame = ViewAdapter::bounds();
-	this->_gridSize = MTL::Size::Make(frame.size.width * 2, frame.size.height * 2, 1);
-	this->_resolution = {(float)_gridSize.width, (float)_gridSize.height, (float)_gridSize.depth};
+	_gridSize = MTL::Size::Make(frame.size.width * 2, frame.size.height * 2, 1);
+	_resolution = {(float)_gridSize.width, (float)_gridSize.height, (float)_gridSize.depth};
 
-	this->_threadGroupSize = calcGridsize(_temporalReuseState);
+	_threadGroupSize = calcGridsize(_temporalReuseState);
+	_temporalDescriptor = MTL::ComputePassDescriptor::alloc()->init();
+	_temporalDescriptor->retain();
 		
 	buildModels(device);
 	buildAccelerationStructures(device);
@@ -64,23 +66,29 @@ MTL::Size EXP::RayTraceLayer::calcGridsize(const MTL::ComputePipelineState* stat
 }
 
 void EXP::RayTraceLayer::buildAccelerationStructures(MTL::Device* device) {
+	// events to wait for while building
 	_dispatchEvent = device->newEvent();	
 	_buildEvent = device->newEvent();
-  _primitiveDescriptors = Renderer::Descriptor::primitives(
-			EXP::SCENE::getModels(), 
-			_vertexDescriptor->layouts()->object(0)->stride(),
-			_vertexDescriptor->layouts()->object(1)->stride()
-	);
-  MTL::AccelerationStructureSizes sizes = Renderer::Acceleration::sizes(device, _primitiveDescriptors);
-  _heap = Renderer::Heap::primitives(device, sizes);
-  _primitiveAccStructures = Renderer::Acceleration::primitives(device, _heap, queue, _primitiveDescriptors, sizes, _buildEvent);
-  _instanceDescriptor = Renderer::Descriptor::instance(device, _primitiveAccStructures, EXP::SCENE::getModels());
-  _instanceAccStructure = Renderer::Acceleration::instance(device, queue, _instanceDescriptor, _buildEvent);
+
+	// primitive acc structures
+	int vStride = _vertexDescriptor->layouts()->object(0)->stride();
+	int pStride = _vertexDescriptor->layouts()->object(1)->stride();
+	_primitiveDescriptors = Renderer::Descriptor::primitives(EXP::SCENE::getMeshes(), vStride, pStride);
+	MTL::AccelerationStructureSizes primitiveSizes = Renderer::Acceleration::sizes(device, _primitiveDescriptors);
+	_heap = Renderer::Heap::primitives(device, primitiveSizes);
+	_primitiveAccStructures = Renderer::Acceleration::primitives(device, _heap, queue, _primitiveDescriptors, primitiveSizes, _buildEvent);
+	
+	// instance acc structure
+	_instanceDescriptor = Renderer::Descriptor::instance(device, _primitiveAccStructures, EXP::SCENE::getMeshes())->retain();
+	_instanceSizes = device->accelerationStructureSizes(_instanceDescriptor);
+	_scratchBuffer = device->newBuffer(_instanceSizes.buildScratchBufferSize, MTL::ResourceStorageModePrivate)->retain();
+	_instanceAccStructure = device->newAccelerationStructure(_instanceSizes.accelerationStructureSize);
+  	_instanceAccStructure = Renderer::Acceleration::instance(device, queue, _instanceAccStructure, _instanceDescriptor, _scratchBuffer, _buildEvent);
 }
 
 void EXP::RayTraceLayer::rebuildAccelerationStructures(MTK::View* view) {
-  _instanceDescriptor = Renderer::Descriptor::instance(view->device(), _primitiveAccStructures, EXP::SCENE::getModels());
-	_instanceAccStructure = Renderer::Acceleration::instance(view->device(), queue, _instanceDescriptor, _buildEvent);
+    _instanceDescriptor = Renderer::Descriptor::updateTransformationMatrix(EXP::SCENE::getMeshes(), _instanceDescriptor);
+    _instanceAccStructure = Renderer::Acceleration::instance(device, queue, _instanceAccStructure, _instanceDescriptor, _scratchBuffer, _buildEvent);
 }
 
 void EXP::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* notUsed) {
@@ -123,24 +131,22 @@ void EXP::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* no
 	**/
 	
 	// ------------------------------ //
-	// Temporal Re-use RESTIR GI			//
+	// Temporal Re-use RESTIR GI	  //
 	// ------------------------------ //
 	MTL::CommandBuffer* temporalCommand = queue->commandBuffer();
-	MTL::ComputePassDescriptor* temporalDescriptor = MTL::ComputePassDescriptor::alloc()->init();
-	MTL::ComputeCommandEncoder* temporalEncoder = temporalCommand->computeCommandEncoder(temporalDescriptor);
+	temporalCommand->encodeWait(_buildEvent, 2);
+	MTL::ComputeCommandEncoder* temporalEncoder = temporalCommand->computeCommandEncoder(_temporalDescriptor);
 	
-	temporalEncoder->setComputePipelineState(this->_temporalReuseState);
+	temporalEncoder->setComputePipelineState(_temporalReuseState);
 	temporalEncoder->setTexture(view->currentDrawable()->texture(), 0);
 	
 	temporalEncoder->useHeap(_heap);
-	temporalEncoder->setAccelerationStructure(_instanceAccStructure, 1);	
+	temporalEncoder->setAccelerationStructure(_instanceAccStructure, 1);
+	temporalEncoder->useResource(_instanceAccStructure, MTL::ResourceUsageRead);
 	
-	for (MTL::Resource* resource : EXP::SCENE::getResources()) {
-		temporalEncoder->useResource(resource, MTL::ResourceUsageSample);
-  }
-	
+	const std::vector<MTL::Resource*>& resources = EXP::SCENE::getResources();
+	temporalEncoder->useResources(resources.data(), resources.size(), MTL::ResourceUsageRead | MTL::ResourceUsageSample);
 	temporalEncoder->setBuffer(EXP::SCENE::getBindlessScene(), 0, 2);
-
 	temporalEncoder->dispatchThreads(_gridSize, _threadGroupSize);
 	temporalEncoder->endEncoding();
 

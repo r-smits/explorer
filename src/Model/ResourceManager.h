@@ -14,6 +14,7 @@ class SCENE {
 	static inline MTL::Buffer* vcameraBuffer = nullptr;
 	
 	static inline std::vector<EXP::Model*> models = {};
+	static inline std::vector<EXP::MDL::Mesh*> meshes = {};
 	static inline std::unordered_map<std::string, int> modnames = {};
 	static inline MTL::Buffer* sceneBuffer = nullptr;
 
@@ -46,6 +47,7 @@ public:
 	static void addModel(EXP::Model* model);
 	static EXP::Model* getModel(const std::string& name);
 	static const std::vector<EXP::Model*>& getModels();
+	static const std::vector<EXP::MDL::Mesh*>& getMeshes();
 
 	static const int& addTexture(const Renderer::Texture& texture);
 	static const int& addTexture(MTL::Device* device, const std::string& name, const Renderer::TextureAccess& access);

@@ -106,13 +106,11 @@ float4 transport_ray(
 	int bounces,
 	thread uint32_t& seed
 ) {
-	
 	// Contribution is set to color because it will continue from previous light transport.
 	float4 contribution = float(1.0f);
 	float4 sky_color = float4(.3f, .4f, .5f, 1.0f);
 	float4 color = float4(.0f);
 	bool bounce_continue = true;
-	
 	for (int i = 1; i <= bounces && bounce_continue; i += 1) {
 		shade_ray(r, structure, scene, gid, bounces, seed, contribution, bounce_continue); 
 	}
@@ -129,12 +127,11 @@ void temporal_reuse(
 	instance_acceleration_structure structure		[[ buffer(1)	]],
 	constant Scene* scene							[[ buffer(2)	]]
 ) {
-	
-	float4 curr_reservoir = float4(.0f);
+	float4 curr_reservoir = float4(.0000f);
 	float4 color = float4(.0f);
-	float3 vec_origin = float3(.0f);
 	float3 vec_normal = float3(.0f);
 	thread uint32_t seed = (1 + tid.x) * (tid.y - tid.x) + (1 + tid.y) * (tid.x + tid.y); 
+	bool hit = false;
 	bool light = false;
 	
 	//	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	//
@@ -148,7 +145,17 @@ void temporal_reuse(
 
 	ray r;
 	build_ray(r, scene->vcamera, tid);
-	if (!color_ray(r, structure, scene, tid, color, vec_origin, vec_normal, seed, light) || light) {
+	ray ground_r = r;
+	float distance;
+	if (!(hit = color_ray(r, structure, scene, tid, color, vec_normal, seed, light))) {
+		if (hit = intersect_ground_plane(ground_r, -0.2f, distance, vec_normal, color)) {
+			r = ground_r;
+			// buffer.write(color, tid);
+			// return;
+		}
+	}
+
+	if (!hit || light) {
 		buffer.write(color, tid);
 		return;
 	}

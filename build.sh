@@ -1,4 +1,6 @@
 echo "[Script] Building cmake files ..."
+export MTL_CACHE_ENABLE=0
+rm -rf ~/Library/Caches/com.apple.metal
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -S . -B ./build 
 echo "[Script] Building project binary ..."
 ninja -v -C ./build

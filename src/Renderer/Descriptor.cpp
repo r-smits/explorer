@@ -1,8 +1,11 @@
 #include <DB/Repository.hpp>
 #include <Renderer/Descriptor.h>
 
-MTL::VertexDescriptor*
-Renderer::Descriptor::vertex(MTL::Device* device, const BufferLayouts& layouts) {
+
+MTL::VertexDescriptor* Renderer::Descriptor::vertex(
+  MTL::Device* device, 
+  const BufferLayouts& layouts
+) {
   MTL::VertexDescriptor* vertexDescriptor = MTL::VertexDescriptor::alloc()->init();
 
   int elementIndex = 0;
@@ -54,8 +57,7 @@ MTL::RenderPipelineDescriptor* Renderer::Descriptor::render(
   return descriptor;
 }
 
-MTL::ComputePipelineDescriptor*
-Renderer::Descriptor::compute(MTL::Device* device, const std::string& path) {
+MTL::ComputePipelineDescriptor* Renderer::Descriptor::compute(MTL::Device* device, const std::string& path) {
   MTL::Library* library = Repository::Shaders::readLibrary(device, path);
   MTL::ComputePipelineDescriptor* descriptor = MTL::ComputePipelineDescriptor::alloc()->init();
   descriptor->setSupportAddingBinaryFunctions(true);
@@ -64,33 +66,31 @@ Renderer::Descriptor::compute(MTL::Device* device, const std::string& path) {
   return descriptor;
 }
 
-std::vector<MTL::PrimitiveAccelerationStructureDescriptor*> Renderer::Descriptor::primitives(
-    const std::vector<EXP::Model*>& scene, const int& vStride, const int& pStride
+std::vector<prim_acc_desc*> Renderer::Descriptor::primitives(
+  mesh_array meshes, 
+  const int& vStride, 
+  const int& pStride
 ) {
-  std::vector<EXP::MDL::Mesh*> meshes;
-  for (EXP::Model* model : scene) {
-    for (EXP::MDL::Mesh* mesh : model->meshes)
-      meshes.emplace_back(mesh);
-  }
-  std::vector<MTL::PrimitiveAccelerationStructureDescriptor*> descriptors;
-  for (EXP::MDL::Mesh* mesh : meshes)
-    descriptors.emplace_back(Descriptor::primitive(mesh, vStride, pStride));
+  std::vector<prim_acc_desc*> descriptors;  
+  for (auto mesh : meshes) descriptors.emplace_back(Descriptor::primitive(mesh, vStride, pStride));
   return descriptors;
 }
 
+
 // For every mesh :: 1 PrimitiveAccelerationStructure, 1 instance
 // For every submesh :: 1 Geometry
-MTL::PrimitiveAccelerationStructureDescriptor*
-Renderer::Descriptor::primitive(EXP::MDL::Mesh* mesh, const int& vStride, const int& pStride) {
-
-  std::vector<MTL::AccelerationStructureTriangleGeometryDescriptor*> geometryDescriptors;
+prim_acc_desc* Renderer::Descriptor::primitive(
+  EXP::MDL::Mesh* mesh, 
+  const int& vStride, 
+  const int& pStride
+) {
+  std::vector<geom_desc*> geometryDescriptors;
   std::vector<EXP::MDL::Submesh*> submeshes = mesh->getSubmeshes();
-
+  prim_acc_desc* dPrimitive = prim_acc_desc::descriptor();
+ 
   for (int i = 0; i < mesh->count; i++) {
-    MTL::AccelerationStructureTriangleGeometryDescriptor* geometryDescriptor =
-        MTL::AccelerationStructureTriangleGeometryDescriptor::descriptor();
+    geom_desc* geometryDescriptor = geom_desc::descriptor();
     EXP::MDL::Submesh* submesh = submeshes[i];
-
     // A: Using a packed float, set to 3float in buffer
     // Using non-interleaved vertex buffer
     geometryDescriptor->setVertexBuffer(mesh->buffers[0]);
@@ -109,80 +109,49 @@ Renderer::Descriptor::primitive(EXP::MDL::Mesh* mesh, const int& vStride, const 
     geometryDescriptor->setTriangleCount(submesh->indexCount / 3);
     geometryDescriptors.emplace_back(geometryDescriptor);
   }
-
-  MTL::PrimitiveAccelerationStructureDescriptor* dPrimitive =
-      MTL::PrimitiveAccelerationStructureDescriptor::descriptor();
-  NS::Array* aGeometries =
-      NS::Array::array((NS::Object* const*)&geometryDescriptors[0], mesh->count);
-  dPrimitive->setGeometryDescriptors(aGeometries);
+  dPrimitive->setGeometryDescriptors(
+    NS::Array::array(reinterpret_cast<NS::Object* const*>(&geometryDescriptors[0]), mesh->count)
+  );
   return dPrimitive;
 }
 
-MTL::InstanceAccelerationStructureDescriptor* Renderer::Descriptor::instance(
+
+inst_acc_desc* Renderer::Descriptor::instance(
     MTL::Device* device,
-    const std::vector<MTL::AccelerationStructure*>& primitiveStructures,
-    const std::vector<EXP::Model*>& scene
+    acc_array primitiveStructures,
+    mesh_array meshes
 ) {
-  int count = 0;
-  for (EXP::Model* model : scene)
-    count += model->meshCount;
-  EXP::MDL::Mesh* meshes[count];
-
-  int currentCount = 0;
-  for (EXP::Model* model : scene) {
-    for (EXP::MDL::Mesh* mesh : model->meshes) {
-      meshes[currentCount] = mesh;
-      currentCount += 1;
-    }
-  }
-
-  MTL::InstanceAccelerationStructureDescriptor* descriptor =
-      MTL::InstanceAccelerationStructureDescriptor::descriptor();
-  NS::Array* primitiveStructuresArray =
-      NS::Array::array((NS::Object* const*)&primitiveStructures[0], primitiveStructures.size());
-  descriptor->setInstancedAccelerationStructures(primitiveStructuresArray);
-  descriptor->setInstanceCount(count);
-
-  MTL::Buffer* instanceDescriptorBuffer = device->newBuffer(
-      sizeof(MTL::AccelerationStructureInstanceDescriptor) * count, MTL::ResourceStorageModeShared
+  inst_acc_desc* descriptor = inst_acc_desc::descriptor();  
+  descriptor->setInstancedAccelerationStructures(
+    NS::Array::array(reinterpret_cast<NS::Object* const*>(&primitiveStructures[0]), primitiveStructures.size())
   );
-
-  MTL::AccelerationStructureInstanceDescriptor* instanceDescriptors =
-      (MTL::AccelerationStructureInstanceDescriptor*)instanceDescriptorBuffer->contents();
-
-  for (int i = 0; i < count; i++) {
-    instanceDescriptors[i].accelerationStructureIndex = i;
-    instanceDescriptors[i].intersectionFunctionTableOffset = 0;
-    instanceDescriptors[i].mask = 0xFF;
-    instanceDescriptors[i].options = MTL::AccelerationStructureInstanceOptionNone;
-    MTL::PackedFloat4x3 modelViewTransform = EXP::MATH::pack(meshes[i]->f4x4()->get());
-    instanceDescriptors[i].transformationMatrix = modelViewTransform;
+  descriptor->setInstanceCount(meshes.size());
+  size_t inst_desc_size = sizeof(inst_desc) * meshes.size();
+  MTL::Buffer* instanceDescriptorBuffer = device->newBuffer(inst_desc_size, MTL::ResourceStorageModeShared);
+  inst_desc* instanceDescriptors = static_cast<inst_desc*>(instanceDescriptorBuffer->contents());
+  for (unsigned int i = 0; i < meshes.size(); i+=1) {
+    instanceDescriptors[i] = {
+      .accelerationStructureIndex = i,
+      .intersectionFunctionTableOffset = 0,
+      .mask = 0xFF,
+      .options = MTL::AccelerationStructureInstanceOptionNone,
+      .transformationMatrix = EXP::MATH::pack(meshes[i]->f4x4()->get())
+    };
   }
-
   descriptor->setInstanceDescriptorBuffer(instanceDescriptorBuffer);
   return descriptor;
 }
 
-MTL::InstanceAccelerationStructureDescriptor* Renderer::Descriptor::updateTransformationMatrix(
-    const std::vector<EXP::Model*>& scene,
-    MTL::InstanceAccelerationStructureDescriptor* descriptor
+
+// NOTE TO SELF: INST_ACC_DESC contains ACC_INST_DEC
+// SO: INST_ACC_DESC > ACC_INST_DEC
+inst_acc_desc* Renderer::Descriptor::updateTransformationMatrix(
+  mesh_array meshes, 
+  inst_acc_desc* descriptor
 ) {
-  int count = 0;
-  for (EXP::Model* model : scene)
-    count += model->meshCount;
-
-  EXP::MDL::Mesh* meshes[count];
-  int currentCount = 0;
-  for (EXP::Model* model : scene) {
-    for (EXP::MDL::Mesh* mesh : model->meshes) {
-      meshes[currentCount] = mesh;
-      currentCount += 1;
-    }
-  }
-
   MTL::Buffer* descriptorBuffer = descriptor->instanceDescriptorBuffer();
-  auto* descriptors = (MTL::AccelerationStructureInstanceDescriptor*)descriptorBuffer->contents();
-  for (int i = 0; i < count; i++) {
+  inst_desc* descriptors = static_cast<inst_desc*>(descriptorBuffer->contents());
+  for (int i = 0; i < meshes.size(); i+=1) {
     descriptors[i].transformationMatrix = EXP::MATH::pack(meshes[i]->f4x4()->get());
   }
   descriptor->setInstanceDescriptorBuffer(descriptorBuffer);
