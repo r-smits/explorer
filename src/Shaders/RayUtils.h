@@ -7,24 +7,47 @@
 
 
 void build_ray(thread ray& r, constant VCamera* vcamera, uint2 gid) {
-	
-	// Camera point needs to be within world space:
-	// -1 >= x >= 1 :: Normalized
-	// -1 >= y >= 1 :: We want to scale y in opposite direction for viewport coordinates
-	// -1 >= z >= 0 :: The camera is pointed towards -z axis, as we use right handed
-	float3 pixel = float3(float2(gid), 1.0f);
-	pixel = pixel / vcamera->resolution * 2 - 1;
-	pixel *= float3(1, -1, 1);
+	float2 uv = (float2(gid) / vcamera->resolution.xy) * 2.0f - 1.0f;
+    uv.y *= -1.0f;
 
-	// Projection transformations
-	// orientation = matView * matProjection
-	float3 vecRayDir = (vcamera->orientation * float4(pixel, 1.0f)).xyz;
+    float aspectRatio = vcamera->resolution.x / vcamera->resolution.y;
+    float orthoScale = vcamera->fovScale; // repurpose as ortho half-width
+
+    float3 right   = float3(vcamera->vecRight);
+    float3 up      = float3(vcamera->vecUp);
+    float3 forward = float3(vcamera->vecForward);
+
+    // All rays parallel, origins spread across the view plane
+    r.origin    = vcamera->vecOrigin 
+                + uv.x * orthoScale * aspectRatio * right 
+                + uv.y * orthoScale * up - forward * 5;
+    r.direction = normalize(forward);
+    r.min_distance = 0.1f;
+    r.max_distance = FLT_MAX;
+}
+
+
+bool intersect_ground_plane(
+    thread ray& r, 
+    float plane_y,
+    thread float& distance,
+	thread float3& vec_normal,
+	thread float4& color
+) {
+    // Ray-plane intersection: r.origin.y + t * r.direction.y = plane_y
+    float denom = r.direction.y;
+    if (abs(denom) < 1e-6f) return false;
+    distance = (plane_y - r.origin.y) / denom;
+    if (distance < r.min_distance || distance > r.max_distance) return false;
+
+	r.origin = r.origin + r.direction * distance;
+	vec_normal = float3(0.0f, 1.0f, 0.0f);
 	
-	// Ray is modified by reference
-	r.origin = vcamera->vecOrigin;
-	r.direction = vecRayDir;
-	r.min_distance = 0.1f;						// Set to avoid self-occlusion
-	r.max_distance = FLT_MAX;
+	// Grid pattern as the surface color
+	float2 grid = abs(fract(r.origin.xz * 5.0f) - .5f);
+	float line = min(grid.x, grid.y);
+	color = mix(float4(.3f, .3f, .3f, 1.f), float4(.1f, .1f, .1f, 1.f), step(line, 0.01f));
+	return true;
 }
 
 
@@ -83,7 +106,6 @@ bool color_ray(
 	constant Scene* scene,
 	uint2 gid,
 	thread float4& color,
-	thread float3& vec_origin,
 	thread float3& vec_normal,
 	thread uint32_t& seed,
 	thread bool& light
@@ -116,7 +138,6 @@ bool color_ray(
 	// You can chance this for materials and so forth
 	// Called: BSDF: bi-directional scattering distribution function.
 	r.origin = r.origin + r.direction * intersection.distance;
-	vec_origin = r.origin;		
 	seed = gid.x * (intersection.primitive_id * bary_3d.z) + gid.y * (intersection.primitive_id * bary_2d.y);
 	float3 jittered_normal = normalize(vec_normal + uniform_pdf(seed) * .0);
 	r.direction = reflect(r.direction, jittered_normal);
@@ -127,9 +148,9 @@ bool color_ray(
 	float4 wo_color = scene->textsample[prim->flags[0]].value.sample(sampler2d, txcoord) + prim->color[0];
 	
 	color += contribution * wo_color;
-	if (!light) color *= wi_dot_n;
 	light = prim->flags[1];
-	return !light;
+	if (!light) color *= wi_dot_n;
+	return true;
 }
 
 /**

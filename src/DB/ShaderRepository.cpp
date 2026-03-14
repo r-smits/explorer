@@ -14,7 +14,8 @@ NS::String* Repository::Shaders::open(std::string path) {
 MTL::Library* Repository::Shaders::readLibrary(MTL::Device* device, std::string path) {
   DEBUG("Loading: " + path + ".metal" + " ... ");
   NS::Error* error = nullptr;
-  MTL::CompileOptions* options = nullptr;
+  MTL::CompileOptions* options = MTL::CompileOptions::alloc()->init();
+  options->setFastMathEnabled(true);
   if (!device) WARN("No device found!");
   MTL::Library* library = device->newLibrary(open(path + ".metal"), options, &error);
   if (!library) EXP::printError(error);

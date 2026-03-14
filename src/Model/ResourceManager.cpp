@@ -7,11 +7,15 @@
 
 using namespace EXP;
 
+constexpr MTL::PixelFormat mtl_rgb16 = MTL::PixelFormat::PixelFormatRGBA16Float;
+using mtl_tx_desc = MTL::TextureDescriptor;
+
 const std::vector<MTL::Resource*>& SCENE::getResources() { return resources; };
 
 const std::vector<Renderer::Texture>& SCENE::getTextures() { return textSample; };
 
 const std::vector<EXP::Model*>& SCENE::getModels() { return models; };
+const std::vector<EXP::MDL::Mesh*>& SCENE::getMeshes() { return meshes; };
 
 MTL::Buffer* SCENE::getBindlessScene() { return sceneBuffer; };
 
@@ -27,10 +31,11 @@ EXP::Model* SCENE::getModel(const std::string& name) {
 void SCENE::addModel(
     MTL::Device* device, MTL::VertexDescriptor* vertexDescriptor, const std::string& path, const std::string& name
 ) {
-  EXP::Model* model = Repository::Meshes::read(device, vertexDescriptor, path);
-  models.emplace_back(model);
+	EXP::Model* model = Repository::Meshes::read(device, vertexDescriptor, path);
+	models.emplace_back(model);
 	modnames.insert({name, models.size()-1});
 	DEBUG("Model stored. Name: " + model->name);
+	meshes.insert(meshes.end(), model->meshes.begin(), model->meshes.end());
 };
 
 const int& SCENE::addTexture(const Renderer::Texture& texture) {
@@ -62,13 +67,8 @@ const int& SCENE::addTexture(const Renderer::Texture& texture) {
 }
 
 const int& SCENE::addTexture(MTL::Device* device, const std::string& name, const Renderer::TextureAccess& access) {
-	MTL::TextureDescriptor* textureDescriptor = MTL::TextureDescriptor::texture2DDescriptor(
-			MTL::PixelFormat::PixelFormatRGBA16Float,
-			2000, 
-			1400, 
-			false
-	);
-	MTL::Texture* mtlTexture = device->newTexture(textureDescriptor);
+	mtl_tx_desc* txDesc = MTL::TextureDescriptor::texture2DDescriptor(mtl_rgb16, 2000, 1400, false);
+	MTL::Texture* mtlTexture = device->newTexture(txDesc);
 	const Renderer::Texture texture {name, access, mtlTexture};
 	return EXP::SCENE::addTexture(texture);	
 }
@@ -142,9 +142,7 @@ MTL::Buffer* SCENE::buildVCameraBuffer(MTL::Device* device) {
 	Renderer::VCamera* vcameraPtr = (Renderer::VCamera*) vcameraBuffer->contents();
 
 	const Renderer::VCamera& updatedVCamera = vcamera->update();
-	vcameraPtr->vecOrigin = updatedVCamera.vecOrigin;
-	vcameraPtr->resolution = updatedVCamera.resolution;
-	vcameraPtr->orientation = updatedVCamera.orientation;
+	memcpy(vcameraBuffer->contents(), &updatedVCamera, sizeof(Renderer::VCamera));
 	return vcameraBuffer;
 };
 
@@ -201,13 +199,10 @@ const void SCENE::buildBindlessScene(MTL::Device* device) {
 	gpuScene->lightsCount = SCENE::lights.size();
 };
 
-
 const void SCENE::updateBindlessScene(MTL::Device* device) {
 	Renderer::VCamera* vcameraPtr = (Renderer::VCamera*)vcameraBuffer->contents();
 	const Renderer::VCamera& updatedVCamera = vcamera->update();
-	vcameraPtr->vecOrigin = updatedVCamera.vecOrigin;
-	vcameraPtr->resolution = updatedVCamera.resolution;
-	vcameraPtr->orientation = updatedVCamera.orientation;
+	memcpy(vcameraBuffer->contents(), &updatedVCamera, sizeof(Renderer::VCamera));
 
 	Renderer::Mesh* meshPtr = (Renderer::Mesh*)lightsBuffer->contents();
 	for (int i = 0; i < SCENE::lights.size(); i += 1) {

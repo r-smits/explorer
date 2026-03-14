@@ -5,7 +5,7 @@
 
 MTL::AccelerationStructureSizes Renderer::Acceleration::sizes(
 		MTL::Device* device,
-		const std::vector<MTL::PrimitiveAccelerationStructureDescriptor*>& descriptors
+		prim_acc_desc_array descriptors
 ) {
   MTL::AccelerationStructureSizes totalSizes = {0, 0, 0};
   for (int i = 0; i < descriptors.size(); i++) {
@@ -23,7 +23,7 @@ std::vector<MTL::AccelerationStructure*> Renderer::Acceleration::primitives(
     MTL::Device* device,
     MTL::Heap* heap,
     MTL::CommandQueue* queue,
-    const std::vector<MTL::PrimitiveAccelerationStructureDescriptor*>& descriptors,
+    prim_acc_desc_array descriptors,
     const MTL::AccelerationStructureSizes& sizes,
     MTL::Event* buildEvent
 ) {
@@ -46,22 +46,24 @@ std::vector<MTL::AccelerationStructure*> Renderer::Acceleration::primitives(
 }
 
 MTL::AccelerationStructure* Renderer::Acceleration::instance(
-    MTL::Device* device,
-    MTL::CommandQueue* queue,
-    MTL::InstanceAccelerationStructureDescriptor* descriptor,
-    MTL::Event* buildEvent
+  MTL::Device* device,
+  MTL::CommandQueue* queue,
+  MTL::AccelerationStructure* structure,
+  MTL::InstanceAccelerationStructureDescriptor* descriptor,
+  MTL::Buffer* scratch_buffer,
+  MTL::Event* buildEvent
 ) {
-	MTL::CommandBuffer* cmd = queue->commandBuffer();
+  MTL::CommandBuffer* cmd = queue->commandBuffer();
   cmd->encodeWait(buildEvent, 1);
-  MTL::AccelerationStructureSizes sizes = device->accelerationStructureSizes(descriptor);
-  MTL::Buffer* scratchBuffer = device->newBuffer(sizes.buildScratchBufferSize, MTL::ResourceStorageModePrivate);
-  MTL::AccelerationStructure* structure = device->newAccelerationStructure(sizes.accelerationStructureSize);
   MTL::AccelerationStructureCommandEncoder* encoder = cmd->accelerationStructureCommandEncoder();
-  encoder->buildAccelerationStructure(structure, descriptor, scratchBuffer, NS::UInteger(0));
+  encoder->buildAccelerationStructure(structure, descriptor, scratch_buffer, NS::UInteger(0));
   encoder->endEncoding();
+  cmd->encodeSignalEvent(buildEvent, 2);  // signal render pass
+  cmd->addCompletedHandler([scratch_buffer](MTL::CommandBuffer*) {});
   cmd->commit();
   return structure;
 }
+
 
 MTL::AccelerationStructure* Renderer::Acceleration::refit(
 		MTL::Device* device,
@@ -70,15 +72,15 @@ MTL::AccelerationStructure* Renderer::Acceleration::refit(
 		MTL::AccelerationStructure* structure,
 		MTL::Event* buildEvent
 ) {
-	MTL::CommandBuffer* cmd = queue->commandBuffer();
-  cmd->encodeWait(buildEvent, 2);
+  MTL::CommandBuffer* cmd = queue->commandBuffer();
   MTL::AccelerationStructureSizes sizes = device->accelerationStructureSizes(descriptor);
-  MTL::Buffer* scratchBuffer = device->newBuffer(sizes.buildScratchBufferSize, MTL::ResourceStorageModePrivate);
+  MTL::Buffer* scratchBuffer = device->newBuffer(sizes.refitScratchBufferSize, MTL::ResourceStorageModePrivate);
   MTL::AccelerationStructureCommandEncoder* encoder = cmd->accelerationStructureCommandEncoder();
-	encoder->refitAccelerationStructure(structure, descriptor, nullptr, scratchBuffer, 0);
+  encoder->refitAccelerationStructure(structure, descriptor, nullptr, scratchBuffer, 0);
   encoder->endEncoding();
-  cmd->encodeSignalEvent(buildEvent, 2);
   cmd->commit();
+  cmd->waitUntilCompleted();
+  scratchBuffer->release();
   return structure;
 }
 

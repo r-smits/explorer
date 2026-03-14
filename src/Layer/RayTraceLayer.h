@@ -17,6 +17,7 @@ public: // Setting up layer
   ~RayTraceLayer() {
     device->release();
     queue->release();
+    _instanceDescriptor->release();
   };
 
 public: // Event
@@ -49,10 +50,20 @@ private:
 	MTL::Event* _buildEvent;
 	MTL::Event* _dispatchEvent;
   MTL::Heap* _heap;
+
+private:
 	std::vector<MTL::PrimitiveAccelerationStructureDescriptor*> _primitiveDescriptors;
 	std::vector<MTL::AccelerationStructure*> _primitiveAccStructures;
+
+private:
 	MTL::InstanceAccelerationStructureDescriptor* _instanceDescriptor;
+  MTL::InstanceAccelerationStructureDescriptor* _instanceRefitDescriptor;
   MTL::AccelerationStructure* _instanceAccStructure;
+  MTL::AccelerationStructureSizes _instanceSizes;
+  MTL::Buffer* _scratchBuffer;
+
+private:
+  MTL::ComputePassDescriptor* _temporalDescriptor;
 
 private:
 	int t = 0;

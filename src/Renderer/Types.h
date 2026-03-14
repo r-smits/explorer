@@ -13,10 +13,13 @@ struct Projection {
 
 namespace Renderer {
 
-struct VCamera {
-  simd::float4x4 orientation;
-  simd::float3 vecOrigin;
-	simd::float3 resolution;
+  struct VCamera {
+    MTL::PackedFloat3 vecOrigin;
+    MTL::PackedFloat3 resolution;
+    MTL::PackedFloat3 vecRight;
+    MTL::PackedFloat3 vecUp;
+    MTL::PackedFloat3 vecForward;
+    float fovScale;
 };
 
 enum struct TextureAccess {
