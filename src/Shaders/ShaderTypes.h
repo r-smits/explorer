@@ -77,6 +77,7 @@ struct Scene {
 	constant Text2DSample* textsample;
 	constant Text2DReadWrite* textreadwrite;
 	constant VCamera* vcamera;
+	constant VCamera* prev_vcamera;
 	constant Mesh* lights;
 	uint8_t lightsCount;
 };

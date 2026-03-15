@@ -55,6 +55,7 @@ VCamera::VCamera() {
     .moved = moved,
     .frameCount = 1
   };
+  prev_transforms = transforms;
 };
 
 const simd::float3& VCamera::getVRight() { 
@@ -73,6 +74,7 @@ const void VCamera::setIsometric() {
 	vecForward = simd_act(angle, vecForward);
   vecOrigin = simd_act(angle, vecOrigin);
   vecRight = getVRight();
+  prev_transforms = transforms;
 	transforms = {
     .vecOrigin = MATH::pack(vecOrigin),
     .resolution = MATH::pack(resolution),
@@ -114,6 +116,7 @@ const Renderer::VCamera& VCamera::update() {
 
   vecRight = getVRight();
 
+  prev_transforms = transforms;
 	transforms = {
     .vecOrigin = MATH::pack(vecOrigin),
     .resolution = MATH::pack(resolution),
@@ -131,6 +134,7 @@ const Renderer::VCamera& VCamera::update() {
 }
 
 const Renderer::VCamera& VCamera::get() { return transforms; }
+const Renderer::VCamera& VCamera::getPrev() { return prev_transforms; }
 const void VCamera::updateView() {}
 const void VCamera::setMoved(bool value) { moved = value; }
 

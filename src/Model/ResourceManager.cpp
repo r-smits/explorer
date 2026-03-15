@@ -137,15 +137,20 @@ MTL::Buffer* SCENE::buildTextReadWriteBuffer(MTL::Device* device) {
 };
 
 
-MTL::Buffer* SCENE::buildVCameraBuffer(MTL::Device* device) {
-	vcameraBuffer = device->newBuffer(sizeof(Renderer::VCamera), MTL::ResourceStorageModeShared);
-	resources.emplace_back(vcameraBuffer);
-	Renderer::VCamera* vcameraPtr = (Renderer::VCamera*) vcameraBuffer->contents();
-
-	const Renderer::VCamera& updatedVCamera = vcamera->update();
-	memcpy(vcameraBuffer->contents(), &updatedVCamera, sizeof(Renderer::VCamera));
-	return vcameraBuffer;
+MTL::Buffer* SCENE::buildVCameraBuffer(MTL::Device* device, bool prev) {
+	MTL::Buffer* buffer = device->newBuffer(sizeof(Renderer::VCamera), MTL::ResourceStorageModeShared);
+	const Renderer::VCamera& cameraStruct = prev ? vcamera->getPrev(): vcamera->update();
+	memcpy(buffer->contents(), &cameraStruct, sizeof(Renderer::VCamera));
+	if (prev) {
+		prevVcameraBuffer = buffer;
+		resources.emplace_back(prevVcameraBuffer);
+	} else {
+		vcameraBuffer = buffer;
+		resources.emplace_back(vcameraBuffer);
+	}
+	return buffer;
 };
+
 
 MTL::Buffer* SCENE::buildLightsBuffer(MTL::Device* device) {
 	
@@ -195,7 +200,8 @@ const void SCENE::buildBindlessScene(MTL::Device* device) {
   Renderer::Scene* gpuScene = (Renderer::Scene*)sceneBuffer->contents();
 	gpuScene->textsample = SCENE::buildTextSampleBuffer(device)->gpuAddress();
 	gpuScene->textreadwrite = SCENE::buildTextReadWriteBuffer(device)->gpuAddress();
-	gpuScene->vcamera = SCENE::buildVCameraBuffer(device)->gpuAddress();
+	gpuScene->vcamera = SCENE::buildVCameraBuffer(device, false)->gpuAddress();
+	gpuScene->prev_vcamera = SCENE::buildVCameraBuffer(device, true)->gpuAddress();
 	gpuScene->lights = SCENE::buildLightsBuffer(device)->gpuAddress();
 	gpuScene->lightsCount = SCENE::lights.size();
 };

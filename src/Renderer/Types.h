@@ -112,6 +112,7 @@ struct Scene {
 	uint64_t textsample;
 	uint64_t textreadwrite;
 	uint64_t vcamera;
+  uint64_t prev_vcamera;
 	uint64_t lights;
 	uint8_t lightsCount;
 };

@@ -6,38 +6,56 @@
 #if __METAL_VERSION__
 
 
-void build_ray(thread ray& r, constant VCamera* vcamera, uint2 gid) {
+ray init_ray(
+	thread const float3& origin,
+	thread const float3& direction,
+	thread const float& min_distance,
+	thread const float& max_distance
+) {
+	ray r;
+	r.origin = origin;
+	r.direction = direction;
+	r.min_distance;
+	r.max_distance;
+	return r;
+}
+
+
+ray build_ray(constant VCamera* vcamera, uint2 gid) {
 	float2 uv = (float2(gid) / vcamera->resolution.xy) * 2.0f - 1.0f;
-    uv.y *= -1.0f;
+    float aspect_ratio = vcamera->resolution.x / vcamera->resolution.y;
+	return init_ray(
+		vcamera->vecOrigin 
+			+ uv.x * vcamera->fovScale * aspect_ratio * vcamera->vecRight 
+			- uv.y * vcamera->fovScale * vcamera->vecUp - vcamera->vecForward * 5,
+		normalize(vcamera->vecForward),
+		.1f,
+		FLT_MAX
+	);
+}
 
-    float aspectRatio = vcamera->resolution.x / vcamera->resolution.y;
-    float orthoScale = vcamera->fovScale; // repurpose as ortho half-width
 
-    float3 right   = float3(vcamera->vecRight);
-    float3 up      = float3(vcamera->vecUp);
-    float3 forward = float3(vcamera->vecForward);
-
-    // All rays parallel, origins spread across the view plane
-    r.origin    = vcamera->vecOrigin 
-                + uv.x * orthoScale * aspectRatio * right 
-                + uv.y * orthoScale * up - forward * 5;
-    r.direction = normalize(forward);
-    r.min_distance = 0.1f;
-    r.max_distance = FLT_MAX;
+uint2 get_prev_tid(constant VCamera* vcamera, constant VCamera* prev_vcamera) {
+	float3 d_vec_origin = vcamera->vecOrigin - prev_vcamera->vecOrigin;
+	float aspect_ratio = vcamera->resolution.x / vcamera->resolution.y;
+	float2 uv = float2(
+		dot(d_vec_origin, prev_vcamera->vecRight) / (prev_vcamera->fovScale * aspect_ratio),
+		dot(d_vec_origin, prev_vcamera->vecUp) / prev_vcamera->fovScale
+	);
+	return uint2((uv * 0.5f + 0.5f) * prev_vcamera->resolution.xy);
 }
 
 
 bool intersect_ground_plane(
     thread ray& r, 
     float plane_y,
-    thread float& distance,
 	thread float3& vec_normal,
 	thread float4& color
 ) {
     // Ray-plane intersection: r.origin.y + t * r.direction.y = plane_y
     float denom = r.direction.y;
     if (abs(denom) < 1e-6f) return false;
-    distance = (plane_y - r.origin.y) / denom;
+    float distance = (plane_y - r.origin.y) / denom;
     if (distance < r.min_distance || distance > r.max_distance) return false;
 
 	r.origin = r.origin + r.direction * distance;
@@ -70,7 +88,6 @@ bool shadow_ray(
 	shadow_intersection = shadow_intersector.intersect(s, structure, 0xFF);
 
 	if (shadow_intersection.type == intersection_type::triangle) {
-		// const device PrimitiveAttributes* prim = (const device PrimitiveAttributes*) shadow_intersection.primitive_data;
 		float3 origin = s.origin + s.direction * shadow_intersection.distance;
 		result = (abs(distance(vec_light_origin, origin)) < 0.001);
 	}
