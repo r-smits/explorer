@@ -8,6 +8,7 @@
 #import "RTUtils.h"
 
 constexpr sampler sampler2d(address::clamp_to_edge, filter::linear);
+constexpr constant float3 luminance = float3(0.2126f, 0.7152f, 0.0722f);
 
 
 struct RTMaterial {
@@ -46,7 +47,7 @@ struct VertexAttributes {
 
 struct Submesh
 {
-  constant uint32_t* indices;								// Indices pointing at the packed vertices
+  	constant uint32_t* indices;								// Indices pointing at the packed vertices
 	texture2d<float, access::sample> texture;
 	bool textured;
 	bool emissive;
@@ -56,7 +57,7 @@ struct Submesh
 struct Mesh
 {
 	constant packed_float3* vertices;					// Vertices packed: XYZXYZ...
-  constant VertexAttributes* attributes;		// Attributes of the vertices
+  	constant VertexAttributes* attributes;		// Attributes of the vertices
 	constant Submesh* submeshes;							// Submeshes related to the mesh
 	float4x4 orientation;
 	int vertexCount;
@@ -105,9 +106,9 @@ struct PrimFlagIds {
 // Struct required for reservoir sampling
 struct Reservoir {
 	float w_sum = 0;					// sum of weights
-	float m = 0;							// number of samples
-	float w = 0;							// weight
-	float3 y = float3(0.0f);	// chosen sample (ray direction)
+	float m = 0;						// number of samples
+	float w = 0;						// weight
+	float3 y = float3(0.0f);			// chosen sample (ray direction)
 
 	void update(
 		thread float3& sample, 
@@ -122,6 +123,23 @@ struct Reservoir {
 			w = weight;
 		}
 	}
+};
+
+
+struct Hit {
+	bool   did_hit;
+    bool   is_light;
+    float3 normal;
+    float4 color;
+};
+
+
+struct LightSample {
+    float3 world_pos;
+    float3 direction;
+    float4 color;
+    float  distance;
+	float  l_dot_n;
 };
 
 
