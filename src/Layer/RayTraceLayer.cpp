@@ -40,6 +40,7 @@ EXP::RayTraceLayer::RayTraceLayer(MTL::Device* device, std::shared_ptr<const App
 void EXP::RayTraceLayer::buildModels(MTL::Device* device) {
 
 	EXP::SCENE::addTexture(device, "reservoirs", Renderer::TextureAccess::READ_WRITE);
+	EXP::SCENE::addTexture(device, "accumulation", Renderer::TextureAccess::READ_WRITE);
 	
 	EXP::SCENE::addModel(device, _vertexDescriptor, config->mesh_path / "f16/f16", "f16");
 	EXP::SCENE::addModel(device, _vertexDescriptor, config->mesh_path / "sphere/sphere", "sphere1");
@@ -93,15 +94,17 @@ void EXP::RayTraceLayer::rebuildAccelerationStructures(MTK::View* view) {
 
 void EXP::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* notUsed) {
 	
-	// Update camera part of the bindless scene
-	EXP::SCENE::updateBindlessScene(view->device());
-
 	// Scene action & update acceleration structure
 	if (IO::isPressed(KEY_T)) { 
+		EXP::SCENE::getCamera()->setMoved(true);
 		for (Model* model : EXP::SCENE::getModels()) {
 			model->rotate(EXP::MATH::yRotation(-1.0f));
 		}
 	}
+
+	// Update camera part of the bindless scene
+	EXP::SCENE::updateBindlessScene(view->device());
+
 	rebuildAccelerationStructures(view);
 
 	// ------------------------------ //

@@ -54,4 +54,5 @@
 #define MOUSE_DRAG			777
 #define MOUSE_X					888
 #define MOUSE_Y					999
+#define ANY                 111
 

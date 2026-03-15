@@ -18,6 +18,7 @@ void shade_ray(
 	thread float4& contribution,
 	thread bool& bounce_continue
 ) {
+
 	// Initialize local variables
 	float3 normal = float3(.0f);
 	float3 direction = float3(.0f);
@@ -47,9 +48,6 @@ void shade_ray(
 	// Compute surface normal
 	normal = (prim->normal[0] * bary_3d.x) + (prim->normal[1] * bary_3d.y) + (prim->normal[2] * bary_3d.z);
 	normal = normalize(result.object_to_world_transform * float4(normal, 0.0f));
-
-	// Update seed deterministically per primitive
-	seed = gid.x * (result.primitive_id * bary_3d.z * 1) + gid.y * (result.primitive_id * bary_2d.y);
 
 	// Move ray origin to intersection point
 	r.origin = r.origin + r.direction * result.distance;
@@ -130,7 +128,7 @@ void temporal_reuse(
 	float4 curr_reservoir = float4(.0000f);
 	float4 color = float4(.0f);
 	float3 vec_normal = float3(.0f);
-	thread uint32_t seed = (1 + tid.x) * (tid.y - tid.x) + (1 + tid.y) * (tid.x + tid.y); 
+	thread uint32_t seed = tid.x * 1619 + tid.y * 31337 + scene->vcamera->frameCount * 719393;
 	bool hit = false;
 	bool light = false;
 	
@@ -236,6 +234,26 @@ void temporal_reuse(
 	
 	float4 indirect_color = transport_ray(r, structure, scene, tid, 1, seed);
 	indirect_color = float4(n_dot_l * indirect_color.rgb * color.rgb / M_PI_F / sample_probability, 1.f);
-	buffer.write(indirect_color + shade_color, tid);
+	float4 current = indirect_color + shade_color;
+
+	// Clamp fireflies
+	float luma = dot(current.rgb, float3(0.2126f, 0.7152f, 0.0722f));
+	float maxLuma = 10.0f;
+	if (luma > maxLuma) {
+		current.rgb *= maxLuma / luma;
+	}
+
+	// Accumulation
+	texture2d<float, access::read_write> accum = scene->textreadwrite[RestirIdx::accumulation].value;
+	if (scene->vcamera->moved) {
+		accum.write(current, tid);
+		buffer.write(current, tid);
+	} else {
+		float4 history = accum.read(tid);
+		float alpha = 0.1f;
+		float4 accumulated = mix(history, current, alpha);
+		accum.write(accumulated, tid);
+		buffer.write(accumulated, tid);	
+	}
 }
 

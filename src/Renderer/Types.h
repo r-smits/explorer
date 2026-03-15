@@ -20,6 +20,8 @@ namespace Renderer {
     MTL::PackedFloat3 vecUp;
     MTL::PackedFloat3 vecForward;
     float fovScale;
+    bool moved;
+    uint32_t frameCount;
 };
 
 enum struct TextureAccess {
