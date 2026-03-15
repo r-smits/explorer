@@ -12,6 +12,7 @@ class SCENE {
 
 	static inline EXP::VCamera* vcamera;
 	static inline MTL::Buffer* vcameraBuffer = nullptr;
+	static inline MTL::Buffer* prevVcameraBuffer = nullptr;
 	
 	static inline std::vector<EXP::Model*> models = {};
 	static inline std::vector<EXP::MDL::Mesh*> meshes = {};
@@ -64,7 +65,7 @@ public:
 
 	static MTL::Buffer* buildTextSampleBuffer(MTL::Device* device);
 	static MTL::Buffer* buildTextReadWriteBuffer(MTL::Device* device);
-	static MTL::Buffer* buildVCameraBuffer(MTL::Device* device);
+	static MTL::Buffer* buildVCameraBuffer(MTL::Device* device, const bool& prev);
 	static MTL::Buffer* buildLightsBuffer(MTL::Device* device);
 
 

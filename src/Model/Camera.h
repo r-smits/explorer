@@ -43,6 +43,7 @@ class VCamera {
 		simd::float4x4 projection;
 
 		Renderer::VCamera transforms;
+    Renderer::VCamera prev_transforms;
     bool moved;
 
 	public:
@@ -56,6 +57,7 @@ class VCamera {
 		const simd::float3& getVRight();
 		const Renderer::VCamera& update();
     const Renderer::VCamera& get();
+    const Renderer::VCamera& getPrev();
     const void setMoved(bool value);
 		
 };

@@ -121,12 +121,12 @@ float4 transport_ray(
 [[kernel]]
 void temporal_reuse(
 	uint2 tid										[[ thread_position_in_grid	]], 
-	texture2d<float, access::write> buffer			[[ texture(0) ]],
-	instance_acceleration_structure structure		[[ buffer(1)	]],
-	constant Scene* scene							[[ buffer(2)	]]
+	texture2d<float, access::write> buffer			[[ texture(0) 				]],
+	instance_acceleration_structure structure		[[ buffer(1)				]],
+	constant Scene* scene							[[ buffer(2)				]]
 ) {
-	float4 curr_reservoir = float4(.0000f);
-	float4 color = float4(.0f);
+	float4 curr_reservoir = float4(0.000000f);
+	float4 color = float4(.1f);
 	float3 vec_normal = float3(.0f);
 	thread uint32_t seed = tid.x * 1619 + tid.y * 31337 + scene->vcamera->frameCount * 719393;
 	bool hit = false;
@@ -141,16 +141,10 @@ void temporal_reuse(
 		return;
 	}
 
-	ray r;
-	build_ray(r, scene->vcamera, tid);
+	ray r = build_ray(scene->vcamera, tid);
 	ray ground_r = r;
-	float distance;
 	if (!(hit = color_ray(r, structure, scene, tid, color, vec_normal, seed, light))) {
-		if (hit = intersect_ground_plane(ground_r, -0.2f, distance, vec_normal, color)) {
-			r = ground_r;
-			// buffer.write(color, tid);
-			// return;
-		}
+		if (hit = intersect_ground_plane(ground_r, -0.2f, vec_normal, color)) r = ground_r;
 	}
 
 	if (!hit || light) {
@@ -168,7 +162,6 @@ void temporal_reuse(
 	float uniform_pdf_sample = 1.f / scene->lights[0].vertexCount;
 	float complex_pdf_sample = float(0.0f);
 	float prev_p_hat_weight = float(0.0f);
-	float3 vec_ray_direction = float3(.0f);
 	float3 vec_to_light = float3(.0f);
 	float4 vec_light_col = float4(.0f);
 	float3 vec_world_light_pos = float3(0.0f);
@@ -202,7 +195,8 @@ void temporal_reuse(
 	update_reservoir(combined_reservoir, curr_reservoir.y, complex_pdf_sample * curr_reservoir.w * curr_reservoir.z, seed);
 	
 	// Add previous reservoir to combined reservoir
-	float4 prev_reservoir = scene->textreadwrite[RestirIdx::prev_frame].value.read(tid);
+	uint2 prev_frame_tid = get_prev_tid(scene->vcamera, scene->prev_vcamera);
+	float4 prev_reservoir = scene->textreadwrite[RestirIdx::prev_frame].value.read(prev_frame_tid);
 	sample_light(scene, prev_reservoir.y, r.origin, vec_world_light_pos, vec_to_light, vec_light_col, distance_to_light);
 	l_dot_n = lambertian(vec_to_light, vec_normal); 
 	prev_p_hat_weight = length(color.xyz / M_PI_F * vec_light_col.xyz * l_dot_n / distance_to_light) / uniform_pdf_sample;
