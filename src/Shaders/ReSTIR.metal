@@ -195,7 +195,7 @@ void temporal_reuse(
 	update_reservoir(combined_reservoir, curr_reservoir.y, complex_pdf_sample * curr_reservoir.w * curr_reservoir.z, seed);
 	
 	// Add previous reservoir to combined reservoir
-	uint2 prev_frame_tid = get_prev_tid(scene->vcamera, scene->prev_vcamera);
+	uint2 prev_frame_tid = get_prev_tid(r.origin, scene->prev_vcamera);
 	float4 prev_reservoir = scene->textreadwrite[RestirIdx::prev_frame].value.read(prev_frame_tid);
 	sample_light(scene, prev_reservoir.y, r.origin, vec_world_light_pos, vec_to_light, vec_light_col, distance_to_light);
 	l_dot_n = lambertian(vec_to_light, vec_normal); 

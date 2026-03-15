@@ -35,9 +35,9 @@ ray build_ray(constant VCamera* vcamera, uint2 gid) {
 }
 
 
-uint2 get_prev_tid(constant VCamera* vcamera, constant VCamera* prev_vcamera) {
-	float3 d_vec_origin = vcamera->vecOrigin - prev_vcamera->vecOrigin;
-	float aspect_ratio = vcamera->resolution.x / vcamera->resolution.y;
+uint2 get_prev_tid(thread float3& vec_origin, constant VCamera* prev_vcamera) {
+	float3 d_vec_origin = vec_origin - prev_vcamera->vecOrigin;
+	float aspect_ratio = prev_vcamera->resolution.x / prev_vcamera->resolution.y;
 	float2 uv = float2(
 		dot(d_vec_origin, prev_vcamera->vecRight) / (prev_vcamera->fovScale * aspect_ratio),
 		dot(d_vec_origin, prev_vcamera->vecUp) / prev_vcamera->fovScale
