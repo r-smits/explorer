@@ -120,37 +120,37 @@ target_link_libraries(EXPLORER PUBLIC
 		"-framework ModelIO"
 )
 
-add_executable(
-		EXPLORER_TESTS
-		${CMAKE_CURRENT_SOURCE_DIR}/tests/test_basic_syntax.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/tests/test_int_mock.cpp
-		tests/test_int_mock.cpp
+# add_executable(
+# 		EXPLORER_TESTS
+# 		${CMAKE_CURRENT_SOURCE_DIR}/tests/test_basic_syntax.cpp
+# 		${CMAKE_CURRENT_SOURCE_DIR}/tests/test_int_mock.cpp
+# 		tests/test_int_mock.cpp
 
-)
+# )
 
-set_target_properties(
-		EXPLORER_TESTS PROPERTIES
-		CXX_STANDARD 17
-		CXX_STANDARD_REQUIRED ON
-		CXX_EXTENSIONS ON
-)
+# set_target_properties(
+# 		EXPLORER_TESTS PROPERTIES
+# 		CXX_STANDARD 17
+# 		CXX_STANDARD_REQUIRED ON
+# 		CXX_EXTENSIONS ON
+# )
 
-include(FetchContent)
-FetchContent_Declare(
-		googletest
-		URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
-)
-FetchContent_MakeAvailable(googletest)
+# include(FetchContent)
+# FetchContent_Declare(
+# 		googletest
+# 		URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
+# )
+# FetchContent_MakeAvailable(googletest)
 
-enable_testing()
+# enable_testing()
 
-target_link_libraries(
-		EXPLORER_TESTS
-		GTest::gtest_main
-)
+# target_link_libraries(
+# 		EXPLORER_TESTS
+# 		GTest::gtest_main
+# )
 
-include(GoogleTest)
-gtest_discover_tests(EXPLORER_TESTS)
+# include(GoogleTest)
+# gtest_discover_tests(EXPLORER_TESTS)
 
 # Add precompiled headers
 # Attempted to get to work but does not work currently

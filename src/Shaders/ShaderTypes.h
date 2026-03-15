@@ -8,6 +8,8 @@
 #import "RTUtils.h"
 
 constexpr sampler sampler2d(address::clamp_to_edge, filter::linear);
+constexpr constant float3 luminance = float3(0.2126f, 0.7152f, 0.0722f);
+constexpr constant float4 sky_color = float4(.3f, .4f, .5f, 1.0f);
 
 
 struct RTMaterial {
@@ -46,7 +48,7 @@ struct VertexAttributes {
 
 struct Submesh
 {
-  constant uint32_t* indices;								// Indices pointing at the packed vertices
+  	constant uint32_t* indices;								// Indices pointing at the packed vertices
 	texture2d<float, access::sample> texture;
 	bool textured;
 	bool emissive;
@@ -56,7 +58,7 @@ struct Submesh
 struct Mesh
 {
 	constant packed_float3* vertices;					// Vertices packed: XYZXYZ...
-  constant VertexAttributes* attributes;		// Attributes of the vertices
+  	constant VertexAttributes* attributes;		// Attributes of the vertices
 	constant Submesh* submeshes;							// Submeshes related to the mesh
 	float4x4 orientation;
 	int vertexCount;
@@ -104,24 +106,46 @@ struct PrimFlagIds {
 
 // Struct required for reservoir sampling
 struct Reservoir {
-	float w_sum = 0;					// sum of weights
-	float m = 0;							// number of samples
-	float w = 0;							// weight
-	float3 y = float3(0.0f);	// chosen sample (ray direction)
+    float w_sum = 0;
+    float m     = 0;
+    float w     = 0;
+    float3 y    = float3(0.0f);   // chosen direction
+    float3 p    = float3(0.0f);   // chosen light world_pos  <-- ADD THIS
+    float4 c    = float4(0.0f);   // chosen light color      <-- ADD THIS
 
-	void update(
-		thread float3& sample, 
-		thread float& weight,
-		thread uint32_t& seed
-	) {
-		w_sum += weight;
-		m += 1;
-		float random = rand(seed);
-		if (random <= (weight / w_sum)) {
-			y = sample;
-			w = weight;
-		}
-	}
+    void update(
+        thread float3& sample,
+        thread float3& world_pos,
+        thread float4& color,
+        thread float&  weight,
+        thread uint32_t& seed
+    ) {
+        w_sum += weight;
+        m     += 1;
+        if (rand(seed) <= (weight / max(w_sum, 1e-6f))) {
+            y = sample;
+            p = world_pos;
+            c = color;
+            w = weight;
+        }
+    }
+};
+
+
+struct Hit {
+	bool   did_hit;
+    bool   is_light;
+    float3 normal;
+    float4 color;
+};
+
+
+struct LightSample {
+    float3 world_pos;
+    float3 direction;
+    float4 color;
+    float  distance;
+	float  l_dot_n;
 };
 
 
