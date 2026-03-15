@@ -65,7 +65,7 @@ public:
 
 	static MTL::Buffer* buildTextSampleBuffer(MTL::Device* device);
 	static MTL::Buffer* buildTextReadWriteBuffer(MTL::Device* device);
-	static MTL::Buffer* buildVCameraBuffer(MTL::Device* device, const bool& prev);
+	static MTL::Buffer* buildVCameraBuffer(MTL::Device* device, bool prev);
 	static MTL::Buffer* buildLightsBuffer(MTL::Device* device);
 
 

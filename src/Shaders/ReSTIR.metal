@@ -8,116 +8,6 @@ using namespace raytracing;
 #import "../src/Shaders/RayUtils.h"
 
 
-void shade_ray(
-	thread ray& r,
-	thread instance_acceleration_structure& structure,
-	constant Scene* scene,
-	uint2 gid,
-	int bounces,
-	thread uint32_t& seed,
-	thread float4& contribution,
-	thread bool& bounce_continue
-) {
-
-	// Initialize local variables
-	float3 normal = float3(.0f);
-	float3 direction = float3(.0f);
-	float3 vec_light_origin = float3(.0f);
-	float3 vec_to_light = float3(.0f);
-	float4 light_color = float4(.0f);
-	float distance_to_light = .0f;
-	bool visible = true;
-	bounce_continue = false;
-
-	intersector<instancing, triangle_data, world_space_data> intersector;	
-	intersector.assume_geometry_type(geometry_type::triangle);
-	intersection_result<instancing, triangle_data, world_space_data> result;
-	result = intersector.intersect(r, structure, 0xFF);
-
-	// If our ray does not hit, terminate early.
-	if (result.type == intersection_type::none) {
-		bounce_continue = false;
-		return;
-	}
-
-	float2 bary_2d = result.triangle_barycentric_coord;
-	float3 bary_3d = float3(1.0 - bary_2d.x - bary_2d.y, bary_2d.x, bary_2d.y);
-
-	const device PrimitiveAttributes* prim = (const device PrimitiveAttributes*) result.primitive_data;
-
-	// Compute surface normal
-	normal = (prim->normal[0] * bary_3d.x) + (prim->normal[1] * bary_3d.y) + (prim->normal[2] * bary_3d.z);
-	normal = normalize(result.object_to_world_transform * float4(normal, 0.0f));
-
-	// Move ray origin to intersection point
-	r.origin = r.origin + r.direction * result.distance;
-
-	// Compute outgoing direction (toward previous ray origin / camera)
-	float3 wo = normalize(-r.direction);
-
-	// Perfect reflection for now
-	float3 jittered_normal = normalize(normal + uniform_pdf(seed) * 0.1);
-	r.direction = reflect(r.direction, jittered_normal);
-
-	// ----------------------------
-	// Direct lighting contribution
-	// ----------------------------
-
-	// Sample a light from the scene
-	float light_index = float(min(int(rand(seed) * scene->lights[0].vertexCount), scene->lights[0].vertexCount - 1));
-	sample_light(scene, light_index, r.origin, vec_light_origin, vec_to_light, light_color, distance_to_light);
-
-	// Compute incoming light direction
-	float3 wi = normalize(vec_to_light);
-
-	// Lambertian cosine term
-	float wi_dot_n = max(dot(normal, wi), 0.0f);
-
-	// PDFs for MIS
-	float p_light = 1.0f / scene->lights[0].vertexCount;       // uniform light sample
-	float p_bsdf = wi_dot_n / M_PI_F;			               // cosine-weighted PDF
-
-	// MIS weight (balance heuristic)
-	float mis_weight = p_light / (p_light + p_bsdf);
-
-	// Compute surface color from texture
-	float2 txcoord = (prim->txcoord[0] * bary_3d.x) + (prim->txcoord[1] * bary_3d.y) + (prim->txcoord[2] * bary_3d.z);
-	float4 wo_color = scene->textsample[prim->flags[0]].value.sample(sampler2d, txcoord) + prim->color[0];
-
-	// Shadow ray
-	visible = shadow_ray(r, structure, vec_to_light, vec_light_origin);
-
-	// Weighted contribution using MIS
-	float4 weighted_contribution = visible * wi_dot_n * wo_color * light_color * mis_weight;
-
-	// Update the reservoir contribution
-	update_reservoir(contribution, light_index, length(weighted_contribution.xyz), seed);
-	bounce_continue = !prim->flags[1];
-}
-
-
-float4 transport_ray(
-	thread ray& r,
-	instance_acceleration_structure structure,
-	constant Scene* scene,
-	uint2 gid,
-	int bounces,
-	thread uint32_t& seed
-) {
-	// Contribution is set to color because it will continue from previous light transport.
-	float4 contribution = float(1.0f);
-	float4 sky_color = float4(.3f, .4f, .5f, 1.0f);
-	float4 color = float4(.0f);
-	bool bounce_continue = true;
-	for (int i = 1; i <= bounces && bounce_continue; i += 1) {
-		shade_ray(r, structure, scene, gid, bounces, seed, contribution, bounce_continue); 
-	}
-		
-	color += contribution * sky_color;
-	return color;
-}
-
-
 [[kernel]]
 void temporal_reuse(
 	uint2 tid										[[ thread_position_in_grid	]], 
@@ -125,69 +15,59 @@ void temporal_reuse(
 	instance_acceleration_structure structure		[[ buffer(1)				]],
 	constant Scene* scene							[[ buffer(2)				]]
 ) {
-	float4 curr_reservoir = float4(0.000000f);
-	float4 color = float4(.1f);
-	float3 vec_normal = float3(.0f);
-	thread uint32_t seed = tid.x * 1619 + tid.y * 31337 + scene->vcamera->frameCount * 719393;
-	bool hit = false;
-	bool light = false;
-	
+
 	//	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	//
 	//	Retrieving initial colors and values	//
 	//	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	//
 
 	if (is_null_instance_acceleration_structure(structure)) {
-		buffer.write(color, tid);
-		return;
-	}
-
-	ray r = build_ray(scene->vcamera, tid);
-	ray ground_r = r;
-	if (!(hit = color_ray(r, structure, scene, tid, color, vec_normal, seed, light))) {
-		if (hit = intersect_ground_plane(ground_r, -0.2f, vec_normal, color)) r = ground_r;
-	}
-
-	if (!hit || light) {
-		buffer.write(color, tid);
+		buffer.write(float4(.0f), tid);
 		return;
 	}
 	
+	thread uint32_t seed = tid.x * 1619 + tid.y * 31337 + scene->vcamera->frameCount * 719393;
+	thread ray r = project_ray(scene->vcamera, tid);
+	thread Hit hit = color_ray(r, structure, scene, seed);
+	if (!hit.did_hit) hit = intersect_plane(r, -0.2f);
+	if (!hit.did_hit || hit.is_light) {
+		buffer.write(hit.color, tid);
+		return;
+	}
+
 	//	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	//
 	//	Global Illumination						//
 	//	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	//
 
-	float distance_to_light = float(0.0f);
-	float l_dot_n = float(0.0f);
-	float light_index = float(.0f);
-	float uniform_pdf_sample = 1.f / scene->lights[0].vertexCount;
-	float complex_pdf_sample = float(0.0f);
-	float prev_p_hat_weight = float(0.0f);
-	float3 vec_to_light = float3(.0f);
-	float4 vec_light_col = float4(.0f);
-	float3 vec_world_light_pos = float3(0.0f);
-	float3 luminance = float3(0.2126f, 0.7152f, 0.0722f);
-	
-	for (int i = 0; i < min(int(scene->lights[0].vertexCount), 32); i += 1) {
-		
+	thread float4 curr_reservoir = float4(.0f);
+	thread float l_dot_n = float(0.0f);
+	thread int light_count = scene->lights[0].vertexCount;
+	thread float uniform_pdf_sample = 1.0f / light_count;
+	thread float3 color_over_pi = hit.color.xyz / M_PI_F;
+	thread float complex_pdf_sample = float(0.0f);
+	thread float prev_p_hat_weight = float(0.0f);
+	thread float3 luminance = float3(0.2126f, 0.7152f, 0.0722f);
+
+	auto p_hat = [&](LightSample ls) -> float {
+    	return dot(color_over_pi * ls.color.xyz * ls.l_dot_n / ls.distance, luminance) / uniform_pdf_sample;
+	};
+
+	for (int i = 0; i < min(light_count, 32); i += 1) {
 		// TODO: create a new abstraction with: (a) vertex attributes, (b) vertices, (c) total vertex count
 		// TODO: generate a single number to randomly choose a light and position to sample.
-		int light_index = min(int(rand(seed) * scene->lights[0].vertexCount), scene->lights[0].vertexCount-1);
+		int light_index = min(int(rand(seed) * light_count), light_count-1);
 
 		// Update reservoir as a float4
-		sample_light(scene, light_index, r.origin, vec_world_light_pos, vec_to_light, vec_light_col, distance_to_light);
-		l_dot_n = lambertian(vec_to_light, vec_normal); 
-		complex_pdf_sample = dot(color.xyz / M_PI_F * vec_light_col.xyz * l_dot_n / distance_to_light, luminance) / uniform_pdf_sample;
-		update_reservoir(curr_reservoir, light_index, complex_pdf_sample, seed); 
+		thread LightSample lsample = sample_light(scene, light_index, r.origin, hit.normal);
+		update_reservoir(curr_reservoir, light_index, p_hat(lsample), seed); 
 	}
 	
 	// Retrieve final selected weight
-	sample_light(scene, curr_reservoir.y, r.origin, vec_world_light_pos, vec_to_light, vec_light_col, distance_to_light);
-	l_dot_n = lambertian(vec_to_light, vec_normal); 
-	complex_pdf_sample = dot(color.xyz / M_PI_F * vec_light_col.xyz * l_dot_n / distance_to_light, luminance) / uniform_pdf_sample;
+	thread LightSample lsample = sample_light(scene, curr_reservoir.y, r.origin, hit.normal);
+	complex_pdf_sample = p_hat(lsample);
 	curr_reservoir.w = (curr_reservoir.x / curr_reservoir.z) / max(complex_pdf_sample, 1e-4f);
 
 	// Shadow ray for current reservoir
-	bool visible = shadow_ray(r, structure, vec_to_light, vec_world_light_pos);
+	thread bool visible = shadow_ray(r, structure, lsample.direction, lsample.world_pos);
 	curr_reservoir.w *= visible;
 
 	// Add current reservoir to combined reservoir 
@@ -195,44 +75,39 @@ void temporal_reuse(
 	update_reservoir(combined_reservoir, curr_reservoir.y, complex_pdf_sample * curr_reservoir.w * curr_reservoir.z, seed);
 	
 	// Add previous reservoir to combined reservoir
-	uint2 prev_frame_tid = get_prev_tid(r.origin, scene->prev_vcamera);
+	uint2 prev_frame_tid = reproject_ray(r, scene->prev_vcamera);
 	float4 prev_reservoir = scene->textreadwrite[RestirIdx::prev_frame].value.read(prev_frame_tid);
-	sample_light(scene, prev_reservoir.y, r.origin, vec_world_light_pos, vec_to_light, vec_light_col, distance_to_light);
-	l_dot_n = lambertian(vec_to_light, vec_normal); 
-	prev_p_hat_weight = length(color.xyz / M_PI_F * vec_light_col.xyz * l_dot_n / distance_to_light) / uniform_pdf_sample;
+	lsample = sample_light(scene, prev_reservoir.y, r.origin, hit.normal);
 	prev_reservoir.z = min(20.f * curr_reservoir.z, prev_reservoir.z);
-	update_reservoir(combined_reservoir, prev_reservoir.y, prev_p_hat_weight * prev_reservoir.w * prev_reservoir.z, seed);
+	update_reservoir(combined_reservoir, prev_reservoir.y, p_hat(lsample) * prev_reservoir.w * prev_reservoir.z, seed);
 	
 	// Set sample size and adjusted weight of combined reservoir
 	combined_reservoir.z = curr_reservoir.z + prev_reservoir.z;
-	sample_light(scene, combined_reservoir.y, r.origin, vec_world_light_pos, vec_to_light, vec_light_col, distance_to_light);
-	l_dot_n = lambertian(vec_to_light, vec_normal); 
-	complex_pdf_sample = dot(color.xyz / M_PI_F * vec_light_col.xyz * l_dot_n / distance_to_light, luminance) / uniform_pdf_sample;
-	combined_reservoir.w = (combined_reservoir.x / combined_reservoir.z) / max(complex_pdf_sample, 1e-4f);
+	lsample = sample_light(scene, combined_reservoir.y, r.origin, hit.normal);
+	combined_reservoir.w = (combined_reservoir.x / combined_reservoir.z) / max(p_hat(lsample), 1e-4f);
 	
 	// Shadow ray for combined reservoir	
-	visible = shadow_ray(r, structure, vec_to_light, vec_world_light_pos);
+	visible = shadow_ray(r, structure, lsample.direction, lsample.world_pos);
 	scene->textreadwrite[RestirIdx::prev_frame].value.write(combined_reservoir, tid);
 
 	float4 shade_color = 
-		float4(color.xyz / M_PI_F * vec_light_col.xyz * l_dot_n / distance_to_light * visible * combined_reservoir.w, 1.f);
+		float4(color_over_pi * lsample.color.xyz * lsample.l_dot_n / lsample.distance * visible * combined_reservoir.w, 1.f);
 	
 	//	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	//
 	//	Indirect Illumination					//
 	//	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	//
 	
-	// r.direction = r.direction + rand_hemisphere(seed, vec_normal) * .1;
-	r.direction = rand_hemisphere(seed, vec_normal);
+	r.direction = rand_hemisphere(seed, hit.normal);
 	float sample_probability = 1.0f / (2.0f * M_PI_F);
-	float n_dot_l = lambertian(r.direction, vec_normal);
+	float n_dot_l = lambertian(r.direction, hit.normal);
 	
 	float4 indirect_color = transport_ray(r, structure, scene, tid, 1, seed);
-	indirect_color = float4(n_dot_l * indirect_color.rgb * color.rgb / M_PI_F / sample_probability, 1.f);
+	indirect_color = float4(n_dot_l * indirect_color.rgb * color_over_pi / sample_probability, 1.f);
 	float4 current = indirect_color + shade_color;
 
 	// Clamp fireflies
 	float luma = dot(current.rgb, float3(0.2126f, 0.7152f, 0.0722f));
-	float maxLuma = 10.0f;
+	float maxLuma = 1.f;
 	if (luma > maxLuma) {
 		current.rgb *= maxLuma / luma;
 	}

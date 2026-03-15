@@ -54,11 +54,12 @@ float3 rand_hemisphere(thread uint32_t& seed, float3 normal) {
 
 // Cosine: decrease light intensity based on the angle between the normal and outgoing light direction (wi).
 float lambertian(
-	thread float3& wi,
-	thread float3& normal
+	thread const float3& wi,
+	thread const float3& normal
 ) {
 	return max(dot(normalize(wi), normal), 0.0f);
 }
+
 
 // Inverse square: light intensity inversely proportional to distance.
 float cos_inverse_square(
