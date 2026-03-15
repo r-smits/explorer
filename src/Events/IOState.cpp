@@ -68,7 +68,7 @@ std::unordered_map<int, bool> keyState = {
     {       ARROW_UP, false},
     {     ARROW_DOWN, false},
     {     ARROW_LEFT, false},
-    {    ARROW_RIGHT, false}
+    {    ARROW_RIGHT, false},
 };
 } // namespace EXP
 

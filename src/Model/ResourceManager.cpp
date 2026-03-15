@@ -67,7 +67,8 @@ const int& SCENE::addTexture(const Renderer::Texture& texture) {
 }
 
 const int& SCENE::addTexture(MTL::Device* device, const std::string& name, const Renderer::TextureAccess& access) {
-	mtl_tx_desc* txDesc = MTL::TextureDescriptor::texture2DDescriptor(mtl_rgb16, 2000, 1400, false);
+	CGSize size = ViewAdapter::bounds().size;
+	mtl_tx_desc* txDesc = MTL::TextureDescriptor::texture2DDescriptor(mtl_rgb16, size.width * 2, size.height * 2, false);
 	MTL::Texture* mtlTexture = device->newTexture(txDesc);
 	const Renderer::Texture texture {name, access, mtlTexture};
 	return EXP::SCENE::addTexture(texture);	
@@ -200,7 +201,6 @@ const void SCENE::buildBindlessScene(MTL::Device* device) {
 };
 
 const void SCENE::updateBindlessScene(MTL::Device* device) {
-	Renderer::VCamera* vcameraPtr = (Renderer::VCamera*)vcameraBuffer->contents();
 	const Renderer::VCamera& updatedVCamera = vcamera->update();
 	memcpy(vcameraBuffer->contents(), &updatedVCamera, sizeof(Renderer::VCamera));
 

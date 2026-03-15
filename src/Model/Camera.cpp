@@ -40,6 +40,7 @@ VCamera::VCamera() {
 	
 	quatPosY = simd::quatf(speed.y, vecUp);
 	quatNegY = simd::quatf(-speed.y, vecUp);
+  moved = false;
 
 	//simd::float4x4 mProjection = EXP::MATH::orthographic(-1, 1, -1, 1, 1, -1);
 	projection = simd::inverse(EXP::MATH::perspective(45.0f, frame.size.width / frame.size.height, 0.1f, 100.0f));
@@ -50,7 +51,9 @@ VCamera::VCamera() {
     .vecRight = MATH::pack(vecRight),
     .vecUp = MATH::pack(vecUp),
     .vecForward = MATH::pack(vecForward),
-    .fovScale = fovScale
+    .fovScale = fovScale,
+    .moved = moved,
+    .frameCount = 1
   };
 };
 
@@ -76,15 +79,19 @@ const void VCamera::setIsometric() {
     .vecRight = MATH::pack(vecRight),
     .vecUp = MATH::pack(vecUp),
     .vecForward = MATH::pack(vecForward),
-    .fovScale = fovScale
+    .fovScale = fovScale,
+    .moved = true,
+    .frameCount = transforms.frameCount + 1
   };
 }
 
 const Renderer::VCamera& VCamera::update() {
+  simd::float3 prevOrigin  = vecOrigin;
+  simd::float3 prevForward = vecForward;
+  float prevFovScale = fovScale;
+
   if (IO::isPressed(KEY_W)) fovScale -= speed.x;
   if (IO::isPressed(KEY_S)) fovScale += speed.x;
-  // if (IO::isPressed(KEY_W)) vecOrigin += vecForward * speed.x;
-  // if (IO::isPressed(KEY_S)) vecOrigin -= vecForward * speed.x;
   if (IO::isPressed(KEY_A)) vecOrigin -= getVRight() * speed.x;
   if (IO::isPressed(KEY_D)) vecOrigin += getVRight() * speed.x;
   if (IO::isPressed(KEY_Q)) vecOrigin -= vecUp * speed.x;
@@ -106,18 +113,25 @@ const Renderer::VCamera& VCamera::update() {
   }
 
   vecRight = getVRight();
+
 	transforms = {
     .vecOrigin = MATH::pack(vecOrigin),
     .resolution = MATH::pack(resolution),
     .vecRight = MATH::pack(vecRight),
     .vecUp = MATH::pack(vecUp),
     .vecForward = MATH::pack(vecForward),
-    .fovScale = fovScale
+    .fovScale = fovScale,
+    .moved = simd_length(prevOrigin  - vecOrigin)  > 1e-5f || 
+             simd_length(prevForward - vecForward) > 1e-5f ||
+             prevFovScale != fovScale || moved,
+    .frameCount = transforms.frameCount + 1
   };
+  moved = false;
   return transforms;
 }
 
 const Renderer::VCamera& VCamera::get() { return transforms; }
 const void VCamera::updateView() {}
+const void VCamera::setMoved(bool value) { moved = value; }
 
 };

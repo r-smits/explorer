@@ -138,7 +138,6 @@ bool color_ray(
 	// You can chance this for materials and so forth
 	// Called: BSDF: bi-directional scattering distribution function.
 	r.origin = r.origin + r.direction * intersection.distance;
-	seed = gid.x * (intersection.primitive_id * bary_3d.z) + gid.y * (intersection.primitive_id * bary_2d.y);
 	float3 jittered_normal = normalize(vec_normal + uniform_pdf(seed) * .0);
 	r.direction = reflect(r.direction, jittered_normal);
 	float wi_dot_n = lambertian(r.direction, vec_normal);
@@ -231,7 +230,7 @@ void update_reservoir(
 	thread uint32_t& seed
 ) {
 	reservoir.x += p_hat_weight;											// w_sum - total sum of weights
-	reservoir.z += 1.0f;															// m_sum - total sum of samples
+	reservoir.z += 1.0f;													// m_sum - total sum of samples
 	float random = rand(seed);
 	if (random <= (p_hat_weight / max(reservoir.x, 1e-6f))) {
 		reservoir.y = light_indices;										// sample inside of reservoir

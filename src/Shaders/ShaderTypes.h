@@ -24,6 +24,8 @@ struct VCamera {
     packed_float3 vecUp;
     packed_float3 vecForward;
     float fovScale;
+	bool moved;
+	uint32_t frameCount;
 };
 
 
@@ -89,6 +91,7 @@ struct GBufferIds {
 
 struct RestirIdx {
 	static constant uint8_t prev_frame = 0;
+	static constant uint8_t accumulation = 1;
 };
 
 
