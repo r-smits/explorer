@@ -79,8 +79,8 @@ void g_buffer(
 	}
 
 	ray r;	
-	build_ray(r, scene->vcamera, gid);
-	shoot_ray(r, structure, scene, gid);
+	build_ray(scene->vcamera, gid);
+	//shoot_ray(structure, scene, gid);
 	
 
 	float4 value = scene->textreadwrite[GBufferIds::col].value.read(gid);
