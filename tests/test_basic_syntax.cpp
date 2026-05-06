@@ -3,6 +3,7 @@
 //
 #include <gtest/gtest.h>
 #include <cstdlib>
+#include <shared_mutex>
 
 
 TEST(CBASICS, Malloc0) {
@@ -246,6 +247,112 @@ TEST(CPPBASICS, SharedPtrTest) {
     std::shared_ptr<int> y_ptr2 = y_ptr;
     generic_c_out(y_ptr.use_count());
     generic_c_out(y_ptr2.use_count());
+}
+
+
+class Node {
+public:
+    explicit Node(const int& key, const int& val) : key_(key), val_(val), nxt_(nullptr), prv_(nullptr) {}
+    int key_;
+    int val_;
+    Node* nxt_;
+    Node* prv_;
+};
+
+class LRUCache {
+
+private:
+    std::unordered_map<int, Node*> map_;
+    Node tail_;
+    Node head_;
+    int capacity_;
+    mutable std::shared_mutex mutex_;
+
+public:
+    explicit LRUCache(const int& capacity): capacity_(capacity), tail_(Node{0, 0}), head_(Node{0, 0}) {
+        tail_.prv_ = &head_;
+        head_.nxt_ = &tail_;
+    }
+
+    [[nodiscard]] int get(const int& key) {
+        std::unique_lock lock(mutex_);
+        if (map_.find(key) == map_.end()) {
+            return -1;
+        }
+
+        Node* n = map_.at(key);
+        Node* nxt = n->nxt_;
+        Node* prv = n->prv_;
+
+        if (prv) prv->nxt_ = nxt;
+        if (nxt) nxt->prv_ = prv;
+
+        n->prv_ = nullptr;
+        n->nxt_ = nullptr;
+
+        prv = tail_.prv_;
+        prv->nxt_ = n;
+        n->prv_ = prv;
+
+        tail_.prv_ = n;
+        n->nxt_ = &tail_;
+
+        return n->val_;
+    }
+
+
+    void put(const int& key, const int& value) {
+        std::unique_lock lock(mutex_);
+        Node* n = nullptr;
+        if (map_.find(key) == map_.end()) {
+            if (map_.size() == capacity_) {
+                Node* to_delete = head_.nxt_;
+                head_.nxt_ = to_delete->nxt_;
+                head_.nxt_->prv_ = &head_;
+                to_delete->prv_ = nullptr;
+                to_delete->nxt_ = nullptr;
+                map_.erase(to_delete->key_);
+                delete to_delete;
+            }
+            n = new Node(key, value);
+            map_.insert(std::make_pair(key, n));
+        } else {
+            n = map_.at(key);
+            n->val_ = value;
+            Node* nxt = n->nxt_;
+            Node* prv = n->prv_;
+
+            if (prv) prv->nxt_ = nxt;
+            if (nxt) nxt->prv_ = prv;
+
+            n->prv_ = nullptr;
+            n->nxt_ = nullptr;
+        }
+
+        Node* prv = tail_.prv_;
+        prv->nxt_ = n;
+        n->prv_ = prv;
+
+        tail_.prv_ = n;
+        n->nxt_ = &tail_;
+    }
+
+    ~LRUCache() {
+        const Node* curr = head_.nxt_;
+        while (curr != &tail_) {
+            const Node* nxt = curr->nxt_;
+            delete curr;
+            curr = nxt;
+        }
+    }
+};
+
+
+TEST(CPPBASICS, lru_cache) {
+
+
+
+
 }
 
 

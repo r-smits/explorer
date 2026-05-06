@@ -1,4 +1,5 @@
 #pragma once
+#include "ImGuiAPI.h"
 #include "Metal/MTLAccelerationStructure.hpp"
 #include "Metal/MTLComputePipeline.hpp"
 #include "Metal/MTLVertexDescriptor.hpp"
@@ -18,6 +19,7 @@ public: // Setting up layer
     device->release();
     queue->release();
     _instanceDescriptor->release();
+		deallocate_imgui();
   };
 
 public: // Event

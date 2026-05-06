@@ -31,8 +31,8 @@ add_executable(EXPLORER
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/Layer.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/LayerStack.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/LayerStack.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/ImGuiLayer.h	
-	${CMAKE_CURRENT_SOURCE_DIR}/src/layer/ImGuiLayer.mm
+	${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/ImGuiApi.h
+	${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/ImGuiApi.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/BaseLayer.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/BaseLayer.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/RayTraceLayer.h
@@ -104,9 +104,13 @@ add_library(IMGUI STATIC
 )
 
 set_target_properties(IMGUI PROPERTIES
-	CXX_STANDARD 11
+	CXX_STANDARD 17
 	CXX_STANDARD_REQUIRED ON
 	CXX_EXTENSIONS ON
+)
+
+target_include_directories(IMGUI PUBLIC
+	"${CMAKE_CURRENT_SOURCE_DIR}/vendor"
 )
 
 # Metal cpp library (linker)
@@ -118,6 +122,7 @@ target_link_libraries(EXPLORER PUBLIC
 		"-framework AppKit"
 		"-framework Foundation"
 		"-framework ModelIO"
+		"-framework QuartzCore" 
 )
 
 add_executable(
