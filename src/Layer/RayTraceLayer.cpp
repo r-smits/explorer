@@ -1,3 +1,4 @@
+#include "ImGuiAPI.h"
 #include "Math/Transformation.h"
 #include "Metal/MTLCommandBuffer.hpp"
 #include "Metal/MTLCommandEncoder.hpp"
@@ -35,6 +36,7 @@ EXP::RayTraceLayer::RayTraceLayer(MTL::Device* device, std::shared_ptr<const App
 		
 	buildModels(device);
 	buildAccelerationStructures(device);
+	initialize_imgui(device);
 }
 
 void EXP::RayTraceLayer::buildModels(MTL::Device* device) {
@@ -108,52 +110,47 @@ void EXP::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* no
 	rebuildAccelerationStructures(view);
 
 	// ------------------------------ //
-	// GBuffer												//
-	// ------------------------------ //
-	/**	
-	MTL::CommandBuffer* gbufferCommand = queue->commandBuffer();
-	MTL::ComputePassDescriptor* gbufferDescriptor = MTL::ComputePassDescriptor::alloc()->init();
-	MTL::ComputeCommandEncoder* gbufferEncoder = gbufferCommand->computeCommandEncoder(gbufferDescriptor);
-	
-	gbufferEncoder->setComputePipelineState(this->_gbufferState);
-	gbufferEncoder->setTexture(view->currentDrawable()->texture(), 0);
-	
-	gbufferEncoder->useHeap(_heap);
-	gbufferEncoder->setAccelerationStructure(_instanceAccStructure, 1);	
-	gbufferEncoder->setBuffer(EXP::SCENE::getBindlessScene(), 0, 2);
-
-	for (MTL::Resource* resource : EXP::SCENE::getResources()) {
-		gbufferEncoder->useResource(resource, MTL::ResourceUsageWrite);
-  }
-
-	gbufferEncoder->dispatchThreads(_gridSize, _threadGroupSize);
-	gbufferEncoder->endEncoding();
-
-	// gbufferCommand->presentDrawable(view->currentDrawable());
-	gbufferCommand->commit();
-	**/
-	
-	// ------------------------------ //
 	// Temporal Re-use RESTIR GI	  //
 	// ------------------------------ //
-	MTL::CommandBuffer* temporalCommand = queue->commandBuffer();
-	temporalCommand->encodeWait(_buildEvent, 2);
-	MTL::ComputeCommandEncoder* temporalEncoder = temporalCommand->computeCommandEncoder(_temporalDescriptor);
+	MTL::CommandBuffer* command_buffer = queue->commandBuffer();
+	command_buffer->encodeWait(_buildEvent, 2);
+	MTL::ComputeCommandEncoder* compute_encoder = command_buffer->computeCommandEncoder(_temporalDescriptor);
 	
-	temporalEncoder->setComputePipelineState(_temporalReuseState);
-	temporalEncoder->setTexture(view->currentDrawable()->texture(), 0);
+	compute_encoder->setComputePipelineState(_temporalReuseState);
+	compute_encoder->setTexture(view->currentDrawable()->texture(), 0);
 	
-	temporalEncoder->useHeap(_heap);
-	temporalEncoder->setAccelerationStructure(_instanceAccStructure, 1);
-	temporalEncoder->useResource(_instanceAccStructure, MTL::ResourceUsageRead);
+	compute_encoder->useHeap(_heap);
+	compute_encoder->setAccelerationStructure(_instanceAccStructure, 1);
+	compute_encoder->useResource(_instanceAccStructure, MTL::ResourceUsageRead);
 	
 	const std::vector<MTL::Resource*>& resources = EXP::SCENE::getResources();
-	temporalEncoder->useResources(resources.data(), resources.size(), MTL::ResourceUsageRead | MTL::ResourceUsageSample);
-	temporalEncoder->setBuffer(EXP::SCENE::getBindlessScene(), 0, 2);
-	temporalEncoder->dispatchThreads(_gridSize, _threadGroupSize);
-	temporalEncoder->endEncoding();
+	compute_encoder->useResources(resources.data(), resources.size(), MTL::ResourceUsageRead | MTL::ResourceUsageSample);
+	compute_encoder->setBuffer(EXP::SCENE::getBindlessScene(), 0, 2);
+	compute_encoder->dispatchThreads(_gridSize, _threadGroupSize);
+	compute_encoder->endEncoding();
 
-	temporalCommand->presentDrawable(view->currentDrawable());
-	temporalCommand->commit();
+	//
+	// Blit RenderPass
+	//
+	DEBUG("Starting blit render pass");
+	MTL::RenderPassDescriptor* render_pass_descriptor = MTL::RenderPassDescriptor::alloc()->init();
+	MTL::RenderPassColorAttachmentDescriptor* color_attachment = render_pass_descriptor->colorAttachments()->object(0);
+	color_attachment->setTexture(view->currentDrawable()->texture());
+	color_attachment->setLoadAction(MTL::LoadActionLoad);  
+	color_attachment->setStoreAction(MTL::StoreActionStore);
 
+	MTL::RenderCommandEncoder* render_encoder = command_buffer->renderCommandEncoder(render_pass_descriptor);
+	imgui_on_update(
+		view, 
+		command_buffer, 
+		render_pass_descriptor,
+		render_encoder, 
+		view->currentDrawable()->texture()
+	);
+
+	render_encoder->endEncoding();
+	render_pass_descriptor->release();
+
+	command_buffer->presentDrawable(view->currentDrawable());
+	command_buffer->commit();
 }
