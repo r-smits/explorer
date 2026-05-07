@@ -31,8 +31,10 @@ add_executable(EXPLORER
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/Layer.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/LayerStack.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/LayerStack.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/ImGuiLayer.h	
-	${CMAKE_CURRENT_SOURCE_DIR}/src/layer/ImGuiLayer.mm
+	#${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/ImGuiLayer.h	
+	#${CMAKE_CURRENT_SOURCE_DIR}/src/layer/ImGuiLayer.mm
+	${CMAKE_CURRENT_SOURCE_DIR}/src/layer/ImGuiAPI.h
+	${CMAKE_CURRENT_SOURCE_DIR}/src/layer/ImGuiAPI.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/BaseLayer.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/BaseLayer.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/Layer/RayTraceLayer.h
@@ -89,6 +91,8 @@ set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/src/Shaders/ReSTIR.metal
 target_include_directories(EXPLORER PUBLIC
 	"${CMAKE_CURRENT_SOURCE_DIR}/src"
 	"${CMAKE_CURRENT_SOURCE_DIR}/vendor"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/vendor/Metal"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/vendor/Foundation"
 	"${CMAKE_CURRENT_SOURCE_DIR}/vendor/spdlog/include"
 	"${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui/"
 	"${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui/backends"
@@ -104,20 +108,24 @@ add_library(IMGUI STATIC
 )
 
 set_target_properties(IMGUI PROPERTIES
-	CXX_STANDARD 11
+	CXX_STANDARD 17
 	CXX_STANDARD_REQUIRED ON
 	CXX_EXTENSIONS ON
 )
 
+target_include_directories(IMGUI PUBLIC
+	"${CMAKE_CURRENT_SOURCE_DIR}/vendor"
+)
+
 # Metal cpp library (linker)
 target_link_libraries(EXPLORER PUBLIC
-		# glm::glm
 		IMGUI
 		"-framework Metal"
 		"-framework MetalKit"
 		"-framework AppKit"
 		"-framework Foundation"
 		"-framework ModelIO"
+		"-framework QuartzCore"
 )
 
 add_executable(

@@ -2,10 +2,7 @@
 #include <sstream>
 
 EXP::AppDelegate::AppDelegate(std::shared_ptr<const EXP::AppProperties> _properties) : 
-properties(_properties), mtkView(ViewAdapter::initView(_properties->cgRect)) {
-	// EXP::ViewAdapter* viewAdapter = ViewAdapter::sharedInstance();
-  // this->mtkView = ViewAdapter::initView(properties->cgRect);
-}
+properties(_properties), mtkView(ViewAdapter::initView(_properties->cgRect)) {}
 
 EXP::AppDelegate::~AppDelegate() {
   mtkView->release();
@@ -58,15 +55,16 @@ void EXP::AppDelegate::applicationDidFinishLaunching(NS::Notification* msg) {
 
 	// Set object to be the MTK::View event handler
   this->viewDelegate = new EXP::ViewDelegate(this->mtkView, this->properties);
+	DEBUG("Setting view delegate ...");
   this->mtkView->setDelegate(this->viewDelegate);
-
-  // Set NS::Window defaults
+  
+	// Set NS::Window defaults
   this->window->setContentView(mtkView);
   this->window->setTitle(NS::String::string("EXPLORER", NS::StringEncoding::UTF8StringEncoding));
   this->window->makeKeyAndOrderFront(nullptr);
-
   NS::Application* app = reinterpret_cast<NS::Application*>(msg->object());
   app->activateIgnoringOtherApps(true);
+	DEBUG("Application finished launching");
 }
 
 bool EXP::AppDelegate::applicationShouldTerminateAfterLastWindowClosed(NS::Application* sender

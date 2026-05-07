@@ -26,11 +26,15 @@ int main() {
       texture_path.string(),
 			mesh_path.string()
   );
-
+	
+	DEBUG("Starting in main");
   EXP::AppDelegate appDelegate = EXP::AppDelegate(properties);
+	DEBUG("Back in main");
   NS::Application* app = NS::Application::sharedApplication();
-
+	
+	DEBUG("Setting app delegate ...");
   app->setDelegate(&appDelegate);
+	DEBUG("Triggering app run ...");
   app->run();
 
   autoreleasePool->release();

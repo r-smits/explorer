@@ -5,19 +5,23 @@
 #include <View/ViewAdapter.hpp>
 #include <View/ViewDelegate.h>
 
-EXP::ViewDelegate::ViewDelegate(MTK::View* view, std::shared_ptr<const EXP::AppProperties> _config) : MTK::ViewDelegate() {
+EXP::ViewDelegate::ViewDelegate(
+	MTK::View* view, 
+	std::shared_ptr<const EXP::AppProperties> app_properties
+) : MTK::ViewDelegate() {
   DEBUG("Initializing ViewDelegate ...");
-
   // Set up Keyboard IO eventing from MTK::View
   ViewAdapter* viewAdapter = ViewAdapter::sharedInstance();
   auto callback = [this](Event& event) { this->onEvent(event); };
   viewAdapter->setHandler(callback);
-	this->layerStack.pushLayer(new EXP::RayTraceLayer(view->device(), _config));
+	this->layerStack.pushLayer(new EXP::RayTraceLayer(view->device(), app_properties));
+	DEBUG("Initialized ViewDelegate");
 }
 
 EXP::ViewDelegate::~ViewDelegate() {}
 
 void EXP::ViewDelegate::onEvent(Event& event) {
+	DEBUG("ViewDelegate onEvent");
   IO::onEvent(event);
   for (std::vector<Layer*>::iterator index = layerStack.end(); index != layerStack.begin();) {
     (*--index)->onEvent(event);
@@ -26,21 +30,14 @@ void EXP::ViewDelegate::onEvent(Event& event) {
 }
 
 void EXP::ViewDelegate::drawInMTKView(MTK::View* view) {
+	DEBUG("Draw in MTK View");
   NS::AutoreleasePool* pool = NS::AutoreleasePool::alloc()->init();
-	
-
-  //MTL::CommandBuffer* buffer = queue->commandBuffer();
-  //MTL::RenderPassDescriptor* descriptor = view->currentRenderPassDescriptor();
-  //MTL::RenderCommandEncoder* encoder = buffer->renderCommandEncoder(descriptor);
-
   for (Layer* layer : this->layerStack)
     layer->onUpdate(view, nullptr);
-
-  //encoder->endEncoding();
-  //buffer->presentDrawable(view->currentDrawable());
-  //buffer->commit();
-  //buffer->waitUntilScheduled();
-  //pool->release();
+	pool->release();
 }
 
+
 void EXP::ViewDelegate::drawableSizeWillChange(MTK::View* view, CGSize size) {}
+
+

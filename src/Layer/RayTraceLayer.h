@@ -14,12 +14,7 @@ class RayTraceLayer : public Layer {
 
 public: // Setting up layer
   RayTraceLayer(MTL::Device* device, std::shared_ptr<const AppProperties> config);
-  ~RayTraceLayer() {
-    device->release();
-    queue->release();
-    _instanceDescriptor->release();
-  };
-
+  ~RayTraceLayer(); 
 public: // Event
   void buildModels(MTL::Device* device);
   void buildAccelerationStructures(MTL::Device* device);
@@ -68,6 +63,7 @@ private:
 private:
 	int t = 0;
 
-
+private:
+    MTL::Texture* _outputTexture;
 };
 }; // namespace EXP
