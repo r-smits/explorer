@@ -19,6 +19,8 @@ EXP::Object* EXP::Object::scale(const float& factor) {
   this->factor = factor;
   return this;
 }
+
+
 EXP::Object* EXP::Object::rotate(const simd::float4x4& rotation) {
   this->rotation = rotation;
   return this;
