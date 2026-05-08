@@ -1,3 +1,5 @@
+<img width="1498" height="861" alt="Screenshot 2026-05-08 at 01 28 59" src="https://github.com/user-attachments/assets/99fc3fef-b5e0-4fca-8f11-8a6dcb53f715" />
+
 Explorer: A toy real-time raytracer / renderer.
 
 System requirements:
