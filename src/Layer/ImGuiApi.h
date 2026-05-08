@@ -2,7 +2,7 @@
 #include <pch.h>
 
 
-void initialize_imgui(MTL::Device* view); 
+void initialize_imgui(MTK::View* view); 
 void deallocate_imgui();
 void imgui_on_update(
 	MTK::View* view, 
@@ -11,5 +11,4 @@ void imgui_on_update(
 	MTL::RenderCommandEncoder* render_encoder,
 	MTL::Texture* output_texture
 );
-void show_imgui_debug_window(bool* open);
 

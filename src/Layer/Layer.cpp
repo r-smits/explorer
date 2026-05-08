@@ -1,7 +1,7 @@
 #include <Layer/Layer.h>
 
-EXP::Layer::Layer(MTL::Device *device, std::shared_ptr<const EXP::AppProperties> config, const std::string &name)
-    : device(device), config(config), name(name) {}
+EXP::Layer::Layer(MTK::View* view, std::shared_ptr<const EXP::AppProperties> config, const std::string &name)
+    : device(view->device()), config(config), name(name) {}
 	
 EXP::Layer::~Layer() {
 	device->release();

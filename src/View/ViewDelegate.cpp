@@ -11,7 +11,7 @@ EXP::ViewDelegate::ViewDelegate(MTK::View* view, std::shared_ptr<const EXP::AppP
   ViewAdapter* viewAdapter = ViewAdapter::sharedInstance();
   auto callback = [this](Event& event) { this->onEvent(event); };
   viewAdapter->setHandler(callback);
-	this->layerStack.pushLayer(new EXP::RayTraceLayer(view->device(), _config));
+	this->layerStack.pushLayer(new EXP::RayTraceLayer(view, _config));
 }
 
 EXP::ViewDelegate::~ViewDelegate() {}

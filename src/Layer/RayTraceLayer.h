@@ -14,7 +14,7 @@ namespace EXP {
 class RayTraceLayer : public Layer {
 
 public: // Setting up layer
-  RayTraceLayer(MTL::Device* device, std::shared_ptr<const AppProperties> config);
+  RayTraceLayer(MTK::View* view, std::shared_ptr<const AppProperties> config);
   ~RayTraceLayer() {
     device->release();
     queue->release();
@@ -70,6 +70,8 @@ private:
 private:
 	int t = 0;
 
+private:
+  MTL::Texture* _outputTexture;
 
 };
 }; // namespace EXP
