@@ -14,4 +14,5 @@
 - (void)printDebug;
 - (void)keyDown:(NSEvent *)event;
 - (void)keyUp:(NSEvent *)event;
+- (void)viewDidMoveToWindow; 
 @end

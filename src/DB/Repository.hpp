@@ -40,6 +40,6 @@ public:
   Meshes(){};
   ~Meshes(){};
   //static EXP::Model* read(MTL::Device* device, MTL::VertexDescriptor* vertexDescriptor, std::string path, bool useTexture = true, bool useLight = true);
-	static EXP::Model* read(MTL::Device* device, MTL::VertexDescriptor* vertexDescriptor, const std::string& relativePath);
+	static EXP::Model* read(MTL::Device* device, MTL::VertexDescriptor* vertexDescriptor, const std::string& relativePath, const std::string& model_name);
 };
 }; // namespace Repository

@@ -46,7 +46,11 @@ buildMDLVertexDescriptor(MTL::Device* device, MTL::VertexDescriptor* vertexDescr
   return mdlVertexDescriptor;
 }
 
-EXP::MDL::Mesh* buildMesh(MTL::Device* device, MDLMesh* mdlMesh, MTL::VertexDescriptor* vertexDescriptor) {
+EXP::MDL::Mesh* buildMesh(
+	MTL::Device* device, MDLMesh* mdlMesh, 
+	MTL::VertexDescriptor* vertexDescriptor,
+	const std::string& model_name
+) {
   id<MTLDevice> objcppDevice = (__bridge id<MTLDevice>)device;
 	
 	//[mdlMesh addNormalsWithAttributeNamed:MDLVertexAttributeNormal creaseThreshold:0.7];
@@ -77,7 +81,7 @@ EXP::MDL::Mesh* buildMesh(MTL::Device* device, MDLMesh* mdlMesh, MTL::VertexDesc
       buffers,
       offsets,
       mtkMesh.vertexBuffers.count,
-      [[mdlMesh name] UTF8String],
+      model_name,
       mdlMesh.vertexCount
   );
 	
@@ -96,21 +100,31 @@ EXP::MDL::Mesh* buildMesh(MTL::Device* device, MDLMesh* mdlMesh, MTL::VertexDesc
   return mesh;
 }
 
-std::vector<EXP::MDL::Mesh*> buildMeshes(MTL::Device* device, MDLObject* object, MTL::VertexDescriptor* vertexDescriptor) {
+std::vector<EXP::MDL::Mesh*> buildMeshes(
+	MTL::Device* device, 
+	MDLObject* object, 
+	MTL::VertexDescriptor* vertexDescriptor,
+	const std::string& model_name
+) {
   std::vector<EXP::MDL::Mesh*> meshes;
   if ([object isKindOfClass:[MDLMesh class]]) {
-    EXP::MDL::Mesh* mesh = buildMesh(device, (MDLMesh*)object, vertexDescriptor);
+    EXP::MDL::Mesh* mesh = buildMesh(device, (MDLMesh*)object, vertexDescriptor, model_name);
     meshes.emplace_back(mesh);
   }
 
   for (MDLObject* child in object.children) {
-    std::vector<EXP::MDL::Mesh*> meshes = buildMeshes(device, child, vertexDescriptor);
+    std::vector<EXP::MDL::Mesh*> meshes = buildMeshes(device, child, vertexDescriptor, model_name);
     meshes.insert(meshes.end(), meshes.begin(), meshes.end());
   }
   return meshes;
 }
 
-EXP::Model* Repository::Meshes::read(MTL::Device* cppDevice, MTL::VertexDescriptor* vertexDescriptor, const std::string& path) {
+EXP::Model* Repository::Meshes::read(
+	MTL::Device* cppDevice, 
+	MTL::VertexDescriptor* vertexDescriptor, 
+	const std::string& path,
+	const std::string& model_name
+) {
   NSURL* url = (__bridge NSURL*)EXP::nsUrl(path + ".obj");
 	id<MTLDevice> device = (__bridge id<MTLDevice>) cppDevice;
   MTKMeshBufferAllocator* bufferAllocator = [[MTKMeshBufferAllocator alloc] initWithDevice: device];
@@ -118,7 +132,7 @@ EXP::Model* Repository::Meshes::read(MTL::Device* cppDevice, MTL::VertexDescript
 
   std::vector<EXP::MDL::Mesh*> allMeshes;
   for (MDLObject* mdlObject : mdlAsset) {
-    std::vector<EXP::MDL::Mesh*> meshes = buildMeshes(cppDevice, mdlObject, vertexDescriptor);
+    std::vector<EXP::MDL::Mesh*> meshes = buildMeshes(cppDevice, mdlObject, vertexDescriptor, model_name);
 		for (EXP::MDL::Mesh* mesh : meshes) { allMeshes.emplace_back(mesh); }
   }
 

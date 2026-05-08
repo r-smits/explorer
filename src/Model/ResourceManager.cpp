@@ -31,7 +31,7 @@ EXP::Model* SCENE::getModel(const std::string& name) {
 void SCENE::addModel(
     MTL::Device* device, MTL::VertexDescriptor* vertexDescriptor, const std::string& path, const std::string& name
 ) {
-	EXP::Model* model = Repository::Meshes::read(device, vertexDescriptor, path);
+	EXP::Model* model = Repository::Meshes::read(device, vertexDescriptor, path, name);
 	models.emplace_back(model);
 	modnames.insert({name, models.size()-1});
 	DEBUG("Model stored. Name: " + model->name);

@@ -84,6 +84,10 @@ void EXP::ViewAdapter::onEvent(EXP::Event &event) {
   return YES;
 }
 
+- (void)viewDidMoveToWindow {
+    [self.window makeFirstResponder:self];
+}
+
 - (void)updateTrackingAreas {
   DEBUG("Update tracking areas ...");
   NSTrackingArea *areaInit =

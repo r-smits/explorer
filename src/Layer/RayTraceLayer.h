@@ -1,8 +1,5 @@
 #pragma once
-#include "ImGuiAPI.h"
-#include "Metal/MTLAccelerationStructure.hpp"
-#include "Metal/MTLComputePipeline.hpp"
-#include "Metal/MTLVertexDescriptor.hpp"
+#include <Layer/ImGuiAPI.h>
 #include <Layer/Layer.h>
 #include <Model/Camera.h>
 #include <Model/MeshFactory.h>
