@@ -122,7 +122,8 @@ target_link_libraries(EXPLORER PUBLIC
 		"-framework AppKit"
 		"-framework Foundation"
 		"-framework ModelIO"
-		"-framework QuartzCore" 
+		"-framework QuartzCore"
+		"-framework GameController"
 )
 
 add_executable(

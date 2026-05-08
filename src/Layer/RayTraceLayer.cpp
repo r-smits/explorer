@@ -14,9 +14,9 @@ using s_repo = Repository::Shaders;
 using r_acc = Renderer::Acceleration;
 
 
-EXP::RayTraceLayer::RayTraceLayer(MTL::Device* device, std::shared_ptr<const AppProperties> _config)
-    : Layer(device->retain(), _config), queue(device->newCommandQueue()) {
-
+EXP::RayTraceLayer::RayTraceLayer(MTK::View* view, std::shared_ptr<const AppProperties> _config)
+    : Layer(view, _config), queue(view->device()->newCommandQueue()) {
+	auto device = view->device();
 	MTL::Library* gbufferLib = s_repo::readLibrary(device, config->shader_path / "GBuffer");
 	MTL::Library* temporalReuseLib = s_repo::readLibrary(device, config->shader_path / "RESTIR"); 
 	MTL::Function* gbufferFn = gbufferLib->newFunction(EXP::nsString("g_buffer"));
@@ -33,10 +33,20 @@ EXP::RayTraceLayer::RayTraceLayer(MTL::Device* device, std::shared_ptr<const App
 	_threadGroupSize = calcGridsize(_temporalReuseState);
 	_temporalDescriptor = MTL::ComputePassDescriptor::alloc()->init();
 	_temporalDescriptor->retain();
-		
+	
+	MTL::TextureDescriptor* desc = MTL::TextureDescriptor::texture2DDescriptor(
+			MTL::PixelFormat::PixelFormatRGBA8Unorm_sRGB, 
+			_gridSize.width * 2,
+      _gridSize.height * 2,
+      false
+	);
+	desc->setUsage(MTL::TextureUsageShaderWrite | MTL::TextureUsageShaderRead);
+	desc->setStorageMode(MTL::StorageModePrivate);
+	_outputTexture = device->newTexture(desc)->retain();
+
 	buildModels(device);
 	buildAccelerationStructures(device);
-	initialize_imgui(device);
+	initialize_imgui(view);
 }
 
 void EXP::RayTraceLayer::buildModels(MTL::Device* device) {
@@ -117,7 +127,8 @@ void EXP::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* no
 	MTL::ComputeCommandEncoder* compute_encoder = command_buffer->computeCommandEncoder(_temporalDescriptor);
 	
 	compute_encoder->setComputePipelineState(_temporalReuseState);
-	compute_encoder->setTexture(view->currentDrawable()->texture(), 0);
+	compute_encoder->setTexture(_outputTexture, 0);
+	//compute_encoder->setTexture(view->currentDrawable()->texture(), 0);
 	
 	compute_encoder->useHeap(_heap);
 	compute_encoder->setAccelerationStructure(_instanceAccStructure, 1);
@@ -128,14 +139,12 @@ void EXP::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* no
 	compute_encoder->setBuffer(EXP::SCENE::getBindlessScene(), 0, 2);
 	compute_encoder->dispatchThreads(_gridSize, _threadGroupSize);
 	compute_encoder->endEncoding();
-
+	
 	//
 	// Blit RenderPass
 	//
-	DEBUG("Starting blit render pass");
-	MTL::RenderPassDescriptor* render_pass_descriptor = MTL::RenderPassDescriptor::alloc()->init();
+	MTL::RenderPassDescriptor* render_pass_descriptor = view->currentRenderPassDescriptor();
 	MTL::RenderPassColorAttachmentDescriptor* color_attachment = render_pass_descriptor->colorAttachments()->object(0);
-	color_attachment->setTexture(view->currentDrawable()->texture());
 	color_attachment->setLoadAction(MTL::LoadActionLoad);  
 	color_attachment->setStoreAction(MTL::StoreActionStore);
 
@@ -145,12 +154,9 @@ void EXP::RayTraceLayer::onUpdate(MTK::View* view, MTL::RenderCommandEncoder* no
 		command_buffer, 
 		render_pass_descriptor,
 		render_encoder, 
-		view->currentDrawable()->texture()
+		_outputTexture
 	);
-
 	render_encoder->endEncoding();
-	render_pass_descriptor->release();
-
 	command_buffer->presentDrawable(view->currentDrawable());
 	command_buffer->commit();
 }

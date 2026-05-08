@@ -7,7 +7,7 @@ namespace EXP {
 class Layer {
 
 public:
-  Layer(MTL::Device* device, std::shared_ptr<const EXP::AppProperties> config, const std::string& name = "Layer");
+  Layer(MTK::View* view, std::shared_ptr<const EXP::AppProperties> config, const std::string& name = "Layer");
   virtual ~Layer();
 
   virtual void onAttach();
