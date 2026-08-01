@@ -1,5 +1,5 @@
 #pragma once
-#include <Layer/ImGuiAPI.h>
+#include <Layer/ImGuiApi.h>
 #include <Layer/Layer.h>
 #include <Model/Camera.h>
 #include <Model/MeshFactory.h>
@@ -29,18 +29,18 @@ private: // Initialization
   virtual void onUpdate(MTK::View* view, MTL::RenderCommandEncoder* encoder) override;
 
 private:
-  MTL::Device* device;
+	MTL::Device* device;
 	MTL::Function* _kernelFn;
+
 	MTL::ComputePipelineState* _gbufferState;
 	MTL::ComputePipelineState* _temporalReuseState;
-  MTL::ComputePipelineState* _raytraceState;
+	MTL::ComputePipelineState* _raytraceState;
 
 private:
-  MTL::CommandQueue* queue;
-
-  MTL::Size _threadGroupSize;
-  MTL::Size _gridSize;
-  simd::float3 _resolution;
+	MTL::CommandQueue* queue;
+	MTL::Size _threadGroupSize;
+	MTL::Size _gridSize;
+	simd::float3 _resolution;
 
 private:
 	MTL::VertexDescriptor* _vertexDescriptor;

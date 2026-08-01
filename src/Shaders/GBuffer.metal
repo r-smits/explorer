@@ -79,7 +79,7 @@ void g_buffer(
 	}
 
 	ray r;	
-	build_ray(scene->vcamera, gid);
+	//build_ray(scene->vcamera, gid);
 	//shoot_ray(structure, scene, gid);
 	
 
